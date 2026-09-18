@@ -177,10 +177,10 @@ export async function learnFromExchange(userId: number, userName: string, userMe
     const result = await withRetry("remember", () =>
       memwal.rememberBulkAndWait(facts.map((text) => ({ text, namespace })), { timeoutMs: 90_000, pollIntervalMs: 3000 }),
     );
-    const stored = result.results.filter((r) => r.status === "done");
+    const stored = facts.filter((_, i) => result.results[i]?.status === "done");
     result.results.forEach((r, i) => console.log(`         ${r.status === "done" ? "+" : "!"} ${facts[i]}  [${r.blob_id || r.error}]`));
     console.log(`[learn]  user=${userId} stored ${stored.length}/${facts.length} facts`);
-    stats.recordFacts(userId, userName, stored.map((_, i) => facts[i]));
+    stats.recordFacts(userId, userName, stored);
     if (stored.length > 0) profileCache.delete(userId);
   } catch (err) {
     console.error(`[learn]  user=${userId} failed:`, (err as Error).message.slice(0, 200));

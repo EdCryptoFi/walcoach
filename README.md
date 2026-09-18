@@ -87,6 +87,9 @@ good answer depends on remembering session 1. Every probe is answered with memor
 OFF and ON and checked against keywords only a remembering bot could produce.
 Full transcripts land in `eval/report.md`.
 
+The relayer allows ~1000 weighted requests per account per hour; one eval run uses
+a good share of that, so run it at most once an hour or the writes start failing with 429.
+
 ## Project layout
 
 ```
