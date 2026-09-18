@@ -31,7 +31,7 @@ export interface Memory {
 // Cross-language hits (PT question, EN fact) land around 0.55–0.70, so the
 // cutoff is deliberately loose; the LLM is told to ignore what isn't useful.
 const RELEVANT = 0.8;
-const DUPLICATE = 0.25;
+const DUPLICATE = 0.15;
 
 /** Retry transient relayer failures (5xx / network) with a short backoff. */
 async function withRetry<T>(label: string, fn: () => Promise<T>, tries = 3): Promise<T> {
@@ -66,7 +66,7 @@ function toMemory(r: { blob_id: string; text: string; distance: number }): Memor
  * "core profile" query so short messages like "hi, I'm back" still surface
  * the user's goals, schedule and constraints.
  */
-export async function recallForUser(userId: number, query: string, limit = 8): Promise<Memory[]> {
+export async function recallForUser(userId: number, query: string, limit = 8, attempt = 1): Promise<Memory[]> {
   const started = Date.now();
   const namespace = namespaceFor(userId);
   const [byMessage, profile] = await Promise.all([
@@ -82,6 +82,13 @@ export async function recallForUser(userId: number, query: string, limit = 8): P
   }
   merged.sort((a, b) => a.distance - b.distance);
   const memories = merged.slice(0, limit);
+  if (memories.length === 0 && attempt < 3 && knownToHaveMemories(userId)) {
+    // Observed: the relayer occasionally returns an empty result set (no error)
+    // for a namespace that has memories. Retry once before answering blind.
+    console.warn(`[recall] user=${userId} empty result for a user with stored facts — retrying (${attempt})`);
+    await new Promise((r) => setTimeout(r, 1500));
+    return recallForUser(userId, query, limit, attempt + 1);
+  }
   console.log(`[recall] user=${userId} q="${query.slice(0, 60)}" hits=${memories.length} (msg=${byMessage.results.length}, profile=${profile.results.length}) ${Date.now() - started}ms`);
   for (const m of memories) console.log(`         ${m.distance.toFixed(3)}  ${m.text}`);
   return memories;
@@ -89,20 +96,31 @@ export async function recallForUser(userId: number, query: string, limit = 8): P
 
 /** Broad recall used by /memories — no relevance cutoff, just "everything close to being about the user". */
 export async function listMemories(userId: number, limit = 25): Promise<Memory[]> {
-  const result = await withRetry("recall", () =>
-    memwal.recall({
-      query: "facts, preferences, goals, habits, struggles and personal details about the user",
-      namespace: namespaceFor(userId),
-      limit,
-    }),
-  );
-  return result.results.map(toMemory);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const result = await withRetry("recall", () =>
+      memwal.recall({
+        query: "facts, preferences, goals, habits, struggles and personal details about the user",
+        namespace: namespaceFor(userId),
+        limit,
+      }),
+    );
+    if (result.results.length > 0 || !knownToHaveMemories(userId)) return result.results.map(toMemory);
+    console.warn(`[recall] user=${userId} /memories came back empty for a user with stored facts — retrying (${attempt})`);
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  return [];
+}
+
+function knownToHaveMemories(userId: number): boolean {
+  return (stats.all()[userId]?.facts ?? 0) > 0;
 }
 
 /** Skip facts that are near-duplicates of something already stored. */
 async function isDuplicate(namespace: string, fact: string): Promise<boolean> {
   const existing = await withRetry("recall", () => memwal.recall({ query: fact, namespace, limit: 1, maxDistance: DUPLICATE }));
-  return existing.results.length > 0;
+  const dup = existing.results[0];
+  if (dup) console.log(`         = ${fact} (duplicate of "${dup.text}", d=${dup.distance.toFixed(3)}, skipped)`);
+  return Boolean(dup);
 }
 
 /**
@@ -132,10 +150,7 @@ export async function learnFromExchange(userId: number, userName: string, userMe
     }
     const stored: string[] = [];
     for (const fact of facts) {
-      if (await isDuplicate(namespace, fact)) {
-        console.log(`         = ${fact} (duplicate, skipped)`);
-        continue;
-      }
+      if (await isDuplicate(namespace, fact)) continue;
       const result = await withRetry("remember", () => memwal.rememberAndWait(fact, namespace, { timeoutMs: 60_000 }));
       console.log(`         + ${fact}  [${result.blob_id}]`);
       stored.push(fact);

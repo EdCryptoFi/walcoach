@@ -51,3 +51,21 @@ candidate GitHub issue at https://github.com/MystenLabs/MemWal/issues.
   `job_id=441d8509-…` each time. Docs say `remember()` is always append-never-upsert,
   so either there is undocumented idempotency, or the SDK re-polled the old job.
   Worth clarifying.
+
+## 7. `recall` intermittently returns an empty result set with HTTP 200
+
+- Namespace `eval-…-900002` had 7 indexed memories. A recall with the fixed query
+  "the user's main goal, deadline, weekly schedule, constraints and current struggle"
+  returned `{results: [], total: 0}`; the identical call ~10 s later returned 6 hits.
+  Same for a broad `/memories` listing that returned 0 for a namespace with 5 memories.
+- Expected: either results or an error. A silent empty set makes the chatbot answer
+  as if it never met the user, which is the worst failure mode for this product.
+- Suspect: a transient embedding failure (the same upstream that produces #1) being
+  swallowed and mapped to "no matches". Mitigation on our side: retry when a user
+  known to have memories gets 0 hits (`src/memory.ts`, `recallForUser`).
+
+## 8. Rate limit is per delegate key, not per end user
+
+- A single chatbot backend serves many users with one delegate key, so `Too Many Requests`
+  (#2) is triggered by ~10 writes/minute across *all* users. Documenting the limit
+  (and ideally exposing it via headers) would let integrators queue writes properly.
