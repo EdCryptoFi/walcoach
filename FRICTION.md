@@ -64,8 +64,15 @@ candidate GitHub issue at https://github.com/MystenLabs/MemWal/issues.
   swallowed and mapped to "no matches". Mitigation on our side: retry when a user
   known to have memories gets 0 hits (`src/memory.ts`, `recallForUser`).
 
-## 8. Rate limit is per delegate key, not per end user
+## 8. Rate limits are per delegate key / account, and a chatbot backend is one key
 
-- A single chatbot backend serves many users with one delegate key, so `Too Many Requests`
-  (#2) is triggered by ~10 writes/minute across *all* users. Documenting the limit
-  (and ideally exposing it via headers) would let integrators queue writes properly.
+- The relayer returns `429 {"error":"Rate limit exceeded","layer":"delegate_key","limit":"60 weighted-requests/min","retry_after_seconds":60}`
+  and `{"layer":"account_sustained","limit":"1000 weighted-requests/hour","retry_after_seconds":300}`.
+- A bot serving N users shares one delegate key, so a naive loop (recall + dedupe-recall +
+  remember + status polling per fact) exhausts the hourly budget with 3 users in ~30 messages.
+- Friction: the weights per endpoint (is a status poll 1? is recall 5?) are not documented,
+  the SDK's `*AndWait` polling does not back off on 429 in a way the caller can see, and
+  `rememberAndWait` surfaces the *relayer's own* upstream throttling as
+  `seal encrypt failed … Too Many Requests` (#2) rather than as a 429 with `retry_after`.
+- Requests: document the weights, add `X-RateLimit-*` headers, and let integrators register
+  a key with a higher tier for multi-user backends.

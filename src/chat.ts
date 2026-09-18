@@ -35,7 +35,7 @@ export async function chat(userId: number, userName: string, text: string, useMe
   pushTurn(userId, { role: "assistant", content: reply });
 
   // 3. Learn from the exchange (caller decides whether to await).
-  const learning = useMemory ? learnFromExchange(userId, userName, text, reply) : Promise.resolve();
+  const learning = useMemory ? learnFromExchange(userId, userName, text, reply, memories) : Promise.resolve();
 
   return { reply, memories, learning };
 }
