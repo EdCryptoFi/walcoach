@@ -1,23 +1,14 @@
 import { Bot } from "grammy";
 import { config } from "./config.js";
-import { generateReply, type Turn } from "./llm.js";
-import { learnFromExchange, listMemories, memwal, recallForUser, rememberExplicit } from "./memory.js";
+import { chat, resetHistory } from "./chat.js";
+import { generateReply } from "./llm.js";
+import { listMemories, memwal, recallForUser, rememberExplicit } from "./memory.js";
 import { stats } from "./stats.js";
 
 const bot = new Bot(config.telegramToken);
 
-// Short-term context lives in RAM and is per chat; long-term memory lives on Walrus.
-const history = new Map<number, Turn[]>();
-const MAX_TURNS = 12;
-
 // Per-user switch to demo the "before" behaviour (no recall, no learning).
 const memoryDisabled = new Set<number>();
-
-function pushTurn(userId: number, turn: Turn) {
-  const turns = history.get(userId) ?? [];
-  turns.push(turn);
-  history.set(userId, turns.slice(-MAX_TURNS));
-}
 
 function nameOf(ctx: { from?: { first_name?: string; username?: string } }): string {
   return ctx.from?.first_name || ctx.from?.username || "friend";
@@ -79,7 +70,7 @@ bot.command("help", (ctx) =>
 );
 
 bot.command("reset", (ctx) => {
-  history.delete(ctx.from!.id);
+  resetHistory(ctx.from!.id);
   return ctx.reply("Short-term context cleared. I still remember the long-term stuff.");
 });
 
@@ -93,17 +84,9 @@ bot.on("message:text", async (ctx) => {
   await ctx.replyWithChatAction("typing");
 
   try {
-    // 1. Recall: what do we already know that is relevant to this message?
-    const memories = useMemory ? await recallForUser(userId, text) : [];
-
-    // 2. Generate with memories injected into the system prompt.
-    pushTurn(userId, { role: "user", content: text });
-    const reply = await generateReply(name, memories, history.get(userId) ?? []);
-    pushTurn(userId, { role: "assistant", content: reply });
+    // recall → generate → learn (see src/chat.ts). Learning runs in the background.
+    const { reply } = await chat(userId, name, text, useMemory);
     await ctx.reply(reply);
-
-    // 3. Learn: extract and store new facts in the background.
-    if (useMemory) void learnFromExchange(userId, name, text, reply);
   } catch (err) {
     console.error(`[error] user=${userId}`, err);
     await ctx.reply("Something broke on my side — try again in a moment.");
