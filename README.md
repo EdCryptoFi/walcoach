@@ -1,6 +1,7 @@
 # Walrus Coach Bot
 
-A Telegram coaching companion that actually remembers you between conversations.
+A coaching companion that actually remembers you between conversations. Runs as a
+website (primary) and optionally as a Telegram bot — both share the same pipeline.
 Long-term memory is stored encrypted on [Walrus](https://walrus.xyz) via
 [Walrus Memory](https://memory.walrus.xyz); the LLM is **Qwen 3.8 27B (open-weight) running on Groq**
 (no Anthropic/OpenAI in the loop).
@@ -9,7 +10,7 @@ Built for [Walrus Session 8: Chatbots That Remember](https://www.deepsurge.xyz/h
 
 ## How memory works
 
-Every message goes through three steps ([src/index.ts](src/index.ts)):
+Every message goes through three steps ([src/chat.ts](src/chat.ts)):
 
 1. **Recall** — two semantic queries against the user's own Walrus Memory namespace
    (`coach-<telegram user id>`): the message itself (cosine distance `< 0.8`) and a
@@ -30,7 +31,24 @@ so restarting the bot, switching devices, or coming back a week later changes no
 Namespaces are the isolation boundary: user A's recall can never surface user B's
 memories, even though both are written by the same delegate key.
 
-## Commands
+## The web UI
+
+[public/index.html](public/index.html) is a single-page chat served by [src/web.ts](src/web.ts).
+On first visit you type a name; the browser generates an opaque id (`web-<uuid>`) and keeps
+it in `localStorage`. That id becomes the user's memory namespace. Swapping it for a signed
+Sui wallet address later is a change in one place.
+
+The side panel is the point of the UI: it shows **which memories were recalled for the last
+reply** (with their cosine distance) and **everything stored for this user on Walrus**.
+The "Memory" switch in the header turns recall + learning off so you can see the "before".
+
+API (all JSON): `POST /api/chat {userId, name, text}` → `{reply, memories}`,
+`GET /api/memories?userId=`, `POST /api/remember`, `POST /api/memory {enabled}`, `POST /api/reset`.
+
+## Telegram (optional)
+
+Same pipeline, different adapter ([src/index.ts](src/index.ts)). Set `TELEGRAM_BOT_TOKEN`
+and run `npm run telegram`.
 
 | Command | What it does |
 |---|---|
@@ -55,7 +73,7 @@ Fill in `.env`:
 
 | Variable | Where to get it |
 |---|---|
-| `TELEGRAM_BOT_TOKEN` | Telegram → [@BotFather](https://t.me/BotFather) → `/newbot` |
+| `TELEGRAM_BOT_TOKEN` | optional — Telegram → [@BotFather](https://t.me/BotFather) → `/newbot` |
 | `GROQ_API_KEY` | https://console.groq.com (free tier) |
 | `MEMWAL_PRIVATE_KEY`, `MEMWAL_ACCOUNT_ID` | https://memory.walrus.xyz → create account → delegate key |
 | `MEMWAL_SERVER_URL` | `https://relayer.memory.walrus.xyz` (mainnet) or `https://relayer-staging.memory.walrus.xyz` (testnet) |
@@ -66,11 +84,16 @@ Verify credentials with a real write + recall round-trip:
 npm run check
 ```
 
-Run the bot (long polling — no public URL needed):
+Run the website (http://localhost:3000):
 
 ```bash
-npm run dev      # with reload
-npm start        # plain
+npm run web        # or: npm run web:dev (reload on change)
+```
+
+Run the Telegram bot instead (long polling — no public URL needed):
+
+```bash
+npm run telegram
 ```
 
 Usage evidence for the write-up (messages and facts stored per user):
@@ -93,7 +116,9 @@ a good share of that, so run it at most once an hour or the writes start failing
 ## Project layout
 
 ```
-src/index.ts    Telegram bot, commands, recall → generate → learn loop
+src/web.ts      Website: static page + JSON API
+public/index.html  The chat UI (vanilla HTML/CSS/JS, light + dark)
+src/index.ts    Telegram adapter (optional)
 src/memory.ts   Walrus Memory SDK wrapper (per-user namespaces)
 src/llm.ts      Groq client and coach system prompt
 src/extract.ts  Fact extraction with our own model (JSON out)
@@ -107,7 +132,8 @@ scripts/eval.ts   Before/after evaluation with 3 simulated users
 ## Stack
 
 - Runtime: Node.js + TypeScript (`tsx`)
-- Telegram: [grammY](https://grammy.dev)
+- Web: [Hono](https://hono.dev) on Node
+- Telegram (optional): [grammY](https://grammy.dev)
 - LLM: `qwen/qwen3.8-27b` via Groq's OpenAI-compatible API
 - Memory: `@mysten-incubation/memwal` (Walrus + SEAL encryption + Sui ownership)
 

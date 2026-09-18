@@ -10,7 +10,7 @@ function required(name: string): string {
 }
 
 export const config = {
-  telegramToken: required("TELEGRAM_BOT_TOKEN"),
+  telegramToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
   groqApiKey: required("GROQ_API_KEY"),
   groqModel: process.env.GROQ_MODEL ?? "qwen/qwen3.8-27b",
   memwalKey: required("MEMWAL_PRIVATE_KEY"),

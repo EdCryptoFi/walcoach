@@ -5,6 +5,10 @@ import { generateReply } from "./llm.js";
 import { listMemories, memwal, recallForUser, rememberExplicit } from "./memory.js";
 import { stats } from "./stats.js";
 
+if (!config.telegramToken) {
+  console.error("TELEGRAM_BOT_TOKEN is not set. Use `npm run web` for the website, or add a token from @BotFather.");
+  process.exit(1);
+}
 const bot = new Bot(config.telegramToken);
 
 // Per-user switch to demo the "before" behaviour (no recall, no learning).
