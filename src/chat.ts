@@ -25,14 +25,28 @@ export interface ChatResult {
   learning: Promise<void>;
 }
 
-export async function chat(userId: number, userName: string, text: string, useMemory = true): Promise<ChatResult> {
+export interface ChatOptions {
+  useMemory?: boolean;
+  /** Short-term history supplied by the caller (stateless deployments); defaults to the in-RAM history. */
+  history?: Turn[];
+}
+
+export async function chat(userId: number, userName: string, text: string, options: ChatOptions | boolean = {}): Promise<ChatResult> {
+  const { useMemory = true, history: given } = typeof options === "boolean" ? { useMemory: options } : options;
+
   // 1. Recall what we know that is relevant to this message.
   const memories = useMemory ? await recallForUser(userId, text) : [];
 
   // 2. Generate with memories in the system prompt + short-term history.
-  pushTurn(userId, { role: "user", content: text });
-  const reply = await generateReply(userName, memories, history.get(userId) ?? []);
-  pushTurn(userId, { role: "assistant", content: reply });
+  let turns: Turn[];
+  if (given) {
+    turns = [...given.slice(-MAX_TURNS), { role: "user", content: text }];
+  } else {
+    pushTurn(userId, { role: "user", content: text });
+    turns = history.get(userId) ?? [];
+  }
+  const reply = await generateReply(userName, memories, turns);
+  if (!given) pushTurn(userId, { role: "assistant", content: reply });
 
   // 3. Learn from the exchange (caller decides whether to await).
   const learning = useMemory ? learnFromExchange(userId, userName, text, reply, memories) : Promise.resolve();

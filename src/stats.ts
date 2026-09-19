@@ -19,13 +19,21 @@ interface UserStats {
 type Stats = Record<string, UserStats>;
 
 function load(): Stats {
-  if (!existsSync(FILE)) return {};
-  return JSON.parse(readFileSync(FILE, "utf8")) as Stats;
+  try {
+    if (!existsSync(FILE)) return {};
+    return JSON.parse(readFileSync(FILE, "utf8")) as Stats;
+  } catch {
+    return {};
+  }
 }
 
 function save(data: Stats) {
-  mkdirSync(dirname(FILE), { recursive: true });
-  writeFileSync(FILE, JSON.stringify(data, null, 2));
+  try {
+    mkdirSync(dirname(FILE), { recursive: true });
+    writeFileSync(FILE, JSON.stringify(data, null, 2));
+  } catch {
+    // Read-only filesystem (serverless). Walrus is the source of truth anyway.
+  }
 }
 
 function touch(data: Stats, userId: number, name: string): UserStats {

@@ -90,6 +90,21 @@ Run the website (http://localhost:3000):
 npm run web        # or: npm run web:dev (reload on change)
 ```
 
+### Deploy to Vercel (no server to keep running)
+
+The API is stateless (the browser sends its short-term history; long-term memory is on
+Walrus), so it runs as a single Vercel function ([api/index.ts](api/index.ts)); background
+learning is kept alive with `waitUntil`. From the project folder:
+
+```bash
+vercel deploy --prod \
+  -e GROQ_API_KEY=... -e GROQ_MODEL=qwen/qwen3.8-27b \
+  -e MEMWAL_PRIVATE_KEY=... -e MEMWAL_ACCOUNT_ID=... \
+  -e MEMWAL_SERVER_URL=https://relayer.memory.walrus.xyz -e MEMWAL_NAMESPACE_PREFIX=coach
+```
+
+(or set the same variables in the Vercel dashboard and run `vercel deploy --prod`).
+
 Run the Telegram bot instead (long polling — no public URL needed):
 
 ```bash
@@ -116,7 +131,9 @@ a good share of that, so run it at most once an hour or the writes start failing
 ## Project layout
 
 ```
-src/web.ts      Website: static page + JSON API
+src/app.ts      The JSON API (Hono, stateless) shared by local server and Vercel
+src/web.ts      Local Node server: static page + API
+api/index.ts    Vercel function entry (waitUntil keeps learning alive)
 public/index.html  The chat UI (vanilla HTML/CSS/JS, light + dark)
 src/index.ts    Telegram adapter (optional)
 src/memory.ts   Walrus Memory SDK wrapper (per-user namespaces)

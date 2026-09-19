@@ -13,13 +13,15 @@
     "eval": "tsx scripts/eval.ts",
     "web": "tsx src/web.ts",
     "web:dev": "tsx watch src/web.ts",
-    "telegram": "tsx src/index.ts"
+    "telegram": "tsx src/index.ts",
+    "vercel-build": "echo skip"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
     "@mysten-incubation/memwal": "^0.1.7",
     "@mysten/seal": "^1.1.0",
     "@mysten/sui": "^2.5.0",
+    "@vercel/functions": "^3.9.8",
     "dotenv": "^16.4.5",
     "grammy": "^1.30.0",
     "hono": "^4.13.8",

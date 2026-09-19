@@ -200,17 +200,22 @@
   });
   function askName() { $("nameInput").value = ""; dialog.showModal(); }
 
-  $("switchBtn").addEventListener("click", () => { user = { id: newId(), name: "" }; messages.innerHTML = ""; askName(); });
-  $("resetBtn").addEventListener("click", async () => {
-    await api("/api/reset", { userId: user.id });
+  // Short-term history lives in the browser and is sent with every request (the API is stateless).
+  let history = [];
+  const MAX_TURNS = 12;
+  function remember(role, content) { history.push({ role, content }); history = history.slice(-MAX_TURNS); }
+
+  $("switchBtn").addEventListener("click", () => { user = { id: newId(), name: "" }; history = []; messages.innerHTML = ""; askName(); });
+  $("resetBtn").addEventListener("click", () => {
+    history = [];
     addBot("Short-term context cleared. I still remember the long-term stuff — say hi to see it in action.", [], true);
   });
   $("refreshBtn").addEventListener("click", loadAll);
 
-  memToggle.addEventListener("change", async () => {
-    const r = await api("/api/memory", { userId: user.id, enabled: memToggle.checked });
-    memLabel.textContent = r.memory ? "Memory on" : "Memory off";
-    addBot(r.memory ? "Memory ON — I recall and learn again." : "Memory OFF — I'll answer like a bot that forgets you. Ask me something I should know.", [], true);
+  memToggle.addEventListener("change", () => {
+    const on = memToggle.checked;
+    memLabel.textContent = on ? "Memory on" : "Memory off";
+    addBot(on ? "Memory ON — I recall and learn again." : "Memory OFF — I'll answer like a bot that forgets you. Ask me something I should know.", [], true);
   });
 
   async function api(path, body) {
@@ -269,8 +274,10 @@
     addUser(text);
     const t = typing();
     try {
-      const data = await api("/api/chat", { userId: user.id, name: user.name, text });
+      const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history });
       t.remove();
+      remember("user", text);
+      remember("assistant", data.reply);
       addBot(data.reply, data.memories, false);
       renderList(recalledEl, data.memories, data.memory ? "Nothing relevant was recalled for this message." : "Memory is off — nothing recalled.");
       setTimeout(loadAll, 4000); // give background learning a moment to land on Walrus
