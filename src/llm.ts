@@ -1,7 +1,7 @@
 import { OpenAI } from "openai";
 import { config } from "./config.js";
 import type { Memory } from "./memory.js";
-import { searchEnabled, searchTool, webSearch, type Source } from "./search.js";
+import { extractPage, extractTool, searchEnabled, searchTool, webSearch, type Source, type TimeRange } from "./search.js";
 
 // Groq exposes an OpenAI-compatible API, so the official openai client works as-is.
 const groq = new OpenAI({ apiKey: config.groqApiKey, baseURL: "https://api.groq.com/openai/v1" });
@@ -17,7 +17,7 @@ Help them with habits, goals, routines, motivation and follow-through.
 Keep replies short (2-5 sentences), conversational, plain text (bold sparingly, no headings, no bullet lists unless asked). Reply in the same language the user writes in.
 Ask at most one question per reply. Never invent facts about the user.
 You are a coach, not a doctor, therapist or financial advisor: for health, injury, medication, mental-health crises or money decisions, give general guidance and point to a professional.${searchEnabled ? `
-You can call web_search when the user needs current, local or factual information (an event, a race, a price, a place, a product, a how-to you are unsure of). Use it sparingly, at most twice. When you use it, weave the findings into a short answer and cite sources as [1], [2]. Never search for coaching, motivation or habit questions.` : `
+You can call web_search when the user needs current, local or factual information (an event, a race, a price, a place, a product, a how-to you are unsure of), and read_page when they paste a link they want you to look at. Use tools sparingly, at most twice per reply. Weave the findings into a short answer, relate them to what you remember about the user, and cite sources as [1], [2]. Never search for coaching, motivation or habit questions.` : `
 You have no web access: if a question depends on current or local information, say so plainly and suggest where to check.`}`;
 
   if (memories.length === 0) {
@@ -41,6 +41,9 @@ export async function generateReply(userName: string, memories: Memory[], histor
   const messages: OpenAI.ChatCompletionMessageParam[] = [{ role: "system", content: systemPrompt(userName, memories) }, ...history];
   const sources: Source[] = [];
   let searches = 0;
+  const lastUser = [...history].reverse().find((t) => t.role === "user")?.content ?? "";
+  const pastedUrls = lastUser.match(/https?:\/\/[^\s<>"']+/g) ?? [];
+  const tools = searchEnabled ? [searchTool, ...(pastedUrls.length ? [extractTool] : [])] : [];
 
   for (let round = 0; round < MAX_SEARCHES + 1; round++) {
     const completion = await groq.chat.completions.create({
@@ -48,27 +51,31 @@ export async function generateReply(userName: string, memories: Memory[], histor
       temperature: 0.7,
       max_tokens: 500,
       messages,
-      ...(searchEnabled && searches < MAX_SEARCHES ? { tools: [searchTool], tool_choice: "auto" as const } : {}),
+      ...(tools.length && searches < MAX_SEARCHES ? { tools, tool_choice: "auto" as const } : {}),
     });
     const msg = completion.choices[0]?.message;
-    const calls = msg?.tool_calls?.filter((t) => t.type === "function" && t.function.name === "web_search") ?? [];
+    const calls = msg?.tool_calls?.filter((t) => t.type === "function" && (t.function.name === "web_search" || t.function.name === "read_page")) ?? [];
     if (!msg || calls.length === 0) return { text: msg?.content?.trim() || "…", sources };
 
     messages.push(msg);
     for (const call of calls) {
-      let query = "";
-      try { query = String((JSON.parse(call.function.arguments || "{}") as { query?: string }).query ?? ""); } catch { /* ignore */ }
+      let args: { query?: string; time_range?: TimeRange; url?: string } = {};
+      try { args = JSON.parse(call.function.arguments || "{}"); } catch { /* ignore */ }
       searches++;
-      let content = "Search unavailable.";
-      if (query) {
-        try {
-          const result = await webSearch(query);
-          content = result.context;
-          for (const src of result.sources) if (!sources.some((x) => x.url === src.url)) sources.push(src);
-          console.log(`[search] q="${query.slice(0, 60)}" results=${result.sources.length}`);
-        } catch (err) {
-          console.error("[search] failed:", (err as Error).message);
+      let content = "Tool unavailable.";
+      try {
+        if (call.function.name === "read_page") {
+          // Only pages the user actually pasted — the model must not browse on its own.
+          const url = pastedUrls.find((u) => u === args.url) ?? pastedUrls[0];
+          if (url) { const r = await extractPage(url); content = r.context; for (const src of r.sources) if (!sources.some((x) => x.url === src.url)) sources.push(src); console.log(`[read] ${url.slice(0, 60)}`); }
+        } else if (args.query) {
+          const r = await webSearch(String(args.query), args.time_range);
+          content = r.context;
+          for (const src of r.sources) if (!sources.some((x) => x.url === src.url)) sources.push(src);
+          console.log(`[search] q="${String(args.query).slice(0, 60)}"${args.time_range ? ` range=${args.time_range}` : ""} results=${r.sources.length}`);
         }
+      } catch (err) {
+        console.error(`[${call.function.name}] failed:`, (err as Error).message);
       }
       messages.push({ role: "tool", tool_call_id: call.id, content });
     }

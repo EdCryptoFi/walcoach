@@ -162,6 +162,16 @@
   #youDialog .close { width: 100%; height: 44px; margin-top: 6px; }
   .more { font-size: 13px; color: var(--accent); background: none; border: 0; padding: 4px 0; }
 
+  /* ---- save-your-key card ---- */
+  .keycard { border-color: var(--accent) !important; border-style: solid !important; max-width: min(72ch, 92%); white-space: normal; }
+  .keycard h4 { margin: 0 0 6px; font-size: 15px; }
+  .keycard .big { display: flex; gap: 8px; align-items: center; margin: 10px 0; }
+  .keycard .big code { flex: 1; font-size: 16px; letter-spacing: .04em; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--border); user-select: all; overflow-wrap: anywhere; }
+  .keycard ul { margin: 6px 0 10px; padding-left: 18px; color: var(--muted); font-size: 14px; }
+  .keycard li { margin: 2px 0; }
+  .keycard a { color: var(--accent); }
+  .keycard .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
   /* ---- name dialog ---- */
   dialog { border: 1px solid var(--border); border-radius: 16px; background: var(--panel); color: var(--text); padding: 24px; max-width: 420px; width: calc(100% - 32px); box-shadow: var(--shadow); }
   dialog::backdrop { background: rgba(6, 18, 22, .55); }
@@ -259,7 +269,7 @@
       <code id="keyText" title="Your memory key">…</code>
       <button class="btn" id="copyKey" title="Copy your memory key">Copy</button>
     </div>
-    <div class="hint">Paste it on another device to bring your memories with you. Anyone with this key is you — keep it private.</div>
+    <div class="hint">Paste it on another device to bring your memories with you. Anyone with this key is you — keep it private (notes app, email to yourself, or <a href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Walnotes</a> for Web3 users).</div>
   </section>
   <section id="nudgeSection" hidden>
     <h4>Daily nudge</h4>
@@ -282,12 +292,12 @@
 <dialog id="nameDialog">
   <form method="dialog" id="nameForm">
     <h3>Who am I talking to?</h3>
-    <p>No account, no password. A private memory key is created in this browser; keep it to continue on another device.</p>
+    <p>No account, no password — just your first name.</p>
     <div class="tabs" role="tablist">
       <button type="button" role="tab" id="tabNew" aria-selected="true">I'm new here</button>
       <button type="button" role="tab" id="tabKey" aria-selected="false">I have a memory key</button>
     </div>
-    <label for="nameInput">Your first name</label>
+    <label for="nameInput">First name</label>
     <input id="nameInput" required maxlength="40" autocomplete="given-name" placeholder="Ana">
     <div id="keyField" hidden>
       <label for="keyInput">Memory key</label>
@@ -308,7 +318,13 @@
   // ---- identity: opaque id kept in this browser only ----
   let user = null;
   try { user = JSON.parse(localStorage.getItem("walrus-coach-user") || "null"); } catch {}
-  const newId = () => "web-" + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
+  // Readable key: web-xxxx-xxxx-xxxx-xxxx (16 chars from a 32-symbol alphabet ≈ 80 bits, no ambiguous 0/o/1/l).
+  const newId = () => {
+    const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+    const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
+    const chars = Array.from(bytes, (b) => alphabet[b % alphabet.length]);
+    return "web-" + [0, 4, 8, 12].map((i) => chars.slice(i, i + 4).join("")).join("-");
+  };
   function saveUser(u) { user = u; try { localStorage.setItem("walrus-coach-user", JSON.stringify(u)); } catch {} $("whoName").textContent = u.name; $("keyText").textContent = u.id; }
   const KEY_RE = /^web-[a-z0-9-]{8,64}$/i;
 
@@ -341,13 +357,40 @@
       const key = $("keyInput").value.trim();
       if (!KEY_RE.test(key)) { ev.preventDefault(); $("formError").textContent = "That doesn't look like a memory key (it starts with web-)."; return; }
       saveUser({ id: key, name });
+      try { localStorage.setItem("walrus-coach-key-saved", "1"); } catch {}
       messages.innerHTML = "";
       addBot(`Welcome back, ${name}. Your memories are loading on the right — say hi and I'll pick up where we left off.`, [], true);
     } else {
+      const fresh = !user?.id;
       saveUser({ id: user?.id || newId(), name });
+      if (fresh || !localStorage.getItem("walrus-coach-key-saved")) setTimeout(showKeyCard, 400);
     }
     boot();
   });
+
+  function showKeyCard() {
+    if (messages.querySelector(".keycard")) return;
+    const card = el("div", "msg bot nomem keycard");
+    card.innerHTML = `
+      <h4>Save your memory key</h4>
+      <div>This key is how the coach recognises you. No account, no password — if you lose it, your memories are gone.</div>
+      <div class="big"><code id="cardKey"></code><button class="btn" id="cardCopy">Copy</button></div>
+      <ul>
+        <li>Paste it in your notes app, or email it to yourself.</li>
+        <li>Web3 user? Save it in <a href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus.</li>
+        <li>You can always find it again under <b>You</b> in the memory panel.</li>
+      </ul>
+      <div class="actions"><button class="btn" id="cardDone">I've saved it</button></div>`;
+    card.querySelector("#cardKey").textContent = user.id;
+    card.querySelector("#cardCopy").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(user.id); card.querySelector("#cardCopy").textContent = "Copied"; } catch { prompt("Your memory key:", user.id); }
+    });
+    card.querySelector("#cardDone").addEventListener("click", () => { try { localStorage.setItem("walrus-coach-key-saved", "1"); } catch {} card.remove(); });
+    // Right after the welcome message, before the conversation starters.
+    const first = messages.querySelector(".msg");
+    if (first && first.nextSibling) first.after(card); else messages.append(card);
+    messages.scrollTop = 0;
+  }
   function askName() { $("nameInput").value = ""; $("keyInput").value = ""; setMode("new"); dialog.showModal(); }
 
   // Short-term history lives in the browser and is sent with every request (the API is stateless).
@@ -355,7 +398,7 @@
   const MAX_TURNS = 12;
   function remember(role, content) { history.push({ role, content }); history = history.slice(-MAX_TURNS); }
 
-  $("switchBtn").addEventListener("click", () => { $("youDialog").close(); user = { id: newId(), name: "" }; history = []; messages.innerHTML = ""; askName(); });
+  $("switchBtn").addEventListener("click", () => { $("youDialog").close(); try { localStorage.removeItem("walrus-coach-key-saved"); } catch {} user = { id: null, name: "" }; history = []; messages.innerHTML = ""; askName(); });
   $("resetBtn").addEventListener("click", () => {
     $("youDialog").close(); openPanel(false);
     history = [];
@@ -614,7 +657,7 @@
     input.focus();
   }
 
-  if (user && user.id && user.name) boot(); else { user = user || { id: newId() }; askName(); }
+  if (user && user.id && user.name) boot(); else { user = user || { id: null }; askName(); }
 })();
 </script>
 </body>

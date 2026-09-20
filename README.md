@@ -46,11 +46,12 @@ it costs no database — the badges are computed from the user's own memories.
 
 [public/index.html](public/index.html) is a single-page chat served by [src/web.ts](src/web.ts).
 Identity is deliberately Web2-flavoured: no wallet, no account. On first visit you type a
-name; the browser generates a **memory key** (`web-<uuid>`), keeps it in `localStorage`, and
+name; the browser generates a **memory key** (`web-xxxx-xxxx-xxxx-xxxx`), keeps it in `localStorage`, and
 that key becomes the user's memory namespace on Walrus. The key is shown in the side panel
 with a Copy button; pasting it on another device ("I have a memory key") restores the same
-memories there. Under the hood every memory is still an encrypted blob on Walrus with
-on-chain ownership — the user just never sees a wallet.
+memories there. Right after the first start a one-time card asks the user to save the key
+(notes app, email to self, or Walnotes for Web3 users). Under the hood every memory is still
+an encrypted blob on Walrus with on-chain ownership — the user just never sees a wallet.
 
 The side panel is the point of the UI: it shows **which memories were recalled for the last
 reply** (with their cosine distance) and **everything stored for this user on Walrus**.
@@ -63,7 +64,10 @@ API (all JSON): `POST /api/chat {userId, name, text}` → `{reply, memories}`,
 
 Set `TAVILY_API_KEY` and the model gets one tool, `web_search` ([src/search.ts](src/search.ts)).
 It is instructed to use it only for current, local or factual questions (a race, a price, a
-place) — never for coaching or habits — and to cite sources as [1], [2]. The UI shows
+place) — never for coaching or habits — and to cite sources as [1], [2]. When the user pastes
+a link, a second tool `read_page` (Tavily extract) lets the coach read that page and relate it
+to what it remembers. Basic search = 1 credit, extract = 1 credit per 5 pages; keep Tavily's
+"pay as you go" off and the free tier (1,000 credits/month) is plenty. The UI shows
 "searched the web, N sources" with clickable chips. Search results are never stored as
 memories; only facts about the user are. Without the key the coach says plainly when a
 question needs information it doesn't have.
