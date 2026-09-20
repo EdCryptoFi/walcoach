@@ -84,19 +84,22 @@ export function createApp() {
     c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
     c.header(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
     );
   });
 
   // Pages. Local dev also serves ./public statically (src/web.ts).
   app.get("/", (c) => c.html(page("index.html")));
   app.get("/chat", (c) => c.html(page("chat.html")));
+  app.get("/how", (c) => c.html(page("how.html")));
+  app.get("/security", (c) => c.html(page("security.html")));
   app.get("/privacy", (c) => c.html(page("privacy.html")));
+  app.get("/app.css", (c) => c.body(page("app.css"), 200, { "content-type": "text/css; charset=utf-8", "cache-control": "public, max-age=3600" }));
   app.get("/sw.js", (c) => c.body(page("sw.js"), 200, { "content-type": "application/javascript; charset=utf-8", "service-worker-allowed": "/" }));
   app.get("/icon.svg", (c) => c.body(page("icon.svg"), 200, { "content-type": "image/svg+xml" }));
   app.get("/icon.png", (c) => {
-    const url = new URL("../public/characters/mascot.png", import.meta.url);
-    return existsSync(url) ? c.body(readFileSync(url), 200, { "content-type": "image/png", "cache-control": "public, max-age=86400" }) : c.redirect("/icon.svg");
+    const url = new URL("../public/characters/mascot.webp", import.meta.url);
+    return existsSync(url) ? c.body(readFileSync(url), 200, { "content-type": "image/webp", "cache-control": "public, max-age=86400" }) : c.redirect("/icon.svg");
   });
 
   // Character art (see public/characters/README.md). Cached by the browser; 404 when a file is missing.
@@ -110,9 +113,9 @@ export function createApp() {
     return c.body(readFileSync(url), 200, { "content-type": IMG_TYPES[m[2].toLowerCase()], "cache-control": "public, max-age=86400" });
   });
   app.get("/api/characters", (c) => {
-    const names = ["mascot", "forgetful", ...AREAS.map((a) => a.id)];
+    const names = ["mascot", ...AREAS.map((a) => a.id)];
     const have: Record<string, string> = {};
-    for (const n of names) for (const ext of ["png", "svg", "webp"]) {
+    for (const n of names) for (const ext of ["webp", "png", "svg"]) {
       if (existsSync(new URL(`../public/characters/${n}.${ext}`, import.meta.url))) { have[n] = `/characters/${n}.${ext}`; break; }
     }
     return c.json({ characters: have });

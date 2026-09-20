@@ -3,230 +3,219 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Walrus Coach — a coach that remembers you</title>
-<meta name="description" content="A personal coach that remembers your goals, routines and setbacks between conversations. No account, no wallet. Your memories are encrypted and stored on Walrus.">
-<style>
-  :root {
-    --bg: #f4f7f8; --panel: #ffffff; --panel-2: #eef3f5; --border: #d5dfe3;
-    --text: #12242b; --muted: #4b636c; --accent: #0e8aa3; --accent-ink: #ffffff; --ok: #0f8a5f;
-    --shadow: 0 1px 2px rgba(18,36,43,.06), 0 12px 32px rgba(18,36,43,.08);
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #0d1518; --panel: #131e22; --panel-2: #182529; --border: #263840;
-      --text: #e6eef1; --muted: #93a8b1; --accent: #35b8d3; --accent-ink: #06181d; --ok: #4ad19b;
-      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35);
-      color-scheme: dark;
-    }
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif; }
-  a { color: inherit; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
-
-  nav { display: flex; align-items: center; gap: 12px; padding: 22px 0; }
-  .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
-  nav b { font-weight: 650; }
-  nav .spacer { flex: 1; }
-  nav a { font-size: 15px; color: var(--muted); text-decoration: none; }
-  nav a:hover { color: var(--text); }
-  @media (max-width: 480px) { nav a.ext { display: none; } }
-
-  .hero-s { padding: 44px 0 8px; max-width: 64ch; }
-  @media (max-width: 600px) { .hero-s { padding-top: 20px; } }
-  h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1.08; letter-spacing: -.025em; margin: 0 0 18px; font-weight: 700; }
-  h1 em { font-style: normal; color: var(--accent); }
-  .lead { font-size: 19px; color: var(--muted); margin: 0 0 28px; max-width: 52ch; }
-  .cta { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 22px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 650; font-size: 17px; transition: filter .15s; }
-  .cta:hover { filter: brightness(1.08); }
-  .cta svg { width: 20px; height: 20px; }
-  .fine { font-size: 14px; color: var(--muted); margin-top: 14px; }
-
-  /* mock conversation */
-  .demo { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; }
-  .demo .day { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); text-align: center; margin: 4px 0; }
-  .b { max-width: 88%; padding: 10px 14px; border-radius: 14px; font-size: 15px; line-height: 1.45; }
-  .b.u { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 5px; }
-  .b.c { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border); border-bottom-left-radius: 5px; }
-  .b.c mark { background: none; color: var(--ok); font-weight: 600; }
-  .demo .tag { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; margin-left: 4px; }
-  .demo .tag svg { width: 13px; height: 13px; }
-
-  section { padding: 40px 0; }
-  h2 { font-size: 26px; letter-spacing: -.015em; margin: 0 0 8px; }
-  .sub { color: var(--muted); margin: 0 0 24px; max-width: 60ch; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
-  .card h3 { margin: 0 0 6px; font-size: 17px; display: flex; align-items: center; gap: 10px; }
-  .card h3 span { width: 30px; height: 30px; border-radius: 9px; background: var(--panel-2); display: grid; place-items: center; color: var(--accent); }
-  .card h3 svg { width: 17px; height: 17px; }
-  .card p { margin: 0; color: var(--muted); font-size: 15px; }
-
-  .areas { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { font-size: 14px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); color: var(--text); display: inline-flex; align-items: center; gap: 8px; }
-  .chip img { width: 28px; height: 28px; object-fit: contain; margin: -4px 0 -4px -4px; }
-  .areas.art { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-  .areas.art .chip { flex-direction: column; text-align: center; padding: 18px 12px 14px; border-radius: 16px; gap: 8px; font-weight: 600; text-decoration: none; cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s; }
-  .areas.art .chip:hover { border-color: var(--accent); box-shadow: var(--shadow); }
-  .areas.art .chip img { width: 88px; height: 88px; margin: 0; }
-  .areas.art .chip small { font-weight: 400; font-size: 12px; color: var(--muted); line-height: 1.3; }
-  .pick { padding-top: 24px; }
-  .pick .sub { margin-bottom: 18px; }
-  .tech { margin: 22px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 80ch; }
-
-  /* onboarding dialog */
-  dialog { border: 1px solid var(--border); border-radius: 18px; background: var(--panel); color: var(--text); padding: 26px; max-width: 480px; width: calc(100% - 32px); box-shadow: var(--shadow); }
-  dialog::backdrop { background: rgba(6, 18, 22, .55); }
-  dialog h3 { margin: 0 0 6px; font-size: 22px; letter-spacing: -.01em; }
-  dialog p { margin: 0 0 16px; color: var(--muted); font-size: 15px; }
-  dialog label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
-  dialog input[type=text] { width: 100%; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font: inherit; color: inherit; }
-  .keyrow { display: flex; gap: 8px; align-items: center; }
-  .keyrow code { flex: 1; font-size: 16px; letter-spacing: .04em; padding: 11px 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--border); user-select: all; overflow-wrap: anywhere; }
-  .keyrow button { height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-2); font: inherit; color: inherit; cursor: pointer; }
-  dialog ul { margin: 10px 0 14px; padding-left: 18px; color: var(--muted); font-size: 14px; }
-  dialog li { margin: 3px 0; }
-  .agree { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; margin: 6px 0 16px; cursor: pointer; }
-  .agree input { margin-top: 3px; width: 18px; height: 18px; }
-  .primary { width: 100%; height: 46px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 650; cursor: pointer; }
-  .primary:disabled { opacity: .5; cursor: default; }
-  .linkbtn { background: none; border: 0; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; margin-top: 10px; width: 100%; }
-  .picked { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); margin-bottom: 8px; }
-  .picked img { width: 36px; height: 36px; object-fit: contain; }
-  .logo img { width: 34px; height: 34px; object-fit: contain; border-radius: 10px; }
-  .logo.art { background: transparent; }
-  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
-  @media (max-width: 600px) { .pair { grid-template-columns: 1fr; } }
-  .pair .card { text-align: center; }
-  .pair img { width: 120px; height: 120px; object-fit: contain; }
-  .pair h3 { justify-content: center; }
-
-  .steps { counter-reset: s; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  @media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
-  .step { position: relative; padding: 20px 20px 20px 58px; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; }
-  .step::before { counter-increment: s; content: counter(s); position: absolute; left: 18px; top: 18px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
-  .step b { display: block; margin-bottom: 4px; }
-  .step p { margin: 0; color: var(--muted); font-size: 15px; }
-
-  .honest { border-left: 3px solid var(--accent); padding: 4px 0 4px 18px; color: var(--muted); font-size: 15px; max-width: 70ch; }
-  footer { padding: 32px 0 48px; color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 16px; }
-  footer a { text-decoration: none; }
-  footer a:hover { text-decoration: underline; }
-</style>
+<title>WalCoach — a coach that actually remembers you</title>
+<meta name="description" content="A personal AI coach with long-term memory stored encrypted on Walrus. No account, no wallet. Seven mentors, one memory of you.">
+<link rel="icon" href="/icon.png" type="image/webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
 </head>
-<body>
-<div class="wrap">
-  <nav>
-    <div class="logo" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.9A4 4 0 0 0 7 19h1a4 4 0 0 0 8 0h1a4 4 0 0 0 2-7.1A4 4 0 0 0 16 8V7a4 4 0 0 0-4-4z"/><path d="M12 3v16"/></svg></div>
-    <b>Walrus Coach</b>
-    <div class="spacer"></div>
-    <a href="#how">How it works</a>
-    <a class="ext" href="/privacy">Privacy</a>
-  </nav>
-
-  <header class="hero-s">
-    <h1>A coach that <em>remembers</em> you.</h1>
-    <p class="lead">Tell it what you're working on. Next week it still knows — your goal, your schedule, the thing that trips you up. No account, no wallet, free.</p>
-  </header>
-
-  <section class="pick">
-    <h2>Start now — pick your context</h2>
-    <p class="sub">Or <a href="/chat">just open the chat</a> and type anything.</p>
-    <div class="areas art" id="areas"></div>
-  </section>
-
-  <section id="how">
-    <h2>How it works</h2>
-    <div class="steps">
-      <div class="step"><b>You talk</b><p>In any language. It replies like a good coach: short, direct, one question at a time.</p></div>
-      <div class="step"><b>It learns</b><p>After each reply it extracts the durable facts — goals, schedule, constraints, progress — and stores each one encrypted in your own space on Walrus.</p></div>
-      <div class="step"><b>It recalls</b><p>Next time, your message is matched against your memories and the relevant ones shape the reply. Every answer shows what it used.</p></div>
+<body class="relative min-h-screen overflow-x-hidden">
+<div class="blooms" aria-hidden="true"><i></i></div>
+<header class="fixed top-0 left-0 right-0 z-50 glass-nav">
+  <div class="h-20 max-w-[1440px] mx-auto px-4 lg:px-8 flex items-center justify-between gap-6">
+    <div class="flex items-center gap-4">
+      <a class="flex items-center gap-2 group" href="/">
+        <img alt="" class="h-9 w-9 object-contain transition-transform group-hover:scale-105" src="/characters/mascot.webp">
+        <span class="font-display text-xl font-bold tracking-tight text-on-surface">WalCoach</span>
+      </a>
+      <span class="hidden sm:inline-flex chip">Beta / Web3 AI</span>
     </div>
-    <p class="tech">Open-weight model (Qwen 3.8 27B via Groq) · memory on <a href="https://memory.walrus.xyz" target="_blank" rel="noopener">Walrus Memory</a> — every fact is an encrypted blob on Walrus mainnet, owned on Sui, and links to the explorer from the chat · web search with cited sources when you ask for facts · an AI, not a professional — it can be wrong. <a href="/privacy">Privacy &amp; terms</a></p>
+    <nav class="hidden xl:flex items-center gap-1 p-1.5 rounded-full bg-white/50 border border-white/70"><a class="nav-link active" href="/">Home / Mentors</a><a class="nav-link" href="/how">How it works</a><a class="nav-link" href="/chat">Chat with the coach</a><a class="nav-link" href="/security">Security & Walrus</a><a class="nav-link" href="/privacy">Privacy</a></nav>
+    <div class="flex items-center gap-2">
+      <a class="hidden md:inline-flex btn-ghost" href="/#key"><span class="material-symbols-outlined text-[18px]">key</span> Memory key</a>
+      <a class="btn-primary !py-2.5 !px-5 text-sm" href="/chat">Open coach <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
+      <button class="xl:hidden w-10 h-10 rounded-full glass grid place-items-center" id="menuBtn" aria-label="Menu" aria-expanded="false"><span class="material-symbols-outlined">menu</span></button>
+    </div>
+  </div>
+  <nav class="xl:hidden hidden flex-col gap-1 px-4 pb-4" id="mobileNav"><a class="nav-link active" href="/">Home / Mentors</a><a class="nav-link" href="/how">How it works</a><a class="nav-link" href="/chat">Chat with the coach</a><a class="nav-link" href="/security">Security & Walrus</a><a class="nav-link" href="/privacy">Privacy</a></nav>
+</header>
+<script>document.getElementById("menuBtn").addEventListener("click",()=>{const n=document.getElementById("mobileNav");const o=n.classList.toggle("hidden");n.classList.toggle("flex",o);document.getElementById("menuBtn").setAttribute("aria-expanded",String(o));});</script>
+
+<main class="relative z-10 pt-28 max-w-[1440px] mx-auto px-4 lg:px-8">
+  <!-- hero -->
+  <section class="grid lg:grid-cols-[1.15fr_.85fr] gap-8 items-center">
+    <div>
+      <div class="flex flex-wrap gap-2 mb-5">
+        <span class="chip"><span class="pulse"></span> Your memory, your key</span>
+        <span class="chip"><span class="material-symbols-outlined text-[14px]">lock</span> Encrypted on Walrus Memory</span>
+        <span class="chip"><span class="material-symbols-outlined text-[14px]">memory</span> Qwen 3.8 27B</span>
+      </div>
+      <h1 class="font-display text-[44px] leading-[52px] lg:text-[56px] lg:leading-[64px] font-bold tracking-[-0.02em]">A coach that <span class="bg-gradient-to-r from-primary-container to-secondary bg-clip-text text-transparent">actually remembers</span> you.</h1>
+      <p class="text-lg text-on-surface-variant mt-5 max-w-[56ch] leading-relaxed">Tell it what you're building or training for. Next week it still knows — your goal, your routine, the thing that trips you up. No account, no wallet, and your memories live encrypted on the Walrus network, not in a database of ours.</p>
+      <div class="flex flex-wrap gap-3 mt-7">
+        <a class="btn-primary" href="/chat"><span class="material-symbols-outlined text-[20px]">smart_toy</span> Start talking to the coach <span class="material-symbols-outlined text-[20px]">arrow_forward</span></a>
+        <a class="btn-glass" href="#key"><span class="material-symbols-outlined text-[20px]">vpn_key</span> Create my memory key</a>
+      </div>
+      <div class="grid grid-cols-3 gap-3 mt-8 max-w-xl">
+        <div class="glass rounded-2xl p-4"><div class="font-display text-2xl font-bold text-primary">0</div><div class="text-xs text-on-surface-variant mt-1">databases holding your data</div></div>
+        <div class="glass rounded-2xl p-4"><div class="font-display text-2xl font-bold text-primary">Sui + Walrus</div><div class="text-xs text-on-surface-variant mt-1">where each memory lives, owned on-chain</div></div>
+        <div class="glass rounded-2xl p-4"><div class="font-display text-2xl font-bold text-primary">100%</div><div class="text-xs text-on-surface-variant mt-1">of memories are yours to inspect</div></div>
+      </div>
+    </div>
+    <div class="glass-hi rounded-[2rem] p-6 lg:p-8 relative">
+      <div class="flex items-center justify-between text-xs">
+        <span class="inline-flex items-center gap-2 font-semibold text-primary"><span class="pulse"></span> WALRUS AGENT · ON-CHAIN MEMORY</span>
+        <span class="chip">Qwen 27B</span>
+      </div>
+      <div class="flex justify-center my-6">
+        <div class="relative">
+          <div class="avatar-ring w-56 h-56 shadow-glow"><img src="/characters/mascot.webp" alt="WalCoach"></div>
+          <span class="chip absolute -top-2 -right-4 bg-white"><span class="material-symbols-outlined text-[14px]">psychology</span> Long memory</span>
+          <span class="chip absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white"><span class="material-symbols-outlined text-[14px]">verified_user</span> Walrus blobs</span>
+        </div>
+      </div>
+      <div class="flex items-center justify-between text-xs text-on-surface-variant">
+        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">sync</span> Recall before every reply</span>
+        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">bolt</span> Facts stored after each one</span>
+      </div>
+    </div>
   </section>
 
-  <footer>
-    <a href="/chat">Open the coach</a>
-    <a href="https://www.deepsurge.xyz/hackathons/c0141a4a-21be-4009-bc63-7c168608c849" target="_blank" rel="noopener">Built for Walrus Session 8</a>
-    <a href="https://github.com/MystenLabs/MemWal" target="_blank" rel="noopener">Walrus Memory on GitHub</a>
-    <span>Open source · MIT · No cookies</span>
-  </footer>
-</div>
-<dialog id="onb">
-  <form id="onbForm">
-    <div class="picked" id="picked"></div>
-    <h3>Create your memory key</h3>
-    <p>No account, no password. This key is how the coach recognises you on any device — lose it and your memories are gone.</p>
-    <label for="onbName">First name</label>
-    <input type="text" id="onbName" required maxlength="40" autocomplete="given-name" placeholder="Ana">
-    <label>Your memory key</label>
-    <div class="keyrow"><code id="onbKey"></code><button type="button" id="onbCopy">Copy</button></div>
-    <ul>
-      <li>Paste it in your notes app, or write it on paper.</li>
-      <li>Web3 user? Keep it in <a href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a> — encrypted notes on Walrus.</li>
-    </ul>
-    <label class="agree"><input type="checkbox" id="onbAgree"> I saved my key somewhere safe.</label>
-    <button class="primary" id="onbStart" type="submit" disabled>Start</button>
-    <button class="linkbtn" type="button" id="onbHave">I already have a memory key</button>
-  </form>
-</dialog>
+  <!-- mentors -->
+  <section class="mt-20" id="mentors">
+    <span class="eyebrow">Cognitive specialties</span>
+    <div class="flex flex-wrap items-end justify-between gap-4 mt-2">
+      <div>
+        <h2 class="font-display text-[36px] leading-[44px] font-semibold tracking-tight">Choose your dedicated mentor</h2>
+        <p class="text-on-surface-variant mt-2 max-w-[60ch]">Each mentor leads with its own area, but they all share one memory of you — so the sleep coach knows about your training, and the work coach knows about your stress.</p>
+      </div>
+      <span class="chip"><span class="material-symbols-outlined text-[14px]">hub</span> 7 mentors ready</span>
+    </div>
+    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5 mt-8">
+      <article class="glass rounded-3xl p-6 flex flex-col items-center text-center transition hover:-translate-y-0.5 hover:shadow-glass-lg">
+        <div class="avatar-ring w-32 h-32"><img src="/characters/mind.webp" alt="Mindfulness & Zen mentor" loading="lazy"></div>
+        <span class="chip mt-4"><span class="pulse"></span> Memory active</span>
+        <h3 class="font-display text-xl font-semibold mt-3">Mindfulness & Zen</h3>
+        <p class="text-sm text-on-surface-variant mt-2 leading-relaxed">Steady focus, daily meditation, less anxiety, better sleep hygiene. Remembers exactly what caused your last spike of stress.</p>
+        <a class="btn-glass mt-5 w-full text-sm" href="/chat?context=mind" data-mentor="mind" data-label="Mindfulness & Zen">Train with this coach <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
+      </article>
+      <article class="glass rounded-3xl p-6 flex flex-col items-center text-center transition hover:-translate-y-0.5 hover:shadow-glass-lg">
+        <div class="avatar-ring w-32 h-32"><img src="/characters/focus.webp" alt="Work & Career mentor" loading="lazy"></div>
+        <span class="chip mt-4"><span class="pulse"></span> Memory active</span>
+        <h3 class="font-display text-xl font-semibold mt-3">Work & Career</h3>
+        <p class="text-sm text-on-surface-variant mt-2 leading-relaxed">Relentless productivity, meeting prep, sprint deliveries and the one task you keep avoiding. Knows your deadlines.</p>
+        <a class="btn-glass mt-5 w-full text-sm" href="/chat?context=focus" data-mentor="focus" data-label="Work & Career">Train with this coach <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
+      </article>
+      <article class="glass rounded-3xl p-6 flex flex-col items-center text-center transition hover:-translate-y-0.5 hover:shadow-glass-lg">
+        <div class="avatar-ring w-32 h-32"><img src="/characters/training.webp" alt="Fitness & Performance mentor" loading="lazy"></div>
+        <span class="chip mt-4"><span class="pulse"></span> Memory active</span>
+        <h3 class="font-display text-xl font-semibold mt-3">Fitness & Performance</h3>
+        <p class="text-sm text-on-surface-variant mt-2 leading-relaxed">Training plans, progressive load, mobility routines and the discipline that keeps your past records in mind — injuries included.</p>
+        <a class="btn-glass mt-5 w-full text-sm" href="/chat?context=training" data-mentor="training" data-label="Fitness & Performance">Train with this coach <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
+      </article>
+      <article class="glass rounded-3xl p-6 flex flex-col items-center text-center transition hover:-translate-y-0.5 hover:shadow-glass-lg">
+        <div class="avatar-ring w-32 h-32"><img src="/characters/reading.webp" alt="Study & Academics mentor" loading="lazy"></div>
+        <span class="chip mt-4"><span class="pulse"></span> Memory active</span>
+        <h3 class="font-display text-xl font-semibold mt-3">Study & Academics</h3>
+        <p class="text-sm text-on-surface-variant mt-2 leading-relaxed">Exams, courses, spaced revision and study schedules that don't leave subjects behind. Remembers where you got stuck.</p>
+        <a class="btn-glass mt-5 w-full text-sm" href="/chat?context=reading" data-mentor="reading" data-label="Study & Academics">Train with this coach <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
+      </article>
+      <article class="glass rounded-3xl p-6 flex flex-col items-center text-center transition hover:-translate-y-0.5 hover:shadow-glass-lg">
+        <div class="avatar-ring w-32 h-32"><img src="/characters/pets.webp" alt="Pets & Companionship mentor" loading="lazy"></div>
+        <span class="chip mt-4"><span class="pulse"></span> Memory active</span>
+        <h3 class="font-display text-xl font-semibold mt-3">Pets & Companionship</h3>
+        <p class="text-sm text-on-surface-variant mt-2 leading-relaxed">Positive training routines, vaccine dates, wellbeing and socialisation habits for dogs and cats. Knows your pet by name.</p>
+        <a class="btn-glass mt-5 w-full text-sm" href="/chat?context=pets" data-mentor="pets" data-label="Pets & Companionship">Train with this coach <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
+      </article>
+      <article class="glass rounded-3xl p-6 flex flex-col items-center text-center transition hover:-translate-y-0.5 hover:shadow-glass-lg">
+        <div class="avatar-ring w-32 h-32"><img src="/characters/creative.webp" alt="Music & Creativity mentor" loading="lazy"></div>
+        <span class="chip mt-4"><span class="pulse"></span> Memory active</span>
+        <h3 class="font-display text-xl font-semibold mt-3">Music & Creativity</h3>
+        <p class="text-sm text-on-surface-variant mt-2 leading-relaxed">Instrument practice, songwriting, unblocking creativity and building a repertoire consistently. Tracks what you practised.</p>
+        <a class="btn-glass mt-5 w-full text-sm" href="/chat?context=creative" data-mentor="creative" data-label="Music & Creativity">Train with this coach <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
+      </article>
+    </div>
+    <article class="glass rounded-3xl p-6 mt-5 flex flex-col md:flex-row items-center gap-6">
+      <div class="avatar-ring w-28 h-28 flex-none"><img src="/characters/food.webp" alt="Cooking & Nutrition mentor" loading="lazy"></div>
+      <div class="flex-1 text-center md:text-left">
+        <span class="chip"><span class="pulse"></span> Memory active · new mentor</span>
+        <h3 class="font-display text-xl font-semibold mt-2">Cooking & Nutrition</h3>
+        <p class="text-sm text-on-surface-variant mt-1">Weekly meal prep, smart ingredient swaps, techniques and a calorie balance tailored to your taste — and your restrictions.</p>
+      </div>
+      <a class="btn-primary flex-none" href="/chat?context=food" data-mentor="food" data-label="Cooking & Nutrition">Train with the Chef <span class="material-symbols-outlined text-[20px]">restaurant</span></a>
+    </article>
+  </section>
 
+  <!-- key -->
+  <section class="mt-24 max-w-3xl mx-auto text-center" id="key">
+    <span class="chip"><span class="material-symbols-outlined text-[14px]">key</span> Your identity, no account</span>
+    <h2 class="font-display text-[36px] leading-[44px] font-semibold tracking-tight mt-4">Create your memory key</h2>
+    <p class="text-on-surface-variant mt-3 max-w-[60ch] mx-auto">No account, no password. This key is how the coach recognises you on any device — lose it and your memories are gone. It is generated right here in your browser.</p>
+    <div class="glass-hi rounded-[2rem] p-6 lg:p-8 mt-8 text-left" id="keyCard">
+      <div class="flex items-center justify-between text-xs text-on-surface-variant" id="pickedRow" hidden><span class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">school</span> Starting with <b class="text-on-surface" id="pickedLabel"></b></span><button class="btn-ghost !py-1 !px-2 text-xs" type="button" id="clearPick">change</button></div>
+      <label class="block text-sm font-semibold mt-2" for="keyName">What should the coach call you? <span class="text-on-surface-variant font-normal">(first name)</span></label>
+      <div class="relative mt-2"><input class="field pr-12" id="keyName" maxlength="40" autocomplete="given-name" placeholder="Lucas"><span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary">badge</span></div>
+      <div class="flex items-center justify-between mt-6 text-xs font-semibold text-on-surface-variant"><span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">fingerprint</span> Your generated memory key</span><button class="btn-ghost !py-1 !px-2 text-xs" type="button" id="regen"><span class="material-symbols-outlined text-[16px]">refresh</span> Generate new</button></div>
+      <div class="glass rounded-2xl p-4 mt-2 flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary">vpn_key</span>
+        <div class="flex-1 min-w-0"><div class="text-[11px] uppercase tracking-wider text-on-surface-variant">Unique key</div><code class="font-mono text-base break-all text-on-surface" id="keyValue">web-…</code></div>
+        <button class="btn-glass !py-2 !px-3 text-sm flex-none" type="button" id="copyKey"><span class="material-symbols-outlined text-[18px]">content_copy</span> Copy</button>
+      </div>
+      <div class="rounded-2xl p-4 mt-4 bg-primary-fixed/40 border border-primary-container/30 flex gap-3">
+        <span class="material-symbols-outlined text-primary">tips_and_updates</span>
+        <div class="text-sm"><b>Where to keep it?</b> Paste it in your notes app, write it on paper, or — if you're a Web3 user — keep it in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus. Without it, nobody (including us) can restore your history.</div>
+      </div>
+      <label class="flex items-center gap-2 mt-5 text-sm cursor-pointer select-none"><input type="checkbox" id="agree" class="w-4 h-4 accent-primary-container"> I saved my key somewhere safe.</label>
+      <div class="flex flex-col sm:flex-row items-center justify-end gap-3 mt-4">
+        <button class="btn-glass text-sm" type="button" id="haveKey">I already have a memory key</button>
+        <button class="btn-primary" type="button" id="startBtn" disabled><span class="material-symbols-outlined text-[20px]">check_circle</span> I saved my key safely — start</button>
+      </div>
+      <div class="mt-4 hidden" id="restoreRow">
+        <label class="block text-sm font-semibold" for="restoreKey">Paste your existing key</label>
+        <div class="flex gap-2 mt-2"><input class="field" id="restoreKey" placeholder="web-xxxx-xxxx-xxxx-xxxx" spellcheck="false"><button class="btn-primary flex-none" type="button" id="restoreBtn">Restore <span class="material-symbols-outlined text-[18px]">arrow_forward</span></button></div>
+        <div class="text-xs text-error mt-2 min-h-[1em]" id="restoreErr"></div>
+      </div>
+    </div>
+    <div class="grid sm:grid-cols-3 gap-4 mt-8 text-left">
+      <div class="glass rounded-2xl p-5"><div class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary"><span class="material-symbols-outlined ">key_off</span></div><h4 class="font-semibold mt-3">Zero tracking</h4><p class="text-sm text-on-surface-variant mt-1">No email, phone or wallet needed. No cookies, no analytics.</p></div>
+      <div class="glass rounded-2xl p-5"><div class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary"><span class="material-symbols-outlined ">cloud_sync</span></div><h4 class="font-semibold mt-3">Walrus persistence</h4><p class="text-sm text-on-surface-variant mt-1">Each fact is an encrypted blob on Walrus mainnet, owned on Sui, linked from the chat.</p></div>
+      <div class="glass rounded-2xl p-5"><div class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary"><span class="material-symbols-outlined ">auto_awesome</span></div><h4 class="font-semibold mt-3">Long memory</h4><p class="text-sm text-on-surface-variant mt-1">Weeks later the coach still recalls your goals, schedule and setbacks — and shows what it used.</p></div>
+    </div>
+  </section>
+</main>
 <script>
+(() => {
+  const $ = (id) => document.getElementById(id);
   const KEY_RE = /^web-[a-z0-9-]{8,64}$/i;
-  const newKey = () => {
-    const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
-    const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
-    const chars = Array.from(bytes, (b) => alphabet[b % alphabet.length]);
-    return "web-" + [0, 4, 8, 12].map((i) => chars.slice(i, i + 4).join("")).join("-");
-  };
-  function currentUser() { try { return JSON.parse(localStorage.getItem("walrus-coach-user") || "null"); } catch { return null; } }
-  let pendingContext = null, pendingKey = null;
-  const onb = document.getElementById("onb");
-  function openOnboarding(area, src) {
-    pendingContext = area.id; pendingKey = newKey();
-    document.getElementById("onbKey").textContent = pendingKey;
-    document.getElementById("picked").innerHTML = (src ? `<img src="${src}" alt="">` : "") + `<span>Starting with <b>${area.label}</b></span>`;
-    document.getElementById("onbAgree").checked = false; document.getElementById("onbStart").disabled = true;
-    onb.showModal(); document.getElementById("onbName").focus();
-  }
-  document.getElementById("onbAgree").addEventListener("change", (e) => { document.getElementById("onbStart").disabled = !e.target.checked; });
-  document.getElementById("onbCopy").addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(pendingKey); document.getElementById("onbCopy").textContent = "Copied"; } catch { prompt("Your memory key:", pendingKey); }
+  const newKey = () => { const A = "abcdefghjkmnpqrstuvwxyz23456789"; const b = new Uint8Array(16); crypto.getRandomValues(b); const c = Array.from(b, (x) => A[x % A.length]); return "web-" + [0,4,8,12].map((i) => c.slice(i, i+4).join("")).join("-"); };
+  const user = (() => { try { return JSON.parse(localStorage.getItem("walrus-coach-user") || "null"); } catch { return null; } })();
+  let key = newKey(), picked = null;
+  $("keyValue").textContent = key;
+  $("regen").addEventListener("click", () => { key = newKey(); $("keyValue").textContent = key; $("agree").checked = false; $("startBtn").disabled = true; });
+  $("copyKey").addEventListener("click", async () => { try { await navigator.clipboard.writeText(key); $("copyKey").innerHTML = '<span class="material-symbols-outlined text-[18px]">check</span> Copied'; } catch { prompt("Your memory key:", key); } });
+  $("agree").addEventListener("change", (e) => { $("startBtn").disabled = !e.target.checked; });
+  const go = () => location.href = "/chat" + (picked ? "?context=" + encodeURIComponent(picked) : "");
+  $("startBtn").addEventListener("click", () => { const name = $("keyName").value.trim() || "friend"; try { localStorage.setItem("walrus-coach-user", JSON.stringify({ id: key, name })); localStorage.setItem("walrus-coach-key-saved", "1"); } catch {} go(); });
+  $("haveKey").addEventListener("click", () => { $("restoreRow").classList.toggle("hidden"); $("restoreKey").focus(); });
+  $("restoreBtn").addEventListener("click", () => { const k = $("restoreKey").value.trim(); if (!KEY_RE.test(k)) { $("restoreErr").textContent = "That doesn't look like a memory key (it starts with web-)."; return; } const name = $("keyName").value.trim() || "friend"; try { localStorage.setItem("walrus-coach-user", JSON.stringify({ id: k, name })); localStorage.setItem("walrus-coach-key-saved", "1"); } catch {} go(); });
+  $("clearPick").addEventListener("click", () => { picked = null; $("pickedRow").hidden = true; });
+  // Mentor cards: returning users go straight to the chat; new users are taken to the key section first.
+  for (const a of document.querySelectorAll("[data-mentor]")) a.addEventListener("click", (e) => {
+    if (user && user.id && user.name) return;
+    e.preventDefault(); picked = a.dataset.mentor; $("pickedLabel").textContent = a.dataset.label; $("pickedRow").hidden = false;
+    document.getElementById("key").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("keyCard").classList.add("shadow-glow"); setTimeout(() => $("keyName").focus(), 600);
   });
-  document.getElementById("onbForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const name = document.getElementById("onbName").value.trim() || "friend";
-    try { localStorage.setItem("walrus-coach-user", JSON.stringify({ id: pendingKey, name })); localStorage.setItem("walrus-coach-key-saved", "1"); } catch {}
-    location.href = "/chat?context=" + encodeURIComponent(pendingContext);
-  });
-  document.getElementById("onbHave").addEventListener("click", () => {
-    const key = (prompt("Paste your memory key (web-…):") || "").trim();
-    if (!KEY_RE.test(key)) { if (key) alert("That doesn't look like a memory key."); return; }
-    const name = document.getElementById("onbName").value.trim() || prompt("Your first name:") || "friend";
-    try { localStorage.setItem("walrus-coach-user", JSON.stringify({ id: key, name })); localStorage.setItem("walrus-coach-key-saved", "1"); } catch {}
-    location.href = "/chat?context=" + encodeURIComponent(pendingContext);
-  });
-
-  Promise.all([fetch("/api/areas").then((r) => r.json()), fetch("/api/characters").then((r) => r.json())]).then(([{ areas }, { characters }]) => {
-    const box = document.getElementById("areas");
-    for (const a of areas) {
-      const c = document.createElement("a"); c.className = "chip"; c.href = "/chat?context=" + encodeURIComponent(a.id);
-      const src = characters[a.id] || characters.mascot;
-      c.addEventListener("click", (e) => {
-        const u = currentUser();
-        if (u && u.id && u.name) return;          // returning user: straight to the chat
-        e.preventDefault(); openOnboarding(a, src);
-      });
-      if (src) { const img = document.createElement("img"); img.src = src; img.alt = ""; img.loading = "lazy"; c.append(img); }
-      c.append(document.createTextNode(a.label));
-      const hint = document.createElement("small"); hint.textContent = a.hint; c.append(hint);
-      box.append(c);
-    }
-    if (characters.mascot) for (const logo of document.querySelectorAll(".logo")) { logo.classList.add("art"); logo.innerHTML = `<img src="${characters.mascot}" alt="">`; }
-  }).catch(() => {});
+})();
 </script>
+<footer class="relative z-10 mt-16">
+  <div class="max-w-[1440px] mx-auto px-4 lg:px-8">
+    <div class="glass rounded-3xl px-6 py-4 flex flex-wrap items-center justify-between gap-4 text-xs text-on-surface-variant">
+      <span class="chip"><span class="pulse"></span> Network: Walrus mainnet · memory active</span>
+      <div class="flex flex-wrap gap-4">
+        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">neurology</span> Open-weight Qwen 3.8 27B</span>
+        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">database_off</span> No database of you</span>
+        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">lock</span> Encrypted Walrus Memory</span>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-3 px-2 py-6 text-xs text-on-surface-variant">
+      <span>Built for <a class="underline" href="https://www.deepsurge.xyz/hackathons/c0141a4a-21be-4009-bc63-7c168608c849" target="_blank" rel="noopener">Walrus Session 8: Chatbots That Remember</a>. MIT open source. An AI coach, not a professional — it can be wrong.</span>
+      <nav class="flex gap-4"><a href="/">Home</a><a href="/how">How it works</a><a href="/security">Security &amp; Walrus</a><a href="/privacy">Privacy</a><span>© 2026 WalCoach</span></nav>
+    </div>
+  </div>
+</footer>
 </body>
 </html>

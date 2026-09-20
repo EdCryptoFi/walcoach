@@ -3,733 +3,429 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Walrus Coach</title>
-<meta name="description" content="A coach that remembers you between conversations. Memory stored encrypted on Walrus.">
+<title>WalCoach — chat with the coach</title>
+<meta name="description" content="Talk to a coach that remembers you. Memories encrypted on Walrus, visible to you.">
+<link rel="icon" href="/icon.png" type="image/webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
 <style>
-  :root {
-    --bg: #f4f7f8; --panel: #ffffff; --panel-2: #eef3f5; --border: #d5dfe3;
-    --text: #12242b; --muted: #4b636c; --accent: #0e8aa3; --accent-ink: #ffffff;
-    --user: #0e8aa3; --user-ink: #ffffff; --bot: #ffffff; --ok: #0f8a5f; --warn: #b45309;
-    --shadow: 0 1px 2px rgba(18,36,43,.06), 0 8px 24px rgba(18,36,43,.06);
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #0d1518; --panel: #131e22; --panel-2: #182529; --border: #263840;
-      --text: #e6eef1; --muted: #93a8b1; --accent: #35b8d3; --accent-ink: #06181d;
-      --user: #1c8ea6; --user-ink: #ffffff; --bot: #182529; --ok: #4ad19b; --warn: #f5b04c;
-      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
-      color-scheme: dark;
-    }
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
-  }
-  button, input, textarea { font: inherit; color: inherit; }
-  button { cursor: pointer; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-  .app { display: grid; grid-template-columns: minmax(0, 1fr) 340px; height: 100dvh; }
-  @media (min-width: 1140px) { .app.with-agent { grid-template-columns: 240px minmax(0, 1fr) 340px; } }
-  @media (max-width: 860px) { .app { grid-template-columns: 1fr; grid-template-rows: 1fr auto; } }
-
-  /* ---- agent column ---- */
-  .agent { display: none; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 28px 18px; border-right: 1px solid var(--border); background: var(--panel); }
-  @media (min-width: 1140px) { .app.with-agent .agent { display: flex; } }
-  .agent img { width: 150px; height: 150px; object-fit: contain; }
-  .agent h2 { margin: 6px 0 0; font-size: 18px; letter-spacing: -.01em; text-transform: none; color: var(--text); font-weight: 650; display: block; }
-  .agent .hint { margin: 0; }
-  .agent .focus { margin-top: 8px; font-size: 13px; color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
-  .agent .change { margin-top: auto; font-size: 13px; color: var(--muted); }
-  .agent .change a { color: var(--accent); text-decoration: none; }
-  .agent-mini { display: none; width: 34px; height: 34px; object-fit: contain; }
-  .app.with-agent .agent-mini { display: block; }
-  .app.with-agent .logo { display: none; }
-  @media (min-width: 1140px) { .app.with-agent .agent-mini { display: none; } .app.with-agent .logo { display: grid; } }
-
-  /* ---- chat column ---- */
-  .chat { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--border); }
-  @media (max-width: 860px) { .chat { border-right: 0; } }
-  header {
-    display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border);
-    background: var(--panel);
-  }
-  header h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
-  header .sub { color: var(--muted); font-size: 13px; }
-  .iconbtn { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-2); font-size: 13px; font-weight: 500; transition: border-color .15s; }
-  .iconbtn:hover { border-color: var(--accent); }
-  .iconbtn svg { width: 16px; height: 16px; }
-  #memBtn { display: none; }
-  @media (max-width: 860px) {
-    #memBtn { display: inline-flex; }
-    header .sub { display: none; }
-    .toggle span:last-child { display: none; }
-  }
-  .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; }
-  .spacer { flex: 1; }
-  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); user-select: none; cursor: pointer; min-height: 44px; }
-  .toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
-  .switch { width: 40px; height: 22px; border-radius: 999px; background: var(--border); position: relative; transition: background .2s; }
-  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
-  .toggle input:checked + .switch { background: var(--ok); }
-  .toggle input:checked + .switch::after { transform: translateX(18px); }
-  .toggle input:focus-visible + .switch { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-  .messages { flex: 1; overflow-y: auto; padding: 24px 20px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
-  @media (prefers-reduced-motion: reduce) { .messages { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
-  .msg { max-width: min(72ch, 88%); padding: 11px 15px; border-radius: 16px; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: var(--shadow); animation: rise .18s ease-out; }
+  /* chat-only bits */
+  .msg { max-width: min(72ch, 92%); animation: rise .18s ease-out; }
   @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-  .msg.user { align-self: flex-end; background: var(--user); color: var(--user-ink); border-bottom-right-radius: 6px; }
-  .msg.bot { align-self: flex-start; background: var(--bot); border: 1px solid var(--border); border-bottom-left-radius: 6px; }
-  .msg.bot.nomem { border-style: dashed; }
-  .meta { font-size: 12px; color: var(--muted); margin-top: 6px; display: flex; gap: 6px; align-items: center; }
-  .meta svg { width: 14px; height: 14px; }
-  .msg.user .meta { display: none; }
-  .typing { display: inline-flex; gap: 4px; padding: 4px 0; }
-  .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1s infinite; }
-  .typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
-  @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
-
-  .composer { display: flex; gap: 10px; padding: 14px 20px 6px; border-top: 1px solid var(--border); background: var(--panel); }
-  .legal { font-size: 12px; color: var(--muted); padding: 0 20px 10px; background: var(--panel); }
-  .legal a { color: inherit; }
-  .sources { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
-  .sources a { font-size: 12px; color: var(--accent); text-decoration: none; border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sources a:hover { border-color: var(--accent); }
-  .composer textarea { flex: 1; resize: none; min-height: 46px; max-height: 160px; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); }
-  .composer button { min-width: 46px; height: 46px; border-radius: 12px; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; transition: filter .15s; }
-  .composer button:hover { filter: brightness(1.08); }
-  .composer button:disabled { opacity: .5; cursor: default; }
-  .composer svg { width: 20px; height: 20px; }
-
-  /* ---- memory panel ---- */
-  aside { background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
-  @media (max-width: 860px) {
-    .app { grid-template-rows: 1fr; }
-    aside { position: fixed; inset: 0; z-index: 30; transform: translateX(100%); transition: transform .25s ease; padding-top: env(safe-area-inset-top, 0px); }
-    aside.open { transform: none; }
-    .drawer-head { display: flex !important; }
-  }
-  .drawer-head { display: none; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 650; }
-  .drawer-head .spacer { flex: 1; }
-  aside section { padding: 16px 18px; border-bottom: 1px solid var(--border); }
-  aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; font-weight: 650; display: flex; align-items: center; gap: 8px; }
-  aside h2 svg { width: 15px; height: 15px; }
-  .recalled { flex: 0 0 auto; max-height: 45%; overflow-y: auto; }
-  .all { flex: 1; overflow-y: auto; min-height: 0; }
-  ul.mem { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-  ul.mem li { font-size: 14px; line-height: 1.45; padding: 9px 11px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: flex-start; }
-  ul.mem li > span:nth-child(2) { flex: 1 1 160px; min-width: 0; }
-  ul.mem li .d { flex: none; font-variant-numeric: tabular-nums; font-size: 11px; color: var(--muted); background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; margin-top: 2px; }
-  ul.mem li .d.strong { color: var(--ok); border-color: var(--ok); }
-  .empty { color: var(--muted); font-size: 14px; }
-  .row { display: flex; gap: 8px; align-items: center; }
-  .btn { min-height: 36px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--panel-2); font-size: 13px; transition: background .15s, border-color .15s; }
-  .btn:hover { border-color: var(--accent); }
-  .who { font-size: 13px; color: var(--muted); }
-  .who b { color: var(--text); }
-  .status { font-size: 12px; color: var(--muted); }
-  .status .ok { color: var(--ok); }
-  .status .warn { color: var(--warn); }
-
-  .key { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
-  .key code { flex: 1; min-width: 0; font-size: 12px; padding: 7px 9px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
-  .tabs button { flex: 1; height: 36px; border-radius: 9px; border: 1px solid var(--border); background: var(--panel-2); color: var(--muted); font-size: 13px; font-weight: 500; }
-  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  .field-error { color: var(--warn); font-size: 13px; margin: -8px 0 12px; min-height: 1em; }
-
-  .banner { display: none; align-items: center; gap: 8px; font-size: 13px; padding: 8px 20px; background: color-mix(in srgb, var(--warn) 12%, var(--panel)); color: var(--warn); border-bottom: 1px solid var(--border); }
-  .banner.show { display: flex; }
-  .banner svg { width: 15px; height: 15px; flex: none; }
-
-  /* ---- starters ---- */
-  .starters { display: flex; flex-wrap: wrap; gap: 8px; max-width: 72ch; }
-  .starters button { font-size: 14px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); color: var(--text); transition: border-color .15s, background .15s; text-align: left; }
-  .starters button:hover { border-color: var(--accent); background: var(--panel-2); }
-  .starters-title { font-size: 13px; color: var(--muted); margin: 6px 0 8px; }
-
-  /* ---- badges ---- */
-  .badges { display: flex; flex-wrap: wrap; gap: 6px; }
-  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel-2); color: var(--muted); }
-  .badge.on { border-color: var(--ok); color: var(--ok); background: transparent; }
-  .badge.on b { font-weight: 650; }
-  .badge img { width: 22px; height: 22px; object-fit: contain; margin: -3px 0 -3px -4px; filter: grayscale(1); opacity: .55; }
-  .badge.on img { filter: none; opacity: 1; }
-  .logo img { width: 34px; height: 34px; object-fit: contain; border-radius: 10px; }
-  .logo.art { background: transparent; }
-  ul.mem li .x { flex: none; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; color: var(--muted); text-decoration: none; margin-top: 1px; }
-  ul.mem li .x:hover { color: var(--accent); background: var(--panel); }
-  ul.mem li .x svg { width: 13px; height: 13px; }
-  ul.mem li .tail { flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
-  ul.mem li .a { flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); border: 1px solid var(--border); border-radius: 6px; padding: 2px 5px; margin-top: 3px; }
-
-  /* ---- "you" popover ---- */
-  .you { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .you .who { flex: 1; min-width: 0; }
-  #youDialog { max-width: 460px; }
-  #youDialog h3 { font-size: 18px; }
-  #youDialog section { padding: 14px 0; border-top: 1px solid var(--border); }
-  #youDialog section:first-of-type { border-top: 0; padding-top: 4px; }
-  #youDialog h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-  #youDialog .row { flex-wrap: wrap; }
-  #youDialog button.btn { width: auto; height: auto; background: var(--panel-2); color: var(--text); font-weight: 500; }
-  #youDialog .close { width: 100%; height: 44px; margin-top: 6px; }
-  .more { font-size: 13px; color: var(--accent); background: none; border: 0; padding: 4px 0; }
-
-  /* ---- save-your-key card ---- */
-  .keycard { border-color: var(--accent) !important; border-style: solid !important; max-width: min(72ch, 92%); white-space: normal; }
-  .keycard h4 { margin: 0 0 6px; font-size: 15px; }
-  .keycard .big { display: flex; gap: 8px; align-items: center; margin: 10px 0; }
-  .keycard .big code { flex: 1; font-size: 16px; letter-spacing: .04em; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--border); user-select: all; overflow-wrap: anywhere; }
-  .keycard ul { margin: 6px 0 10px; padding-left: 18px; color: var(--muted); font-size: 14px; }
-  .keycard li { margin: 2px 0; }
-  .keycard a { color: var(--accent); }
-  .keycard .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
-  /* ---- name dialog ---- */
-  dialog { border: 1px solid var(--border); border-radius: 16px; background: var(--panel); color: var(--text); padding: 24px; max-width: 420px; width: calc(100% - 32px); box-shadow: var(--shadow); }
-  dialog::backdrop { background: rgba(6, 18, 22, .55); }
-  dialog h3 { margin: 0 0 6px; font-size: 20px; }
-  dialog p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
-  dialog label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-  dialog input { width: 100%; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); margin-bottom: 14px; }
-  dialog button { width: 100%; height: 44px; border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .bubble { padding: 12px 16px; border-radius: 20px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; font-size: 15px; }
+  .msg.user .bubble { background: linear-gradient(135deg, #00b4d8, #0077b6); color: #fff; border-bottom-right-radius: 6px; box-shadow: var(--shadow-cta); }
+  .msg.bot .bubble { background: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.8); border-bottom-left-radius: 6px; box-shadow: var(--shadow-glass); }
+  .msg.bot.sys .bubble { background: rgba(229,238,255,.7); border-style: dashed; border-color: rgba(0,180,216,.35); }
+  .typing { display: inline-flex; gap: 4px; padding: 4px 0; } .typing i { width: 7px; height: 7px; border-radius: 50%; background: #6d797e; animation: blink 1s infinite; } .typing i:nth-child(2){animation-delay:.15s} .typing i:nth-child(3){animation-delay:.3s}
+  @keyframes blink { 0%,80%,100%{opacity:.25} 40%{opacity:1} }
+  .mod { display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px; border-radius:14px; border:1px solid rgba(255,255,255,.7); background:rgba(255,255,255,.6); font-size:11px; font-weight:600; color:var(--color-on-surface-variant); cursor:pointer; transition:background .15s,color .15s,transform .15s; }
+  .mod .material-symbols-outlined { font-size:20px; }
+  .mod:hover { background:#fff; }
+  .mod.on { background:linear-gradient(135deg,#00b4d8,#0077b6); color:#fff; border-color:transparent; box-shadow:var(--shadow-cta); }
+  .mod .n { font-size:10px; opacity:.8; }
+  .fact { border-radius:16px; padding:12px 14px; background:rgba(255,255,255,.7); border:1px solid rgba(255,255,255,.8); font-size:13px; line-height:1.45; }
+  .fact .row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; }
+  .fact a { color:var(--color-on-surface-variant); display:inline-grid; place-items:center; width:24px; height:24px; border-radius:8px; }
+  .fact a:hover { color:var(--color-primary); background:#fff; }
+  .fact a .material-symbols-outlined { font-size:16px; }
+  .side { display:none; }
+  @media (min-width:1280px) { .side { display:flex; } }
+  .panel-toggle { display:inline-flex; } @media (min-width:1280px) { .panel-toggle { display:none; } }
+  .left { display:none; } @media (min-width:1280px) { .left { display:flex; } }
+  .left::-webkit-scrollbar, #all::-webkit-scrollbar, #messages::-webkit-scrollbar { width: 6px; } .left::-webkit-scrollbar-thumb, #all::-webkit-scrollbar-thumb, #messages::-webkit-scrollbar-thumb { background: rgba(0,180,216,.25); border-radius: 9999px; } .left.open { display:flex; position:fixed; inset:0; z-index:40; overflow:auto; padding:16px; background:rgba(248,249,255,.96); }
+  .memchip { display:inline-flex; align-items:center; gap:4px; border-radius:9999px; padding:3px 10px; background:rgba(0,180,216,.10); border:1px solid rgba(0,180,216,.25); color:var(--color-secondary); font-size:11px; font-weight:600; max-width:100%; }
+  .memchip span.t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:28ch; }
+  .srcs a { display:inline-flex; align-items:center; gap:4px; border-radius:9999px; padding:3px 10px; border:1px solid rgba(0,180,216,.25); color:var(--color-secondary); font-size:11px; text-decoration:none; max-width:100%; }
+  .srcs a span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:34ch; }
+  dialog { border:0; border-radius:2rem; padding:0; background:transparent; max-width:560px; width:calc(100% - 32px); }
+  dialog::backdrop { background:rgba(11,28,48,.45); backdrop-filter:blur(6px); }
+  .banner { display:none; } .banner.show { display:flex; }
 </style>
 </head>
-<body>
-<div class="app" id="app">
-  <aside class="agent" id="agent">
-    <img id="agentImg" alt="">
-    <h2 id="agentName">Coach</h2>
-    <p class="hint" id="agentHint"></p>
-    <div class="focus" id="agentFocus">Ask anything — I'll remember what matters.</div>
-    <div class="change"><a href="/">Change context</a></div>
+<body class="relative min-h-screen overflow-x-hidden">
+<div class="blooms" aria-hidden="true"><i></i></div>
+
+<div class="relative z-10 min-h-screen flex">
+  <!-- ============ sidebar ============ -->
+  <aside class="side w-[300px] flex-none flex-col gap-4 p-5 glass-nav min-h-screen sticky top-0 h-screen">
+    <a class="flex items-center gap-3" href="/"><img class="w-11 h-11 object-contain" src="/characters/mascot.webp" alt=""><div><div class="font-display font-bold text-xl leading-tight">WalCoach</div><div class="text-xs text-on-surface-variant">Walrus Protocol AI</div></div></a>
+    <div class="glass rounded-2xl px-4 py-3 flex items-center justify-between text-sm"><span class="inline-flex items-center gap-2 font-semibold text-primary"><span class="pulse"></span> <span id="syncLabel">Memory synced</span></span><span class="material-symbols-outlined text-primary">verified_user</span></div>
+    <nav class="flex flex-col gap-1 text-sm font-semibold">
+      <a class="nav-link active inline-flex items-center gap-3 !rounded-2xl !py-3" href="#"><span class="material-symbols-outlined">chat_bubble</span> Chat with the coach</a>
+      <button class="nav-link inline-flex items-center gap-3 !rounded-2xl !py-3 text-left" id="navKey" type="button"><span class="material-symbols-outlined">key</span> Memory key &amp; Walrus blobs</button>
+      <a class="nav-link inline-flex items-center gap-3 !rounded-2xl !py-3" href="/#mentors"><span class="material-symbols-outlined">fitness_center</span> Mentors &amp; modalities</a>
+      <a class="nav-link inline-flex items-center gap-3 !rounded-2xl !py-3" href="/how"><span class="material-symbols-outlined">insights</span> How it works · Qwen 27B</a>
+      <a class="nav-link inline-flex items-center gap-3 !rounded-2xl !py-3" href="/security"><span class="material-symbols-outlined">shield</span> Security &amp; Walrus</a>
+    </nav>
+    <div class="mt-auto glass rounded-2xl p-4 text-xs">
+      <div class="inline-flex items-center gap-2 font-semibold"><span class="material-symbols-outlined text-primary text-[18px]">hub</span> Walrus network active</div>
+      <p class="text-on-surface-variant mt-1">No central database. Your memories are encrypted blobs on Walrus <b id="netLabel">mainnet</b>.</p>
+      <a class="inline-flex items-center gap-1 text-secondary font-semibold mt-2" href="/"><span class="material-symbols-outlined text-[16px]">arrow_back</span> Back to the portal</a>
+    </div>
   </aside>
-  <main class="chat">
-    <header>
-      <img class="agent-mini" id="agentMini" alt="">
-      <div class="logo" aria-hidden="true">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.9A4 4 0 0 0 7 19h1a4 4 0 0 0 8 0h1a4 4 0 0 0 2-7.1A4 4 0 0 0 16 8V7a4 4 0 0 0-4-4z"/><path d="M12 3v16"/></svg>
+
+  <!-- ============ main ============ -->
+  <div class="flex-1 min-w-0 flex flex-col xl:h-screen">
+    <!-- top bar -->
+    <header class="glass-nav !bg-white/85 sticky top-0 z-30 px-4 lg:px-6 h-16 flex-none flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <a class="xl:hidden flex items-center gap-2" href="/"><img class="w-8 h-8 object-contain" src="/characters/mascot.webp" alt=""><span class="font-display font-bold hidden sm:inline">WalCoach</span></a>
+        <span class="hidden md:inline-flex chip"><span class="pulse"></span> Session connected</span>
+        <span class="hidden lg:inline text-xs text-on-surface-variant truncate">Open-weight Qwen 3.8 27B · memory on Walrus</span>
       </div>
-      <div>
-        <h1><a href="/" style="text-decoration:none;color:inherit" id="title">Walrus Coach</a></h1>
-        <div class="sub" id="subtitle">Remembers you between sessions</div>
+      <div class="flex items-center gap-2">
+        <label class="inline-flex items-center gap-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none" title="Turn long-term memory off to see how a forgetful bot behaves">
+          <input type="checkbox" id="memToggle" class="sr-only" checked>
+          <span class="w-10 h-6 rounded-full bg-outline-variant relative transition" id="memSwitch"><span class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition" id="memKnob"></span></span>
+          <span id="memLabel" class="hidden sm:inline">Memory on</span>
+        </label>
+        <button class="btn-glass !py-2 !px-3 text-xs panel-toggle" id="panelBtn" type="button"><span class="material-symbols-outlined text-[18px]">psychology</span> <span id="memCount">Memory</span></button>
+        <button class="w-10 h-10 rounded-full glass grid place-items-center" id="youBtn" type="button" aria-label="Your key and settings"><span class="material-symbols-outlined">person</span></button>
       </div>
-      <div class="spacer"></div>
-      <button class="iconbtn" id="memBtn" aria-controls="panel" aria-expanded="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.9A4 4 0 0 0 7 19h1a4 4 0 0 0 8 0h1a4 4 0 0 0 2-7.1A4 4 0 0 0 16 8V7a4 4 0 0 0-4-4z"/><path d="M12 3v16"/></svg>
-        <span id="memCount">Memory</span>
-      </button>
-      <label class="toggle" title="Turn long-term memory off to see how a forgetful bot behaves">
-        <input type="checkbox" id="memToggle" checked>
-        <span class="switch" aria-hidden="true"></span>
-        <span id="memLabel">Memory on</span>
-      </label>
     </header>
 
-    <div class="banner" id="banner" role="status">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-      <span id="bannerText"></span>
-    </div>
-    <div class="messages" id="messages" aria-live="polite"></div>
+    <div class="banner items-center gap-2 px-4 lg:px-6 py-2 text-xs font-semibold text-on-error-container bg-error-container/70" id="banner" role="status"><span class="material-symbols-outlined text-[18px]">warning</span><span id="bannerText"></span></div>
 
-    <form class="composer" id="composer">
-      <textarea id="input" rows="1" placeholder="Tell me what you're working on…" aria-label="Message" autocomplete="off"></textarea>
-      <button type="submit" id="send" aria-label="Send">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
-      </button>
-    </form>
-    <div class="legal">AI coach, not a professional — it can be wrong. Web answers cite their sources. <a href="/privacy">Privacy &amp; terms</a></div>
-  </main>
+    <main class="flex-1 min-h-0 p-4 lg:p-6 grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)] xl:overflow-hidden">
+      <!-- ============ left column: agent + facts ============ -->
+      <section class="left flex-col gap-5 min-h-0 xl:overflow-y-auto" id="leftCol">
+        <div class="xl:hidden flex justify-end"><button class="btn-ghost" id="closeLeft" type="button"><span class="material-symbols-outlined">close</span> Close</button></div>
+        <div class="glass rounded-3xl p-5">
+          <div class="flex items-center gap-3">
+            <div class="avatar-ring w-16 h-16 flex-none"><img id="agentImg" src="/characters/mascot.webp" alt=""></div>
+            <div class="min-w-0"><div class="font-display font-bold text-lg leading-tight truncate" id="agentName">WalCoach AI</div><div class="text-xs text-on-surface-variant" id="agentSub">Personal coach · one memory of you</div></div>
+            <span class="chip ml-auto flex-none">Qwen 27B</span>
+          </div>
+          <div class="text-[11px] font-bold tracking-wider text-on-surface-variant mt-5">ACTIVE MODALITY</div>
+          <div class="grid grid-cols-4 gap-2 mt-2" id="mods"></div>
+          <div class="glass-hi rounded-2xl p-3 mt-4 flex items-start gap-3 text-xs">
+            <span class="material-symbols-outlined text-primary">hub</span>
+            <div class="min-w-0"><b>Walrus Memory namespace</b><div class="text-on-surface-variant truncate" id="nsLine">connecting…</div></div>
+            <span class="material-symbols-outlined text-primary ml-auto">enhanced_encryption</span>
+          </div>
+        </div>
 
-  <aside id="panel">
-    <div class="drawer-head">
-      <span>Memory</span><span class="spacer"></span>
-      <button class="iconbtn" id="closePanel" aria-label="Close">Close</button>
-    </div>
+        <div class="glass rounded-3xl p-5 flex-none flex flex-col">
+          <div class="flex items-center justify-between">
+            <h2 class="font-display font-semibold inline-flex items-center gap-2"><span class="material-symbols-outlined text-primary">psychology</span> Durable facts in memory</h2>
+            <span class="chip" id="factCount">0 facts</span>
+          </div>
+          <p class="text-xs text-on-surface-variant mt-1">These facts live only in your encrypted namespace on Walrus and feed every reply.</p>
+          <div class="flex flex-col gap-2 mt-3 overflow-y-auto max-h-[40vh]" id="all"><div class="text-sm text-on-surface-variant">Loads after your first message.</div></div>
+          <div class="grid grid-cols-2 gap-2 mt-3 text-xs">
+            <button class="btn-glass !py-2 !px-3 text-xs" id="exportBtn" type="button"><span class="material-symbols-outlined text-[16px]">download</span> Export .json</button>
+            <a class="btn-glass !py-2 !px-3 text-xs" id="explorerLink" href="#" target="_blank" rel="noopener noreferrer"><span class="material-symbols-outlined text-[16px]">open_in_new</span> Walrus explorer</a>
+          </div>
+          <div class="flex items-center justify-between text-xs text-on-surface-variant mt-3 pt-3 border-t border-white/60"><span>Namespace on Walrus</span><span class="inline-flex items-center gap-1 font-semibold text-primary" id="nsMini"><span class="material-symbols-outlined text-[16px]">database</span> —</span></div>
+        </div>
+      </section>
 
-    <section>
-      <div class="you">
-        <div class="who">Talking as <b id="whoName">…</b><div class="status" id="status"></div></div>
-        <button class="iconbtn" id="youBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-          You
-        </button>
-      </div>
-    </section>
-
-    <section class="recalled">
-      <h2>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        Recalled for the last reply
-      </h2>
-      <ul class="mem" id="recalled"><li class="empty" style="background:none;border:0;padding:0">Nothing yet — say something.</li></ul>
-    </section>
-
-    <section>
-      <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.4l-4.8 2.5.9-5.4L4.2 7.7l5.4-.8z"/></svg> Life areas covered</h2>
-      <div class="badges" id="badges"></div>
-      <div class="hint" id="badgeHint">Talk about different parts of your life to light these up.</div>
-    </section>
-
-    <section class="all">
-      <h2>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        Everything it remembers
-        <span class="spacer"></span>
-        <button class="btn" id="refreshBtn" style="min-height:30px;padding:0 10px;">Refresh</button>
-      </h2>
-      <ul class="mem" id="all"><li class="empty" style="background:none;border:0;padding:0">Loads after your first message.</li></ul>
-    </section>
-  </aside>
-
-<dialog id="youDialog">
-  <h3>You</h3>
-  <section>
-    <h4>Memory key</h4>
-    <div class="key" style="margin-top:0">
-      <code id="keyText" title="Your memory key">…</code>
-      <button class="btn" id="copyKey" title="Copy your memory key">Copy</button>
-    </div>
-    <div class="hint">Paste it on another device to bring your memories with you. Anyone with this key is you — keep it private (notes app, email to yourself, or <a href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Walnotes</a> for Web3 users).</div>
-  </section>
-  <section id="nudgeSection" hidden>
-    <h4>Daily nudge</h4>
-    <div class="row" style="justify-content: space-between;">
-      <span class="hint" id="nudgeText" style="margin:0; flex:1">One short check-in a day, written from what it remembers about you.</span>
-      <button class="btn" id="nudgeBtn">Turn on</button>
-    </div>
-  </section>
-  <section>
-    <h4>Where your memories live</h4>
-    <div class="hint" id="aboutLine" style="margin:0">Encrypted blobs on Walrus.</div>
-  </section>
-  <section>
-    <h4>Session</h4>
-    <div class="row">
-      <button class="btn" id="resetBtn" title="Clear short-term context; long-term memory stays">New session</button>
-      <button class="btn" id="switchBtn" title="Chat as a different person (new memory namespace)">Switch user</button>
-    </div>
-  </section>
-  <form method="dialog"><button class="close">Done</button></form>
-</dialog>
+      <!-- ============ chat column ============ -->
+      <section class="glass rounded-3xl flex flex-col min-h-[70vh] xl:min-h-0 xl:h-full overflow-hidden">
+        <div class="px-5 py-4 border-b border-white/60 flex items-center justify-between gap-3">
+          <div class="min-w-0"><div class="font-semibold inline-flex items-center gap-2"><span class="pulse"></span> Cognitive session active</div><div class="text-xs text-on-surface-variant truncate" id="sessionSub">Long-term memory ready</div></div>
+          <span class="chip flex-none" id="modeChip">Mode: coach</span>
+        </div>
+        <div class="flex-1 overflow-y-auto px-4 lg:px-6 py-5 flex flex-col gap-4" id="messages" aria-live="polite"></div>
+        <form class="p-3 lg:p-4 border-t border-white/60" id="composer">
+          <div class="flex items-end gap-2">
+            <textarea class="field !rounded-3xl flex-1 resize-none min-h-[48px] max-h-40" id="input" rows="1" placeholder="Type your message to WalCoach…" aria-label="Message"></textarea>
+            <button class="btn-primary !px-5 h-12 flex-none" id="send" type="submit">Send <span class="material-symbols-outlined text-[18px]">send</span></button>
+          </div>
+          <div class="flex items-center justify-between mt-2 text-[11px] text-on-surface-variant"><span>AI coach, not a professional — it can be wrong. Web answers cite sources. <a class="underline" href="/privacy">Privacy &amp; terms</a></span><span class="hidden sm:inline">Shift + ↵ for a new line</span></div>
+        </form>
+      </section>
+    </main>
+  </div>
 </div>
 
+<!-- ============ name dialog (fallback when arriving without a key) ============ -->
 <dialog id="nameDialog">
-  <form method="dialog" id="nameForm">
-    <h3>Who am I talking to?</h3>
-    <p>No account, no password — just your first name.</p>
-    <div class="tabs" role="tablist">
-      <button type="button" role="tab" id="tabNew" aria-selected="true">I'm new here</button>
-      <button type="button" role="tab" id="tabKey" aria-selected="false">I have a memory key</button>
+  <form method="dialog" id="nameForm" class="glass-hi rounded-[2rem] p-7">
+    <h3 class="font-display text-2xl font-bold">Who am I talking to?</h3>
+    <p class="text-sm text-on-surface-variant mt-1">No account, no password — just your first name. A memory key is created in this browser.</p>
+    <div class="flex gap-2 mt-4 p-1 rounded-full bg-white/60" role="tablist">
+      <button type="button" role="tab" id="tabNew" class="flex-1 rounded-full py-2 text-sm font-semibold bg-white shadow" aria-selected="true">I'm new here</button>
+      <button type="button" role="tab" id="tabKey" class="flex-1 rounded-full py-2 text-sm font-semibold text-on-surface-variant" aria-selected="false">I have a memory key</button>
     </div>
-    <label for="nameInput">First name</label>
-    <input id="nameInput" required maxlength="40" autocomplete="given-name" placeholder="Ana">
-    <div id="keyField" hidden>
-      <label for="keyInput">Memory key</label>
-      <input id="keyInput" maxlength="70" autocomplete="off" spellcheck="false" placeholder="web-xxxxxxxx-xxxx-…">
-    </div>
-    <div class="field-error" id="formError"></div>
-    <button type="submit" id="startBtn">Start</button>
+    <label class="block text-sm font-semibold mt-4" for="nameInput">First name</label>
+    <input class="field mt-1" id="nameInput" required maxlength="40" autocomplete="given-name" placeholder="Ana">
+    <div id="keyField" hidden><label class="block text-sm font-semibold mt-3" for="keyInput">Memory key</label><input class="field mt-1" id="keyInput" maxlength="70" autocomplete="off" spellcheck="false" placeholder="web-xxxx-xxxx-xxxx-xxxx"></div>
+    <div class="text-xs text-error mt-2 min-h-[1em]" id="formError"></div>
+    <button class="btn-primary w-full mt-3" id="startBtn" type="submit">Start</button>
   </form>
+</dialog>
+
+<!-- ============ key modal ============ -->
+<dialog id="youDialog">
+  <div class="glass-hi rounded-[2rem] p-6 lg:p-7">
+    <div class="flex items-start gap-3">
+      <span class="w-12 h-12 rounded-full bg-gradient-to-br from-primary-container to-secondary text-white grid place-items-center flex-none"><span class="material-symbols-outlined">key</span></span>
+      <div class="flex-1"><h3 class="font-display text-xl font-bold">Walrus memory key</h3><div class="text-xs text-on-surface-variant">Decentralised memory · Sui &amp; Walrus</div></div>
+      <form method="dialog"><button class="w-9 h-9 rounded-full glass grid place-items-center" aria-label="Close"><span class="material-symbols-outlined">close</span></button></form>
+    </div>
+    <div class="rounded-2xl p-4 mt-5 bg-primary-fixed/50 border border-primary-container/30 flex gap-3">
+      <span class="material-symbols-outlined text-primary">verified_user</span>
+      <div class="text-sm"><b>Your memory key is active in this browser.</b><div class="text-on-surface-variant text-xs mt-1">It is the only thing that points to your namespace. Anyone with it is you — keep it private. Talking as <b class="text-on-surface" id="whoName">…</b>.</div></div>
+    </div>
+    <div class="text-[11px] font-bold tracking-wider text-on-surface-variant mt-5">YOUR MEMORY KEY</div>
+    <div class="flex items-center gap-2 mt-2 glass rounded-2xl p-3"><code class="flex-1 font-mono text-sm break-all" id="keyText">…</code><button class="btn-glass !py-2 !px-3 text-xs flex-none" id="copyKey" type="button"><span class="material-symbols-outlined text-[16px]">content_copy</span> Copy</button></div>
+    <div class="text-[11px] font-bold tracking-wider text-on-surface-variant mt-5">WHERE YOUR MEMORIES LIVE</div>
+    <div class="glass rounded-2xl p-3 mt-2 text-xs text-on-surface-variant" id="aboutLine">Encrypted blobs on Walrus.</div>
+    <div class="glass rounded-2xl p-4 mt-4 text-sm">
+      <div class="flex items-center justify-between"><b>Key backup</b><span class="chip">Recommended</span></div>
+      <p class="text-xs text-on-surface-variant mt-1">If you clear this browser or switch devices, you need this key to get your memories back. Keep it in your notes app, on paper, or in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a> (encrypted notes on Walrus).</p>
+    </div>
+    <div class="glass rounded-2xl p-4 mt-3 text-sm" id="nudgeSection" hidden>
+      <div class="flex items-center justify-between gap-3"><div><b>Daily nudge</b><div class="text-xs text-on-surface-variant" id="nudgeText">One short check-in a day, written from what it remembers about you.</div></div><button class="btn-glass !py-2 !px-3 text-xs flex-none" id="nudgeBtn" type="button">Turn on</button></div>
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-2 mt-5">
+      <div class="flex gap-2"><button class="btn-ghost" id="resetBtn" type="button" title="Clear short-term context; long-term memory stays">New session</button><button class="btn-ghost" id="switchBtn" type="button" title="Chat as a different person (new memory key)">Switch user</button></div>
+      <form method="dialog"><button class="btn-primary !py-2.5 !px-5 text-sm">Sync OK</button></form>
+    </div>
+  </div>
 </dialog>
 
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const messages = $("messages"), input = $("input"), send = $("send"), composer = $("composer");
-  const recalledEl = $("recalled"), allEl = $("all"), statusEl = $("status");
+  const messages = $("messages"), input = $("input"), send = $("send"), composer = $("composer"), allEl = $("all");
   const memToggle = $("memToggle"), memLabel = $("memLabel");
 
-  // ---- identity: opaque id kept in this browser only ----
+  // ---------- identity ----------
   let user = null;
   try { user = JSON.parse(localStorage.getItem("walrus-coach-user") || "null"); } catch {}
-  // Readable key: web-xxxx-xxxx-xxxx-xxxx (16 chars from a 32-symbol alphabet ≈ 80 bits, no ambiguous 0/o/1/l).
-  const newId = () => {
-    const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
-    const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
-    const chars = Array.from(bytes, (b) => alphabet[b % alphabet.length]);
-    return "web-" + [0, 4, 8, 12].map((i) => chars.slice(i, i + 4).join("")).join("-");
-  };
-  function saveUser(u) { user = u; try { localStorage.setItem("walrus-coach-user", JSON.stringify(u)); } catch {} $("whoName").textContent = u.name; $("keyText").textContent = u.id; }
   const KEY_RE = /^web-[a-z0-9-]{8,64}$/i;
-
-  $("copyKey").addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(user.id); $("copyKey").textContent = "Copied"; setTimeout(() => ($("copyKey").textContent = "Copy"), 1500); }
-    catch { prompt("Your memory key:", user.id); }
-  });
-
-  let mode = "new";
-  function setMode(m) {
-    mode = m;
-    $("tabNew").setAttribute("aria-selected", String(m === "new"));
-    $("tabKey").setAttribute("aria-selected", String(m === "key"));
-    $("keyField").hidden = m !== "key";
-    $("startBtn").textContent = m === "key" ? "Restore my memories" : "Start";
-    $("formError").textContent = "";
-  }
-  $("tabNew").addEventListener("click", () => setMode("new"));
-  $("tabKey").addEventListener("click", () => setMode("key"));
+  const newId = () => { const A = "abcdefghjkmnpqrstuvwxyz23456789"; const b = new Uint8Array(16); crypto.getRandomValues(b); const c = Array.from(b, (x) => A[x % A.length]); return "web-" + [0,4,8,12].map((i) => c.slice(i, i+4).join("")).join("-"); };
+  function saveUser(u) { user = u; try { localStorage.setItem("walrus-coach-user", JSON.stringify(u)); } catch {} $("whoName").textContent = u.name; $("keyText").textContent = u.id; }
 
   const dialog = $("nameDialog");
-  const panel = $("panel"), memBtn = $("memBtn");
-  function openPanel(open) { panel.classList.toggle("open", open); memBtn.setAttribute("aria-expanded", String(open)); }
-  memBtn.addEventListener("click", () => openPanel(!panel.classList.contains("open")));
-  $("closePanel").addEventListener("click", () => openPanel(false));
-  $("youBtn").addEventListener("click", () => $("youDialog").showModal());
+  let mode = "new";
+  function setMode(m) { mode = m; const on = "flex-1 rounded-full py-2 text-sm font-semibold bg-white shadow", off = "flex-1 rounded-full py-2 text-sm font-semibold text-on-surface-variant"; $("tabNew").className = m === "new" ? on : off; $("tabKey").className = m === "key" ? on : off; $("tabNew").setAttribute("aria-selected", String(m === "new")); $("tabKey").setAttribute("aria-selected", String(m === "key")); $("keyField").hidden = m !== "key"; $("startBtn").textContent = m === "key" ? "Restore my memories" : "Start"; $("formError").textContent = ""; }
+  $("tabNew").addEventListener("click", () => setMode("new")); $("tabKey").addEventListener("click", () => setMode("key"));
   $("nameForm").addEventListener("submit", (ev) => {
     const name = $("nameInput").value.trim() || "friend";
     if (mode === "key") {
       const key = $("keyInput").value.trim();
       if (!KEY_RE.test(key)) { ev.preventDefault(); $("formError").textContent = "That doesn't look like a memory key (it starts with web-)."; return; }
-      saveUser({ id: key, name });
-      try { localStorage.setItem("walrus-coach-key-saved", "1"); } catch {}
-      messages.innerHTML = "";
-      addBot(`Welcome back, ${name}. Your memories are loading on the right — say hi and I'll pick up where we left off.`, [], true);
+      saveUser({ id: key, name }); try { localStorage.setItem("walrus-coach-key-saved", "1"); } catch {}
+      messages.innerHTML = ""; addBot(`Welcome back, ${name}. Your memories are loading on the left — say hi and I'll pick up where we left off.`, { system: true });
     } else {
-      const fresh = !user?.id;
-      saveUser({ id: user?.id || newId(), name });
+      const fresh = !user?.id; saveUser({ id: user?.id || newId(), name });
       if (fresh || !localStorage.getItem("walrus-coach-key-saved")) setTimeout(showKeyCard, 400);
     }
     boot();
   });
-
-  function showKeyCard() {
-    if (messages.querySelector(".keycard")) return;
-    const card = el("div", "msg bot nomem keycard");
-    card.innerHTML = `
-      <h4>Save your memory key</h4>
-      <div>This key is how the coach recognises you. No account, no password — if you lose it, your memories are gone.</div>
-      <div class="big"><code id="cardKey"></code><button class="btn" id="cardCopy">Copy</button></div>
-      <ul>
-        <li>Paste it in your notes app, or email it to yourself.</li>
-        <li>Web3 user? Save it in <a href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus.</li>
-        <li>You can always find it again under <b>You</b> in the memory panel.</li>
-      </ul>
-      <div class="actions"><button class="btn" id="cardDone">I've saved it</button></div>`;
-    card.querySelector("#cardKey").textContent = user.id;
-    card.querySelector("#cardCopy").addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(user.id); card.querySelector("#cardCopy").textContent = "Copied"; } catch { prompt("Your memory key:", user.id); }
-    });
-    card.querySelector("#cardDone").addEventListener("click", () => { try { localStorage.setItem("walrus-coach-key-saved", "1"); } catch {} card.remove(); });
-    // Right after the welcome message, before the conversation starters.
-    const first = messages.querySelector(".msg");
-    if (first && first.nextSibling) first.after(card); else messages.append(card);
-    messages.scrollTop = 0;
-  }
   function askName() { $("nameInput").value = ""; $("keyInput").value = ""; setMode("new"); dialog.showModal(); }
 
-  // Short-term history lives in the browser and is sent with every request (the API is stateless).
+  // ---------- short-term history (browser side; API is stateless) ----------
   let history = [];
   const MAX_TURNS = 12;
   function remember(role, content) { history.push({ role, content }); history = history.slice(-MAX_TURNS); }
 
-  $("switchBtn").addEventListener("click", () => { $("youDialog").close(); try { localStorage.removeItem("walrus-coach-key-saved"); } catch {} user = { id: null, name: "" }; history = []; messages.innerHTML = ""; askName(); });
-  $("resetBtn").addEventListener("click", () => {
-    $("youDialog").close(); openPanel(false);
-    history = [];
-    addBot("Short-term context cleared. I still remember the long-term stuff — say hi to see it in action.", [], true);
-  });
-  $("refreshBtn").addEventListener("click", loadAll);
+  // ---------- panels / dialogs ----------
+  $("youBtn").addEventListener("click", () => $("youDialog").showModal());
+  $("navKey").addEventListener("click", () => $("youDialog").showModal());
+  $("panelBtn").addEventListener("click", () => $("leftCol").classList.add("open"));
+  $("closeLeft").addEventListener("click", () => $("leftCol").classList.remove("open"));
+  $("copyKey").addEventListener("click", async () => { try { await navigator.clipboard.writeText(user.id); $("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Copied'; setTimeout(() => ($("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">content_copy</span> Copy'), 1500); } catch { prompt("Your memory key:", user.id); } });
+  $("switchBtn").addEventListener("click", () => { $("youDialog").close(); try { localStorage.removeItem("walrus-coach-key-saved"); localStorage.removeItem("walrus-coach-context"); } catch {} user = { id: null, name: "" }; history = []; messages.innerHTML = ""; contextId = null; askName(); });
+  $("resetBtn").addEventListener("click", () => { $("youDialog").close(); history = []; addBot("Short-term context cleared. I still remember the long-term stuff — say hi to see it in action.", { system: true }); });
 
-  memToggle.addEventListener("change", () => {
-    const on = memToggle.checked;
-    memLabel.textContent = on ? "Memory on" : "Memory off";
-    addBot(on ? "Memory ON — I recall and learn again." : "Memory OFF — I'll answer like a bot that forgets you. Ask me something I should know.", [], true);
-  });
+  // memory switch visuals
+  function paintSwitch() { const on = memToggle.checked; $("memSwitch").style.background = on ? "#0f8a5f" : ""; $("memKnob").style.transform = on ? "translateX(16px)" : ""; memLabel.textContent = on ? "Memory on" : "Memory off"; $("syncLabel").textContent = on ? "Memory synced" : "Memory off"; }
+  memToggle.addEventListener("change", () => { paintSwitch(); addBot(memToggle.checked ? "Memory ON — I recall and learn again." : "Memory OFF — I'll answer like a bot that forgets you. Ask me something I should know.", { system: true }); });
+  paintSwitch();
 
-  async function api(path, body) {
-    const res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || res.statusText);
-    return data;
-  }
-
-  // ---- life areas: chips to start with, badges once memories exist ----
-  let AREAS = [];
-  let CHARACTERS = {};
-  let ABOUT = {};
-  fetch("/api/about").then((r) => r.json()).then((d) => {
-    ABOUT = d || {};
-    const line = $("aboutLine");
-    if (line && ABOUT.accountId) {
-      line.innerHTML = `Memories are encrypted blobs on <b>Walrus ${ABOUT.network}</b>, owned by account <a href="${ABOUT.accountUrl}" target="_blank" rel="noopener noreferrer"><code>${ABOUT.accountId.slice(0, 8)}…${ABOUT.accountId.slice(-4)}</code></a> on Sui. Each memory in the panel links to its blob in the explorer.`;
-    }
-  }).catch(() => {});
+  // ---------- areas, characters, about ----------
+  let AREAS = [], CHARACTERS = {}, ABOUT = {};
   const STARTERS = {
-    training: "I want to start running but I've never managed to stick with it.",
-    sleep: "I keep going to bed way too late and waking up tired.",
-    food: "I want to cook at home more instead of ordering in.",
-    reading: "I have a stack of books I never finish.",
-    focus: "I procrastinate on the one task that actually matters at work.",
-    money: "I want to save some money every month and never do.",
-    digital: "I lose hours to my phone without noticing.",
-    social: "I want to call my family more often.",
-    creative: "I've been meaning to write / make music / draw again.",
     mind: "I get stressed and don't really have a way to deal with it.",
+    focus: "I procrastinate on the one task that actually matters at work.",
+    training: "I want to start running but I've never managed to stick with it.",
+    reading: "I have an exam coming up and I keep leaving subjects behind.",
+    pets: "I just adopted a puppy and I want to get the routine right.",
+    creative: "I've been meaning to practise guitar again and never do.",
+    food: "I want to cook at home more instead of ordering in.",
+    life: "Something's on my mind that doesn't fit a category.",
   };
-  const badgesEl = $("badges");
-  function renderBadges(memories) {
-    if (!AREAS.length) return;
-    const counts = {};
-    for (const m of memories || []) { const a = parseTag(m.text).area; counts[a] = (counts[a] || 0) + 1; }
-    badgesEl.innerHTML = "";
-    let lit = 0;
-    for (const a of AREAS) {
-      const n = counts[a.id] || 0; if (n) lit++;
-      const b = el("span", "badge" + (n ? " on" : ""));
-      const src = CHARACTERS[a.id];
-      b.innerHTML = (src ? `<img src="${src}" alt="">` : "") + (n ? `<b>${a.label}</b> ${n}` : a.label);
-      b.title = a.hint;
-      badgesEl.append(b);
-    }
-    $("badgeHint").textContent = lit === 0 ? "Talk about different parts of your life to light these up."
-      : lit < 3 ? `${lit} of ${AREAS.length} areas — the coach gets sharper when it knows how your life overlaps.`
-      : `${lit} of ${AREAS.length} areas. Nice — it can connect the dots now.`;
-  }
-  function parseTag(text) {
-    const m = /^\[([a-z]+)\]\s*(.*)$/i.exec(text || "");
-    return m && AREAS.some((a) => a.id === m[1].toLowerCase()) ? { area: m[1].toLowerCase(), text: m[2] } : { area: "life", text };
-  }
   let contextId = null;
   try { contextId = localStorage.getItem("walrus-coach-context"); } catch {}
-  function renderAgent() {
-    const a = AREAS.find((x) => x.id === contextId);
-    const app = $("app");
-    if (!a) { app.classList.remove("with-agent"); return; }
-    const src = CHARACTERS[a.id] || CHARACTERS.mascot;
-    app.classList.add("with-agent");
-    $("agentName").textContent = a.label + " coach";
-    $("agentHint").textContent = a.hint;
-    if (src) { $("agentImg").src = src; $("agentMini").src = src; }
-    $("subtitle").textContent = a.label + " · remembers you between sessions";
-  }
-  function applyContext() {
-    const ctx = new URLSearchParams(location.search).get("context");
-    if (ctx && STARTERS[ctx]) {
-      contextId = ctx; try { localStorage.setItem("walrus-coach-context", ctx); } catch {}
-      input.value = STARTERS[ctx]; autosize(); input.focus();
-      input.setSelectionRange(input.value.length, input.value.length);
-      window.history.replaceState(null, "", "/chat");
-      messages.querySelector(".starters")?.closest(".msg")?.remove(); // they picked a context already
-    }
-    renderAgent();
-  }
-  function renderStarters() {
-    if (!AREAS.length || messages.querySelector(".starters")) return;
-    if (new URLSearchParams(location.search).get("context")) return;
-    const box = el("div", "msg bot nomem");
-    box.append(el("div", "starters-title", "Not sure where to start? Pick one, or just type."));
-    const list = el("div", "starters");
-    const all = AREAS.map((a) => STARTERS[a.id]).filter(Boolean);
-    const render = (limit) => {
-      list.innerHTML = "";
-      for (const t of all.slice(0, limit)) {
-        const b = el("button"); b.type = "button"; b.textContent = t;
-        b.addEventListener("click", () => { input.value = t; composer.requestSubmit(); });
-        list.append(b);
-      }
-      if (limit < all.length) { const m = el("button", "more", `Show ${all.length - limit} more`); m.type = "button"; m.addEventListener("click", () => render(all.length)); list.append(m); }
-    };
-    render(window.innerWidth < 860 ? 5 : all.length);
-    box.append(list); messages.append(box); scroll();
-  }
-  fetch("/api/characters").then((r) => r.json()).then((d) => {
-    CHARACTERS = d.characters || {};
-    if (CHARACTERS.mascot) for (const logo of document.querySelectorAll(".logo")) { logo.classList.add("art"); logo.innerHTML = `<img src="${CHARACTERS.mascot}" alt="">`; }
-  }).catch(() => {}).finally(() =>
-    fetch("/api/areas").then((r) => r.json()).then((d) => { AREAS = d.areas || []; if (user && user.name) { renderStarters(); loadAll(); applyContext(); } }).catch(() => {})
-  );
 
-  // ---- outbox: facts the server extracted but might not have managed to write ----
-  // Each reply returns the facts being written in the background. We keep them here
-  // with a timestamp; when the memory list refreshes and a fact still isn't there
-  // after a grace period, we resend it through /api/remember (which dedupes).
-  const OUTBOX_KEY = "walrus-coach-outbox";
-  const GRACE_MS = 90_000;
+  function renderMods(counts = {}) {
+    const box = $("mods"); box.innerHTML = "";
+    for (const a of AREAS) {
+      const b = el("button", "mod" + (a.id === contextId ? " on" : "")); b.type = "button"; b.title = a.hint;
+      const n = counts[a.id] || 0;
+      b.innerHTML = `<span class="material-symbols-outlined">${a.icon}</span><span>${a.short}</span>${n ? `<span class="n">${n} ${n === 1 ? "fact" : "facts"}</span>` : ""}`;
+      b.addEventListener("click", () => setContext(a.id, true));
+      box.append(b);
+    }
+  }
+  function setContext(id, prefill) {
+    contextId = id; try { localStorage.setItem("walrus-coach-context", id); } catch {}
+    const a = AREAS.find((x) => x.id === id);
+    for (const b of $("mods").children) b.classList.toggle("on", b.textContent.includes(a?.short || " "));
+    if (a) { $("agentName").textContent = a.id === "life" ? "WalCoach AI" : a.label; $("agentSub").textContent = a.id === "life" ? "Personal coach · one memory of you" : a.hint; $("modeChip").textContent = "Mode: " + a.short; if (CHARACTERS[a.id]) $("agentImg").src = CHARACTERS[a.id]; }
+    if (prefill && !input.value.trim() && STARTERS[id]) { input.value = STARTERS[id]; autosize(); input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+    $("leftCol").classList.remove("open");
+  }
+  function applyContextFromUrl() {
+    const ctx = new URLSearchParams(location.search).get("context");
+    if (ctx && AREAS.some((a) => a.id === ctx)) { setContext(ctx, true); window.history.replaceState(null, "", "/chat"); }
+    else if (contextId) setContext(contextId, false);
+  }
+
+  // ---------- outbox: facts the server extracted but might not have written ----------
+  const OUTBOX_KEY = "walrus-coach-outbox", GRACE_MS = 90_000;
   function outboxLoad() { try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || "{}"); } catch { return {}; } }
   function outboxSave(o) { try { localStorage.setItem(OUTBOX_KEY, JSON.stringify(o)); } catch {} }
-  function outboxAdd(facts) {
-    if (!facts || !facts.length) return;
-    const o = outboxLoad(); const mine = o[user.id] || [];
-    for (const f of facts) if (!mine.some((x) => x.text === f)) mine.push({ text: f, at: Date.now(), tries: 0 });
-    o[user.id] = mine; outboxSave(o);
-  }
+  function outboxAdd(facts) { if (!facts || !facts.length) return; const o = outboxLoad(); const mine = o[user.id] || []; for (const f of facts) if (!mine.some((x) => x.text === f)) mine.push({ text: f, at: Date.now(), tries: 0 }); o[user.id] = mine; outboxSave(o); }
   const norm = (t) => (t || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   async function outboxReconcile(memories) {
     const o = outboxLoad(); const mine = o[user.id] || []; if (!mine.length) return;
-    const stored = new Set((memories || []).map((m) => norm(m.text)));
-    const keep = [];
+    const stored = new Set((memories || []).map((m) => norm(m.text))); const keep = [];
     for (const item of mine) {
-      if (stored.has(norm(item.text))) continue;                       // landed
-      if (Date.now() - item.at < GRACE_MS) { keep.push(item); continue; } // still in flight
-      if (item.tries >= 3) continue;                                     // give up quietly
-      try {
-        await api("/api/remember", { userId: user.id, name: user.name, fact: item.text });
-        console.info("[outbox] resent:", item.text);
-      } catch (e) { item.tries++; item.at = Date.now(); keep.push(item); }
+      if (stored.has(norm(item.text))) continue;
+      if (Date.now() - item.at < GRACE_MS) { keep.push(item); continue; }
+      if (item.tries >= 3) continue;
+      try { await api("/api/remember", { userId: user.id, name: user.name, fact: item.text }); } catch { item.tries++; item.at = Date.now(); keep.push(item); }
     }
     o[user.id] = keep; outboxSave(o);
     if (keep.length) setBanner(`${keep.length} ${keep.length === 1 ? "memory is" : "memories are"} still waiting to be saved — I'll retry automatically.`);
   }
+  function setBanner(text) { $("bannerText").textContent = text || ""; $("banner").classList.toggle("show", Boolean(text)); }
 
-  function setBanner(text) {
-    const b = $("banner"); $("bannerText").textContent = text || "";
-    b.classList.toggle("show", Boolean(text));
-  }
-
-  // ---- proactive nudges (Web Push) ----
-  const nudgeSection = $("nudgeSection"), nudgeBtn = $("nudgeBtn"), nudgeText = $("nudgeText");
+  // ---------- push nudges ----------
   const pushSupported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
   let vapidKey = null;
   function b64ToU8(b64) { const s = atob((b64 + "=".repeat((4 - b64.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(s, (c) => c.charCodeAt(0)); }
-  async function pushState() {
-    const reg = await navigator.serviceWorker.getRegistration();
-    const sub = reg ? await reg.pushManager.getSubscription() : null;
-    const on = Boolean(sub) && Notification.permission === "granted";
-    nudgeBtn.textContent = on ? "Turn off" : "Turn on";
-    nudgeText.textContent = on ? "On — you'll get one check-in a day, based on your memories." : Notification.permission === "denied" ? "Notifications are blocked for this site in your browser settings." : "One short check-in a day, written from what it remembers about you.";
-    nudgeBtn.disabled = Notification.permission === "denied";
-    return { reg, sub, on };
+  async function pushState() { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg ? await reg.pushManager.getSubscription() : null; const on = Boolean(sub) && Notification.permission === "granted"; $("nudgeBtn").textContent = on ? "Turn off" : "Turn on"; $("nudgeText").textContent = on ? "On — one check-in a day, based on your memories." : Notification.permission === "denied" ? "Notifications are blocked for this site in your browser settings." : "One short check-in a day, written from what it remembers about you."; $("nudgeBtn").disabled = Notification.permission === "denied"; return { reg, sub, on }; }
+  async function pushInit() { if (!pushSupported) return; try { const cfg = await (await fetch("/api/push/config")).json(); if (!cfg.enabled) return; vapidKey = cfg.publicKey; $("nudgeSection").hidden = false; await navigator.serviceWorker.register("/sw.js"); await pushState(); } catch (e) { console.warn("push init", e); } }
+  $("nudgeBtn").addEventListener("click", async () => { $("nudgeBtn").disabled = true; try { const { reg, sub, on } = await pushState(); if (on) { await sub.unsubscribe(); addBot("Daily nudges are off.", { system: true }); } else { const perm = await Notification.requestPermission(); if (perm !== "granted") return; const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(vapidKey) }); await api("/api/push/subscribe", { userId: user.id, name: user.name, subscription: newSub.toJSON() }); addBot("Daily nudges are on. Once a day I'll send one line based on what I remember — a goal, a training day, a thing you said you'd do.", { system: true }); } } catch (e) { addBot("Couldn't set up nudges: " + e.message, { system: true }); } finally { $("nudgeBtn").disabled = false; await pushState(); } });
+
+  // ---------- rendering ----------
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function fmt(text) { const esc = String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); return esc.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>"); }
+  function parseTag(text) { const m = /^\[([a-z]+)\]\s*(.*)$/i.exec(text || ""); return m && AREAS.some((a) => a.id === m[1].toLowerCase()) ? { area: m[1].toLowerCase(), text: m[2] } : { area: "life", text }; }
+  const areaLabel = (id) => (AREAS.find((a) => a.id === id) || { short: id }).short;
+  function scroll() { messages.scrollTop = messages.scrollHeight; }
+  function stamp() { return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+
+  function addUser(text) {
+    const m = el("div", "msg user self-end flex flex-col items-end gap-1");
+    m.innerHTML = `<div class="text-[11px] text-on-surface-variant">You${user?.name ? " (" + user.name + ")" : ""} · ${stamp()}</div>`;
+    m.append(el("div", "bubble", text)); messages.append(m); scroll();
   }
-  async function pushInit() {
-    if (!pushSupported) return;
-    try {
-      const cfg = await (await fetch("/api/push/config")).json();
-      if (!cfg.enabled) return;
-      vapidKey = cfg.publicKey;
-      nudgeSection.hidden = false;
-      await navigator.serviceWorker.register("/sw.js");
-      await pushState();
-    } catch (e) { console.warn("push init", e); }
+  function addBot(text, { system = false, memories = [], sources = [], memoryOn = true } = {}) {
+    const m = el("div", "msg bot self-start flex gap-3" + (system ? " sys" : ""));
+    const av = el("div", "w-9 h-9 rounded-full overflow-hidden flex-none bg-white shadow"); av.innerHTML = `<img class="w-full h-full object-cover object-top" src="${$("agentImg").src}" alt="">`;
+    const col = el("div", "min-w-0 flex flex-col gap-1");
+    col.innerHTML = `<div class="text-[11px] text-on-surface-variant">${$("agentName").textContent} · ${stamp()}</div>`;
+    const bubble = el("div", "bubble"); bubble.innerHTML = fmt(text); col.append(bubble);
+    if (sources.length) { const s = el("div", "srcs flex flex-wrap gap-1.5"); sources.forEach((src, i) => { const a = el("a"); a.href = src.url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.title = src.url; a.innerHTML = `<span class="material-symbols-outlined text-[14px]">link</span><span>[${i + 1}] ${(src.title || src.url).replace(/</g, "&lt;")}</span>`; s.append(a); }); col.append(s); }
+    if (!system) {
+      const meta = el("div", "text-[11px] text-on-surface-variant flex flex-wrap items-center gap-1.5");
+      if (!memoryOn) meta.innerHTML = `<span class="material-symbols-outlined text-[14px]">visibility_off</span> memory off`;
+      else if (memories.length) {
+        meta.innerHTML = `<span class="material-symbols-outlined text-[14px] text-primary">lightbulb</span> Memories used in this reply:`;
+        memories.slice(0, 3).forEach((mm) => { const { text: t } = parseTag(mm.text); const c = el("span", "memchip"); c.innerHTML = `<span class="t">${t.replace(/</g, "&lt;")}</span>`; c.title = `${t} (distance ${mm.distance.toFixed(2)})`; meta.append(c); });
+        if (memories.length > 3) { const more = el("button", "memchip"); more.type = "button"; more.textContent = `+${memories.length - 3}`; more.addEventListener("click", () => { more.remove(); memories.slice(3).forEach((mm) => { const { text: t } = parseTag(mm.text); const c = el("span", "memchip"); c.innerHTML = `<span class="t">${t.replace(/</g, "&lt;")}</span>`; meta.append(c); }); }); meta.append(more); }
+      } else meta.innerHTML = `<span class="material-symbols-outlined text-[14px]">search</span> nothing relevant recalled yet`;
+      col.append(meta);
+    }
+    m.append(av, col); messages.append(m); scroll(); return m;
   }
-  nudgeBtn.addEventListener("click", async () => {
-    nudgeBtn.disabled = true;
-    try {
-      const { reg, sub, on } = await pushState();
-      if (on) { await sub.unsubscribe(); addBot("Daily nudges are off.", [], true); }
-      else {
-        const perm = await Notification.requestPermission();
-        if (perm !== "granted") return;
-        const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(vapidKey) });
-        await api("/api/push/subscribe", { userId: user.id, name: user.name, subscription: newSub.toJSON() });
-        addBot("Daily nudges are on. Once a day I'll send one line based on what I remember — a goal, a training day, a thing you said you'd do.", [], true);
-      }
-    } catch (e) { addBot("Couldn't set up nudges: " + e.message, [], true); }
-    finally { nudgeBtn.disabled = false; await pushState(); }
+  function typing() { const m = el("div", "msg bot self-start flex gap-3"); m.innerHTML = `<div class="w-9 h-9 rounded-full overflow-hidden flex-none bg-white shadow"><img class="w-full h-full object-cover object-top" src="${$("agentImg").src}" alt=""></div><div class="bubble"><span class="typing" aria-label="Thinking"><i></i><i></i><i></i></span></div>`; messages.append(m); scroll(); return m; }
+
+  function showKeyCard() {
+    if (messages.querySelector(".keycard")) return;
+    const card = el("div", "msg bot sys keycard self-start");
+    card.innerHTML = `<div class="bubble" style="white-space:normal"><b>Save your memory key</b><div class="text-sm mt-1">This key is how the coach recognises you. No account, no password — if you lose it, your memories are gone.</div>
+      <div class="flex items-center gap-2 mt-3 glass rounded-2xl p-2"><code class="flex-1 font-mono text-sm break-all px-2" id="cardKey"></code><button class="btn-glass !py-2 !px-3 text-xs" id="cardCopy" type="button">Copy</button></div>
+      <ul class="text-xs text-on-surface-variant mt-3 list-disc pl-5 space-y-1"><li>Paste it in your notes app, or write it on paper.</li><li>Web3 user? Keep it in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus.</li><li>You can always find it again under the <b>key icon</b> at the top right.</li></ul>
+      <button class="btn-primary !py-2 !px-4 text-sm mt-3" id="cardDone" type="button">I've saved it</button></div>`;
+    card.querySelector("#cardKey").textContent = user.id;
+    card.querySelector("#cardCopy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(user.id); card.querySelector("#cardCopy").textContent = "Copied"; } catch { prompt("Your memory key:", user.id); } });
+    card.querySelector("#cardDone").addEventListener("click", () => { try { localStorage.setItem("walrus-coach-key-saved", "1"); } catch {} card.remove(); });
+    const first = messages.querySelector(".msg"); if (first) first.after(card); else messages.append(card);
+  }
+
+  function renderFacts(memories) {
+    allEl.innerHTML = "";
+    const list = (memories || []).slice().sort((a, b) => a.distance - b.distance);
+    $("factCount").textContent = `${list.length} ${list.length === 1 ? "fact" : "facts"}`;
+    $("memCount").textContent = list.length ? `Memory · ${list.length}` : "Memory";
+    if (!list.length) { allEl.innerHTML = '<div class="text-sm text-on-surface-variant">No memories stored yet — tell the coach something worth remembering.</div>'; return; }
+    const counts = {};
+    for (const m of list) {
+      const { area, text } = parseTag(m.text); counts[area] = (counts[area] || 0) + 1;
+      const f = el("div", "fact");
+      const row = el("div", "row"); row.innerHTML = `<span class="chip">${areaLabel(area)}</span>`;
+      if (ABOUT.blobUrl && m.blobId) { const a = el("a"); a.href = ABOUT.blobUrl + m.blobId; a.target = "_blank"; a.rel = "noopener noreferrer"; a.title = "Open this blob on Walrus " + (ABOUT.network || ""); a.innerHTML = '<span class="material-symbols-outlined">open_in_new</span>'; row.append(a); }
+      f.append(row, el("div", null, text)); allEl.append(f);
+    }
+    renderMods(counts);
+    if (contextId) for (const b of $("mods").children) b.classList.toggle("on", b.textContent.includes(areaLabel(contextId)));
+  }
+  let lastMemories = [];
+  $("exportBtn").addEventListener("click", () => {
+    const data = { exportedAt: new Date().toISOString(), namespace: ABOUT.namespace || null, memories: lastMemories.map((m) => ({ ...parseTag(m.text), blobId: m.blobId, explorer: ABOUT.blobUrl ? ABOUT.blobUrl + m.blobId : null })) };
+    const w = window.open("", "_blank"); if (w) { w.document.write("<pre>" + JSON.stringify(data, null, 2).replace(/</g, "&lt;") + "</pre>"); w.document.close(); } else prompt("Copy your memories (JSON):", JSON.stringify(data));
   });
 
-  // ---- rendering ----
-  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-  function addUser(text) { const m = el("div", "msg user", text); messages.append(m); scroll(); }
-  // Minimal, safe formatting: escape everything, then allow **bold** and *italic* only.
-  function fmt(text) {
-    const esc = String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    return esc.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
-  }
-  function addBot(text, memories, system, sources) {
-    const m = el("div", "msg bot" + (system ? " nomem" : ""));
-    m.innerHTML = fmt(text);
-    if (sources && sources.length) {
-      const box = el("div", "sources");
-      sources.forEach((s, i) => { const a = el("a", null, `[${i + 1}] ${s.title || s.url}`); a.href = s.url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.title = s.url; box.append(a); });
-      m.append(box);
-    }
-    if (!system) {
-      const meta = el("div", "meta");
-      const n = memories ? memories.length : 0;
-      const searched = sources && sources.length ? ` · searched the web, ${sources.length} ${sources.length === 1 ? "source" : "sources"}` : "";
-      meta.innerHTML = (memToggle.checked
-        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg> recalled ${n} ${n === 1 ? "memory" : "memories"}`
-        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><circle cx="11" cy="11" r="7"/></svg> memory off`) + searched;
-      m.append(meta);
-    }
-    messages.append(m); scroll();
-  }
-  function typing() { const m = el("div", "msg bot"); m.innerHTML = '<span class="typing" aria-label="Thinking"><i></i><i></i><i></i></span>'; messages.append(m); scroll(); return m; }
-  function scroll() { messages.scrollTop = messages.scrollHeight; }
-
-  function renderList(target, memories, emptyText) {
-    target.innerHTML = "";
-    if (!memories || memories.length === 0) { const li = el("li", "empty", emptyText); li.style.cssText = "background:none;border:0;padding:0"; target.append(li); return; }
-    for (const m of memories) {
-      const li = el("li");
-      const d = el("span", "d" + (m.distance < 0.55 ? " strong" : ""), m.distance.toFixed(2));
-      d.title = "cosine distance — lower is more relevant";
-      const { area, text } = parseTag(m.text);
-      const a = el("span", "a", (AREAS.find((x) => x.id === area) || { label: area }).label);
-      const tail = el("span", "tail"); tail.append(a);
-      if (ABOUT.blobUrl && m.blobId) {
-        const x = el("a", "x"); x.href = ABOUT.blobUrl + m.blobId; x.target = "_blank"; x.rel = "noopener noreferrer";
-        x.title = "This memory is a blob on Walrus " + ABOUT.network + " — open in the explorer";
-        x.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
-        tail.append(x);
-      }
-      li.append(d, el("span", null, text), tail);
-      target.append(li);
-    }
-  }
-
+  async function api(path, body) { const res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); const data = await res.json().catch(() => ({})); if (!res.ok) throw new Error(data.error || res.statusText); return data; }
   async function loadAll() {
     try {
       const data = await api("/api/memories", { userId: user.id });
-      renderList(allEl, (data.memories || []).sort((a, b) => a.distance - b.distance), "No memories stored yet.");
-      renderBadges(data.memories || []);
-      const n = (data.memories || []).length;
-      statusEl.innerHTML = `<span class="ok">${n} ${n === 1 ? "memory" : "memories"} on Walrus${ABOUT.network ? " " + ABOUT.network : ""}</span> · <code>${data.namespace}</code>`;
-      $("memCount").textContent = n ? `Memory · ${n}` : "Memory";
-      await outboxReconcile(data.memories || []);
-    } catch (e) { statusEl.innerHTML = `<span class="warn">could not load memories: ${e.message}</span>`; }
+      lastMemories = data.memories || []; ABOUT.namespace = data.namespace;
+      renderFacts(lastMemories);
+      $("nsLine").textContent = `${data.namespace} · ${lastMemories.length} encrypted blobs`; $("nsMini").innerHTML = `<span class="material-symbols-outlined text-[16px]">database</span> ${data.namespace}`;
+      $("sessionSub").textContent = `Long-term memory loaded · ${lastMemories.length} facts on Walrus ${ABOUT.network || ""}`;
+      await outboxReconcile(lastMemories);
+    } catch (e) { $("nsLine").textContent = "could not load memories: " + e.message; }
   }
 
-  // ---- send ----
+  // ---------- send ----------
   let busy = false;
   composer.addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    const text = input.value.trim();
-    if (!text || busy) return;
-    busy = true; send.disabled = true; input.value = ""; autosize(); openPanel(false);
-    messages.querySelector(".starters")?.closest(".msg")?.remove();
-    addUser(text);
-    const t = typing();
+    ev.preventDefault(); const text = input.value.trim(); if (!text || busy) return;
+    busy = true; send.disabled = true; input.value = ""; autosize();
+    addUser(text); const t = typing();
     try {
-      const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history, context: contextId || undefined });
-      t.remove();
-      remember("user", text);
-      remember("assistant", data.reply);
-      addBot(data.reply, data.memories, false, data.sources);
-      if (data.memory && data.memoryAvailable === false) setBanner("Walrus Memory is unreachable right now — this reply was made without your memories. New facts are queued and will be saved when it's back.");
-      else if (data.memory) setBanner("");
+      const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history, context: contextId && contextId !== "life" ? contextId : undefined });
+      t.remove(); remember("user", text); remember("assistant", data.reply);
+      addBot(data.reply, { memories: data.memories || [], sources: data.sources || [], memoryOn: data.memory });
+      if (data.memory && data.memoryAvailable === false) setBanner("Walrus Memory is unreachable right now — this reply was made without your memories. New facts are queued and will be saved when it's back."); else if (data.memory) setBanner("");
       outboxAdd(data.facts);
-      renderList(recalledEl, data.memories, data.memory ? "Nothing relevant was recalled for this message." : "Memory is off — nothing recalled.");
-      setTimeout(loadAll, 5000);            // background write usually lands in a few seconds
-      setTimeout(loadAll, GRACE_MS + 5000); // …and this pass resends anything that didn't
-    } catch (e) {
-      t.remove();
-      addBot("Something broke: " + e.message, [], true);
-    } finally { busy = false; send.disabled = false; input.focus(); }
+      setTimeout(loadAll, 5000); setTimeout(loadAll, GRACE_MS + 5000);
+    } catch (e) { t.remove(); addBot("Something broke: " + e.message, { system: true }); }
+    finally { busy = false; send.disabled = false; input.focus(); }
   });
   input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); composer.requestSubmit(); } });
   function autosize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 160) + "px"; }
   input.addEventListener("input", autosize);
 
+  // ---------- boot ----------
   function boot() {
-    $("whoName").textContent = user.name;
-    $("keyText").textContent = user.id;
-    if (!messages.children.length) addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on — a habit, a goal, something you keep putting off.`, [], true);
-    renderStarters();
-    loadAll();
-    pushInit();
-    input.focus();
-    if (AREAS.length) applyContext();
+    $("whoName").textContent = user.name; $("keyText").textContent = user.id;
+    if (!messages.children.length) addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on — a habit, a goal, something you keep putting off.`, { system: true });
+    loadAll(); pushInit(); input.focus();
   }
-
-  if (user && user.id && user.name) boot(); else { user = user || { id: null }; askName(); }
+  Promise.all([
+    fetch("/api/areas").then((r) => r.json()).catch(() => ({ areas: [] })),
+    fetch("/api/characters").then((r) => r.json()).catch(() => ({ characters: {} })),
+    fetch("/api/about").then((r) => r.json()).catch(() => ({})),
+  ]).then(([a, c, ab]) => {
+    AREAS = a.areas || []; CHARACTERS = c.characters || {}; ABOUT = ab || {};
+    if (ABOUT.network) $("netLabel").textContent = ABOUT.network;
+    if (ABOUT.accountUrl) { $("explorerLink").href = ABOUT.accountUrl; $("aboutLine").innerHTML = `Encrypted blobs on <b>Walrus ${ABOUT.network}</b>, owned by account <a class="text-secondary font-semibold underline" href="${ABOUT.accountUrl}" target="_blank" rel="noopener noreferrer"><code>${ABOUT.accountId.slice(0, 8)}…${ABOUT.accountId.slice(-4)}</code></a> on Sui. Each fact on the left links to its blob in the Walrus explorer.`; }
+    renderMods(); applyContextFromUrl();
+    if (user && user.id && user.name) boot(); else { user = user || { id: null }; askName(); }
+  });
 })();
 </script>
 </body>

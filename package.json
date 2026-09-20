@@ -14,7 +14,8 @@
     "web": "tsx src/web.ts",
     "web:dev": "LOG_MEMORIES=1 tsx watch src/web.ts",
     "telegram": "tsx src/telegram.ts",
-    "vercel-build": "echo skip"
+    "vercel-build": "npm run build:css",
+    "build:css": "tailwindcss -i src/styles.css -o public/app.css --minify"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
@@ -29,8 +30,10 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
     "@types/node": "^22.10.0",
     "@types/web-push": "^3.6.4",
+    "tailwindcss": "^4.3.3",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },

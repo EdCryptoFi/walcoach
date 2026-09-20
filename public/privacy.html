@@ -3,60 +3,79 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Walrus Coach — Privacy & terms</title>
-<style>
-  :root { --bg: #f4f7f8; --panel: #ffffff; --border: #d5dfe3; --text: #12242b; --muted: #4b636c; --accent: #0e8aa3; color-scheme: light; }
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0d1518; --panel: #131e22; --border: #263840; --text: #e6eef1; --muted: #93a8b1; --accent: #35b8d3; color-scheme: dark; } }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif; }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 28px 24px 64px; }
-  a { color: var(--accent); }
-  h1 { font-size: 30px; letter-spacing: -.02em; margin: 24px 0 6px; }
-  h2 { font-size: 20px; margin: 32px 0 8px; }
-  p, li { color: var(--text); }
-  .muted { color: var(--muted); font-size: 14px; }
-  table { border-collapse: collapse; width: 100%; font-size: 15px; }
-  td, th { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
-  nav a { text-decoration: none; color: var(--muted); font-size: 15px; }
-</style>
+<title>WalCoach — Privacy & terms</title>
+<meta name="description" content="No account, no cookies, no database of you. Where each kind of data goes, in plain language.">
+<link rel="icon" href="/icon.png" type="image/webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
 </head>
-<body>
-<div class="wrap">
-  <nav><a href="/">← Walrus Coach</a></nav>
-  <h1>Privacy &amp; terms</h1>
-  <p class="muted">Plain language, because it is short enough to be. Last updated September 2026.</p>
+<body class="relative min-h-screen overflow-x-hidden">
+<div class="blooms" aria-hidden="true"><i></i></div>
+<header class="fixed top-0 left-0 right-0 z-50 glass-nav">
+  <div class="h-20 max-w-[1440px] mx-auto px-4 lg:px-8 flex items-center justify-between gap-6">
+    <div class="flex items-center gap-4">
+      <a class="flex items-center gap-2 group" href="/">
+        <img alt="" class="h-9 w-9 object-contain transition-transform group-hover:scale-105" src="/characters/mascot.webp">
+        <span class="font-display text-xl font-bold tracking-tight text-on-surface">WalCoach</span>
+      </a>
+      <span class="hidden sm:inline-flex chip">Beta / Web3 AI</span>
+    </div>
+    <nav class="hidden xl:flex items-center gap-1 p-1.5 rounded-full bg-white/50 border border-white/70"><a class="nav-link" href="/">Home / Mentors</a><a class="nav-link" href="/how">How it works</a><a class="nav-link" href="/chat">Chat with the coach</a><a class="nav-link" href="/security">Security & Walrus</a><a class="nav-link active" href="/privacy">Privacy</a></nav>
+    <div class="flex items-center gap-2">
+      <a class="hidden md:inline-flex btn-ghost" href="/#key"><span class="material-symbols-outlined text-[18px]">key</span> Memory key</a>
+      <a class="btn-primary !py-2.5 !px-5 text-sm" href="/chat">Open coach <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
+      <button class="xl:hidden w-10 h-10 rounded-full glass grid place-items-center" id="menuBtn" aria-label="Menu" aria-expanded="false"><span class="material-symbols-outlined">menu</span></button>
+    </div>
+  </div>
+  <nav class="xl:hidden hidden flex-col gap-1 px-4 pb-4" id="mobileNav"><a class="nav-link" href="/">Home / Mentors</a><a class="nav-link" href="/how">How it works</a><a class="nav-link" href="/chat">Chat with the coach</a><a class="nav-link" href="/security">Security & Walrus</a><a class="nav-link active" href="/privacy">Privacy</a></nav>
+</header>
+<script>document.getElementById("menuBtn").addEventListener("click",()=>{const n=document.getElementById("mobileNav");const o=n.classList.toggle("hidden");n.classList.toggle("flex",o);document.getElementById("menuBtn").setAttribute("aria-expanded",String(o));});</script>
 
-  <h2>What this is</h2>
-  <p>Walrus Coach is an experimental AI coaching companion built for the Walrus Session 8 hackathon. It is free, open source, and run by an individual, not a company. Use it as a tool for reflection and planning, not as a source of truth.</p>
+<main class="relative z-10 pt-28 max-w-3xl mx-auto px-4 lg:px-8">
+  <span class="chip"><span class="material-symbols-outlined text-[14px]">privacy_tip</span> Plain language</span>
+  <h1 class="font-display text-[36px] leading-[44px] lg:text-[44px] lg:leading-[52px] font-bold tracking-tight mt-4">Privacy &amp; terms</h1>
+  <p class="text-on-surface-variant mt-2">Short enough to actually read. Last updated September 2026.</p>
 
-  <h2>It is an AI, and it can be wrong</h2>
-  <p>Replies are written by an open-weight language model (Qwen 3.8 27B, served by Groq) using what you type and what it remembers about you. It is <strong>not</strong> a doctor, therapist, trainer, nutritionist or financial advisor. For injuries, medication, mental-health crises or money decisions, talk to a professional. If you are in danger, contact local emergency services.</p>
-  <p>When you ask for current or local information (an event, a race, a price, a place), the coach runs a web search and cites its sources as [1], [2]. Search results are third-party pages: check them before acting on them.</p>
+  <section class="glass rounded-3xl p-6 mt-8"><h2 class="font-display text-xl font-semibold">What this is</h2><p class="mt-2 text-sm leading-relaxed">WalCoach is an experimental AI coaching companion built for the Walrus Session 8 hackathon. It is free, open source, and run by an individual, not a company. Use it as a tool for reflection and planning, not as a source of truth.</p></section>
 
-  <h2>No account, no cookies</h2>
-  <p>There is no sign-up and no login. On your first visit the browser generates a random <strong>memory key</strong> (<code>web-…</code>) and stores it in <em>localStorage</em> on your device, together with the name you typed. That is the only thing kept in your browser, it is strictly necessary for the service to work, and it never leaves your device except as the identifier sent with your messages. We set no cookies and run no analytics or ad trackers.</p>
-  <p>Anyone who has your memory key can talk to the coach as you and read your memories. Keep it private, like a password, somewhere you'll find it again (a notes app, an email to yourself, or an encrypted note on <a href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>). There is no recovery if you lose it.</p>
+  <section class="glass rounded-3xl p-6 mt-4"><h2 class="font-display text-xl font-semibold">It is an AI, and it can be wrong</h2><p class="mt-2 text-sm leading-relaxed">Replies are written by an open-weight language model (Qwen 3.8 27B, served by Groq) using what you type and what it remembers about you. It is <strong>not</strong> a doctor, therapist, trainer, nutritionist or financial advisor. For injuries, medication, mental-health crises or money decisions, talk to a professional. If you are in danger, contact local emergency services.</p><p class="mt-2 text-sm leading-relaxed">When you ask for current or local information (an event, a race, a price, a place), the coach runs a web search and cites its sources as [1], [2]. Search results are third-party pages: check them before acting on them.</p></section>
 
-  <h2>Where your data goes</h2>
-  <table>
-    <tr><th>Data</th><th>Goes to</th><th>Why</th></tr>
-    <tr><td>Your messages, name and recalled memories</td><td>Groq (model provider, USA)</td><td>To generate the reply and extract facts. Groq's API does not retain prompts for training under its standard terms.</td></tr>
-    <tr><td>Extracted facts about you (e.g. "Ana runs on Tuesdays")</td><td>Walrus Memory relayer → Walrus network</td><td>The relayer embeds and encrypts each fact (SEAL) and stores it as a blob on Walrus, a decentralized storage network, in a namespace tied to your memory key. The relayer sees the text in clear while processing it.</td></tr>
-    <tr><td>Search queries (only when you ask for current information)</td><td>Tavily (search API)</td><td>To fetch web results.</td></tr>
-    <tr><td>Push subscription (only if you turn on daily nudges)</td><td>Walrus Memory (encrypted) + your browser's push service</td><td>To deliver one notification a day. Turn it off in the "You" panel at any time.</td></tr>
-    <tr><td>Request logs (IP, timestamps, error messages)</td><td>Vercel (hosting)</td><td>Standard server logs, kept briefly. Memory texts are not written to logs.</td></tr>
-  </table>
-  <p class="muted">We keep no database of users. Everything the coach knows about you lives in your Walrus namespace and in your browser.</p>
+  <section class="glass rounded-3xl p-6 mt-4"><h2 class="font-display text-xl font-semibold">No account, no cookies</h2><p class="mt-2 text-sm leading-relaxed">There is no sign-up and no login. On your first visit the browser generates a random <strong>memory key</strong> (<code>web-…</code>) and stores it in <em>localStorage</em> on your device, together with the name you typed. That is the only thing kept in your browser, it is strictly necessary for the service to work, and it never leaves your device except as the identifier sent with your messages. We set no cookies and run no analytics or ad trackers.</p><p class="mt-2 text-sm leading-relaxed">Anyone who has your memory key can talk to the coach as you and read your memories. Keep it private, like a password, somewhere you'll find it again (a notes app, paper, or an encrypted note on <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>). There is no recovery if you lose it.</p></section>
 
-  <h2>Deleting your data</h2>
-  <p>Clear the site's data in your browser to forget the memory key. Memories already stored on Walrus persist for the storage period of the blob and cannot currently be individually deleted by us; they are encrypted and cannot be found without the key. Use "Switch user" to start over with a fresh namespace. If you need something removed, open an issue on the project repository.</p>
+  <section class="glass rounded-3xl p-6 mt-4"><h2 class="font-display text-xl font-semibold">Where your data goes</h2>
+    <div class="overflow-x-auto mt-3"><table class="w-full text-sm"><thead><tr class="text-left text-[11px] uppercase tracking-wider text-on-surface-variant"><th class="pb-2 pr-4">Data</th><th class="pb-2 pr-4">Goes to</th><th class="pb-2">Why</th></tr></thead><tbody>
+      <tr class="border-t border-white/60"><td class="py-3 pr-4 align-top font-semibold">Your messages, name and recalled memories</td><td class="py-3 pr-4 align-top">Groq (model provider, USA)</td><td class="py-3 align-top text-on-surface-variant">To generate the reply and extract facts. Groq's API does not retain prompts for training under its standard terms.</td></tr>
+      <tr class="border-t border-white/60"><td class="py-3 pr-4 align-top font-semibold">Extracted facts about you (e.g. “Ana runs on Tuesdays”)</td><td class="py-3 pr-4 align-top">Walrus Memory relayer → Walrus network</td><td class="py-3 align-top text-on-surface-variant">The relayer embeds and encrypts each fact (SEAL) and stores it as a blob on Walrus, a decentralised storage network, in a namespace tied to your memory key. The relayer sees the text in clear while processing it.</td></tr>
+      <tr class="border-t border-white/60"><td class="py-3 pr-4 align-top font-semibold">Search queries (only when you ask for current information) and links you paste</td><td class="py-3 pr-4 align-top">Tavily (search API)</td><td class="py-3 align-top text-on-surface-variant">To fetch web results or read the page you linked.</td></tr>
+      <tr class="border-t border-white/60"><td class="py-3 pr-4 align-top font-semibold">Push subscription (only if you turn on daily nudges)</td><td class="py-3 pr-4 align-top">Walrus Memory (encrypted) + your browser's push service</td><td class="py-3 align-top text-on-surface-variant">To deliver one notification a day. Turn it off in the key panel at any time.</td></tr>
+      <tr class="border-t border-white/60"><td class="py-3 pr-4 align-top font-semibold">Request logs (IP, timestamps, error messages)</td><td class="py-3 pr-4 align-top">Vercel (hosting)</td><td class="py-3 align-top text-on-surface-variant">Standard server logs, kept briefly. Memory texts are not written to logs.</td></tr>
+    </tbody></table></div>
+    <p class="text-xs text-on-surface-variant mt-3">We keep no database of users. Everything the coach knows about you lives in your Walrus namespace and in your browser.</p></section>
 
-  <h2>Acceptable use</h2>
-  <p>Don't use the coach to harm yourself or others, don't submit other people's personal data, and don't try to break it. There are rate limits so one person can't exhaust the shared service. The service is provided as is, without warranties; it may be slow, wrong, or go away.</p>
+  <section class="glass rounded-3xl p-6 mt-4"><h2 class="font-display text-xl font-semibold">Deleting your data</h2><p class="mt-2 text-sm leading-relaxed">Clear the site's data in your browser to forget the memory key. Memories already stored on Walrus persist for the storage period of the blob and cannot currently be individually deleted by us; they are encrypted and cannot be found without the key. Use "Switch user" to start over with a fresh namespace. If you need something removed, open an issue on the project repository.</p></section>
 
-  <h2>Open source</h2>
-  <p>The code is public under the MIT license, so you can read exactly what happens to your data, or run your own copy.</p>
-</div>
+  <section class="glass rounded-3xl p-6 mt-4"><h2 class="font-display text-xl font-semibold">Acceptable use</h2><p class="mt-2 text-sm leading-relaxed">Don't use the coach to harm yourself or others, don't submit other people's personal data, and don't try to break it. There are rate limits so one person can't exhaust the shared service. The service is provided as is, without warranties; it may be slow, wrong, or go away.</p></section>
+
+  <section class="glass rounded-3xl p-6 mt-4"><h2 class="font-display text-xl font-semibold">Open source</h2><p class="mt-2 text-sm leading-relaxed">The code is public under the MIT licence, so you can read exactly what happens to your data, or run your own copy.</p></section>
+</main>
+<footer class="relative z-10 mt-16">
+  <div class="max-w-[1440px] mx-auto px-4 lg:px-8">
+    <div class="glass rounded-3xl px-6 py-4 flex flex-wrap items-center justify-between gap-4 text-xs text-on-surface-variant">
+      <span class="chip"><span class="pulse"></span> Network: Walrus mainnet · memory active</span>
+      <div class="flex flex-wrap gap-4">
+        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">neurology</span> Open-weight Qwen 3.8 27B</span>
+        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">database_off</span> No database of you</span>
+        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">lock</span> Encrypted Walrus Memory</span>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-3 px-2 py-6 text-xs text-on-surface-variant">
+      <span>Built for <a class="underline" href="https://www.deepsurge.xyz/hackathons/c0141a4a-21be-4009-bc63-7c168608c849" target="_blank" rel="noopener">Walrus Session 8: Chatbots That Remember</a>. MIT open source. An AI coach, not a professional — it can be wrong.</span>
+      <nav class="flex gap-4"><a href="/">Home</a><a href="/how">How it works</a><a href="/security">Security &amp; Walrus</a><a href="/privacy">Privacy</a><span>© 2026 WalCoach</span></nav>
+    </div>
+  </div>
+</footer>
 </body>
 </html>
