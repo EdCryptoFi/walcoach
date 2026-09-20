@@ -143,6 +143,10 @@
   .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel-2); color: var(--muted); }
   .badge.on { border-color: var(--ok); color: var(--ok); background: transparent; }
   .badge.on b { font-weight: 650; }
+  .badge img { width: 22px; height: 22px; object-fit: contain; margin: -3px 0 -3px -4px; filter: grayscale(1); opacity: .55; }
+  .badge.on img { filter: none; opacity: 1; }
+  .logo img { width: 34px; height: 34px; object-fit: contain; border-radius: 10px; }
+  .logo.art { background: transparent; }
   ul.mem li .a { flex: none; margin-left: auto; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); border: 1px solid var(--border); border-radius: 6px; padding: 2px 5px; margin-top: 3px; }
 
   /* ---- "you" popover ---- */
@@ -374,6 +378,7 @@
 
   // ---- life areas: chips to start with, badges once memories exist ----
   let AREAS = [];
+  let CHARACTERS = {};
   const STARTERS = {
     training: "I want to start running but I've never managed to stick with it.",
     sleep: "I keep going to bed way too late and waking up tired.",
@@ -396,7 +401,8 @@
     for (const a of AREAS) {
       const n = counts[a.id] || 0; if (n) lit++;
       const b = el("span", "badge" + (n ? " on" : ""));
-      b.innerHTML = n ? `<b>${a.label}</b> ${n}` : a.label;
+      const src = CHARACTERS[a.id];
+      b.innerHTML = (src ? `<img src="${src}" alt="">` : "") + (n ? `<b>${a.label}</b> ${n}` : a.label);
       b.title = a.hint;
       badgesEl.append(b);
     }
@@ -426,7 +432,12 @@
     render(window.innerWidth < 860 ? 5 : all.length);
     box.append(list); messages.append(box); scroll();
   }
-  fetch("/api/areas").then((r) => r.json()).then((d) => { AREAS = d.areas || []; if (user && user.name) { renderStarters(); loadAll(); } }).catch(() => {});
+  fetch("/api/characters").then((r) => r.json()).then((d) => {
+    CHARACTERS = d.characters || {};
+    if (CHARACTERS.mascot) for (const logo of document.querySelectorAll(".logo")) { logo.classList.add("art"); logo.innerHTML = `<img src="${CHARACTERS.mascot}" alt="">`; }
+  }).catch(() => {}).finally(() =>
+    fetch("/api/areas").then((r) => r.json()).then((d) => { AREAS = d.areas || []; if (user && user.name) { renderStarters(); loadAll(); } }).catch(() => {})
+  );
 
   // ---- outbox: facts the server extracted but might not have managed to write ----
   // Each reply returns the facts being written in the background. We keep them here

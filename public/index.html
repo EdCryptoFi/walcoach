@@ -66,7 +66,18 @@
   .card p { margin: 0; color: var(--muted); font-size: 15px; }
 
   .areas { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { font-size: 14px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); color: var(--text); }
+  .chip { font-size: 14px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); color: var(--text); display: inline-flex; align-items: center; gap: 8px; }
+  .chip img { width: 28px; height: 28px; object-fit: contain; margin: -4px 0 -4px -4px; }
+  .areas.art { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .areas.art .chip { flex-direction: column; text-align: center; padding: 16px 12px; border-radius: 16px; gap: 10px; font-weight: 600; }
+  .areas.art .chip img { width: 92px; height: 92px; margin: 0; }
+  .logo img { width: 34px; height: 34px; object-fit: contain; border-radius: 10px; }
+  .logo.art { background: transparent; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+  @media (max-width: 600px) { .pair { grid-template-columns: 1fr; } }
+  .pair .card { text-align: center; }
+  .pair img { width: 120px; height: 120px; object-fit: contain; }
+  .pair h3 { justify-content: center; }
 
   .steps { counter-reset: s; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   @media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
@@ -137,6 +148,15 @@
     <div class="areas" id="areas"></div>
   </section>
 
+  <section id="beforeAfter" hidden>
+    <h2>Without memory vs. with it</h2>
+    <p class="sub">Same model, same question, one difference: whether it can remember you.</p>
+    <div class="pair">
+      <div class="card"><img id="imgForgetful" alt="A forgetful walrus"><h3>Every chat starts from zero</h3><p>"What's your goal again? Any injuries I should know about?"</p></div>
+      <div class="card"><img id="imgMascot" alt="The Walrus Coach"><h3>Picks up where you left off</h3><p>"It's Thursday — run day. How's the knee since Tuesday?"</p></div>
+    </div>
+  </section>
+
   <section>
     <h2>How it works</h2>
     <div class="steps">
@@ -158,9 +178,24 @@
   </footer>
 </div>
 <script>
-  fetch("/api/areas").then((r) => r.json()).then(({ areas }) => {
+  Promise.all([fetch("/api/areas").then((r) => r.json()), fetch("/api/characters").then((r) => r.json())]).then(([{ areas }, { characters }]) => {
     const box = document.getElementById("areas");
-    for (const a of areas) { const c = document.createElement("span"); c.className = "chip"; c.textContent = a.label; box.append(c); }
+    const anyArt = areas.some((a) => characters[a.id]);
+    if (anyArt) box.classList.add("art");
+    for (const a of areas) {
+      const c = document.createElement("span"); c.className = "chip";
+      const src = characters[a.id] || (anyArt && characters.mascot);
+      if (src) { const img = document.createElement("img"); img.src = src; img.alt = ""; img.loading = "lazy"; c.append(img); }
+      c.append(document.createTextNode(a.label)); box.append(c);
+    }
+    if (characters.mascot) {
+      for (const logo of document.querySelectorAll(".logo")) { logo.classList.add("art"); logo.innerHTML = `<img src="${characters.mascot}" alt="">`; }
+    }
+    if (characters.mascot && characters.forgetful) {
+      document.getElementById("imgForgetful").src = characters.forgetful;
+      document.getElementById("imgMascot").src = characters.mascot;
+      document.getElementById("beforeAfter").hidden = false;
+    }
   }).catch(() => {});
 </script>
 </body>

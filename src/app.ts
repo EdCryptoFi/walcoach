@@ -6,7 +6,7 @@
  * on/off flag with every request, and identity is an opaque `userId` the
  * browser generates once (`web-<uuid>`). Long-term memory lives on Walrus.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { waitUntil } from "@vercel/functions";
 import { Hono } from "hono";
 import { AREAS } from "./areas.js";
@@ -94,6 +94,29 @@ export function createApp() {
   app.get("/privacy", (c) => c.html(page("privacy.html")));
   app.get("/sw.js", (c) => c.body(page("sw.js"), 200, { "content-type": "application/javascript; charset=utf-8", "service-worker-allowed": "/" }));
   app.get("/icon.svg", (c) => c.body(page("icon.svg"), 200, { "content-type": "image/svg+xml" }));
+  app.get("/icon.png", (c) => {
+    const url = new URL("../public/characters/mascot.png", import.meta.url);
+    return existsSync(url) ? c.body(readFileSync(url), 200, { "content-type": "image/png", "cache-control": "public, max-age=86400" }) : c.redirect("/icon.svg");
+  });
+
+  // Character art (see public/characters/README.md). Cached by the browser; 404 when a file is missing.
+  const IMG_TYPES: Record<string, string> = { png: "image/png", svg: "image/svg+xml", webp: "image/webp", jpg: "image/jpeg", jpeg: "image/jpeg" };
+  app.get("/characters/:file", (c) => {
+    const file = c.req.param("file");
+    const m = /^([a-z0-9-]+)\.(png|svg|webp|jpe?g)$/i.exec(file);
+    if (!m) return c.notFound();
+    const url = new URL(`../public/characters/${file}`, import.meta.url);
+    if (!existsSync(url)) return c.notFound();
+    return c.body(readFileSync(url), 200, { "content-type": IMG_TYPES[m[2].toLowerCase()], "cache-control": "public, max-age=86400" });
+  });
+  app.get("/api/characters", (c) => {
+    const names = ["mascot", "forgetful", ...AREAS.map((a) => a.id)];
+    const have: Record<string, string> = {};
+    for (const n of names) for (const ext of ["png", "svg", "webp"]) {
+      if (existsSync(new URL(`../public/characters/${n}.${ext}`, import.meta.url))) { have[n] = `/characters/${n}.${ext}`; break; }
+    }
+    return c.json({ characters: have });
+  });
 
   app.get("/api/areas", (c) => c.json({ areas: AREAS }));
 

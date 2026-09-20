@@ -2,7 +2,7 @@
 self.addEventListener("push", (event) => {
   let data = { title: "Walrus Coach", body: "Your coach has something for you.", url: "/chat" };
   try { data = { ...data, ...event.data.json() }; } catch {}
-  event.waitUntil(self.registration.showNotification(data.title, { body: data.body, icon: "/icon.svg", badge: "/icon.svg", data: { url: data.url }, tag: "walrus-coach-nudge" }));
+  event.waitUntil(self.registration.showNotification(data.title, { body: data.body, icon: "/icon.png", badge: "/icon.svg", data: { url: data.url }, tag: "walrus-coach-nudge" }));
 });
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
