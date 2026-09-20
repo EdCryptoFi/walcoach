@@ -21,3 +21,16 @@ site tries `.png` first, then `.svg`, then falls back to text if neither exists)
 | `life` | Everything else (optional; mascot is used if missing) |
 
 Areas are defined in `src/areas.ts`.
+
+## Poses (optional)
+
+For each mentor you can add up to three extra poses, shown for a few seconds after a reply:
+
+| File | Shown when |
+|---|---|
+| `<id>-talk.webp` | a normal reply |
+| `<id>-happy.webp` | the reply celebrates ("great", "good work", "!") |
+| `<id>-think.webp` | the reply ends with a question |
+
+Ids: mind, focus, training, reading, pets, creative, food, life (life uses the mascot). Without pose
+files the base image plays a small nod / bounce / tilt animation instead.

@@ -9,7 +9,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { waitUntil } from "@vercel/functions";
 import { Hono } from "hono";
-import { AREAS } from "./areas.js";
+import { AREAS, STARTERS } from "./areas.js";
 import { chat } from "./chat.js";
 import { config } from "./config.js";
 import type { Turn } from "./llm.js";
@@ -93,7 +93,8 @@ export function createApp() {
     c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
     c.header(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+      // vercel.live is Vercel's own preview-comments toolbar (preview deployments only).
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://vercel.live https://vercel.com; connect-src 'self' https://vercel.live wss://ws-us3.pusher.com; frame-src https://vercel.live; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
     );
   });
 
@@ -104,6 +105,7 @@ export function createApp() {
   app.get("/security", (c) => c.html(page("security.html")));
   app.get("/privacy", (c) => c.html(page("privacy.html")));
   app.get("/app.css", (c) => c.body(page("app.css"), 200, { "content-type": "text/css; charset=utf-8", "cache-control": "public, max-age=3600" }));
+  app.get("/liquid.js", (c) => c.body(page("liquid.js"), 200, { "content-type": "application/javascript; charset=utf-8", "cache-control": "public, max-age=3600" }));
   app.get("/sw.js", (c) => c.body(page("sw.js"), 200, { "content-type": "application/javascript; charset=utf-8", "service-worker-allowed": "/" }));
   app.get("/icon.svg", (c) => c.body(page("icon.svg"), 200, { "content-type": "image/svg+xml" }));
   app.get("/icon.png", (c) => {
@@ -130,7 +132,7 @@ export function createApp() {
     return c.json({ characters: have });
   });
 
-  app.get("/api/areas", (c) => c.json({ areas: AREAS }));
+  app.get("/api/areas", (c) => c.json({ areas: AREAS.map((a) => ({ ...a, starters: STARTERS[a.id] ?? [] })) }));
 
   // ---- proactive nudges (Web Push) ----
   app.get("/api/push/config", (c) => c.json({ enabled: pushEnabled, publicKey: config.vapidPublicKey }));

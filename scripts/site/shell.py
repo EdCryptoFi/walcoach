@@ -12,8 +12,10 @@ HEAD = '''<!doctype html>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/app.css">
+<script>try{{const t=localStorage.getItem("walcoach-theme");if(t==="dark")document.documentElement.dataset.theme="dark";}}catch{{}}</script>
 </head>
 <body class="relative min-h-screen overflow-x-hidden">
+<canvas id="liquid" aria-hidden="true"></canvas>
 <div class="blooms" aria-hidden="true"><i></i></div>
 '''
 
@@ -33,12 +35,15 @@ def header(active):
     <div class="flex items-center gap-2">
       <a class="hidden md:inline-flex btn-ghost" href="/#key"><span class="material-symbols-outlined text-[18px]">key</span> Memory key</a>
       <a class="btn-primary !py-2.5 !px-5 text-sm" href="/chat">Open coach <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
+      <button class="w-10 h-10 rounded-full glass grid place-items-center" id="themeBtn" type="button" aria-label="Toggle dark mode" title="Light / dark"><span class="material-symbols-outlined" id="themeIcon">dark_mode</span></button>
       <button class="xl:hidden w-10 h-10 rounded-full glass grid place-items-center" id="menuBtn" aria-label="Menu" aria-expanded="false"><span class="material-symbols-outlined">menu</span></button>
     </div>
   </div>
   <nav class="xl:hidden hidden flex-col gap-1 px-4 pb-4" id="mobileNav">{nav}</nav>
 </header>
-<script>document.getElementById("menuBtn").addEventListener("click",()=>{{const n=document.getElementById("mobileNav");const o=n.classList.toggle("hidden");n.classList.toggle("flex",o);document.getElementById("menuBtn").setAttribute("aria-expanded",String(o));}});</script>
+<script src="/liquid.js" defer></script>
+<script>(()=>{{const b=document.getElementById("themeBtn"),i=document.getElementById("themeIcon");const paint=()=>{{i.textContent=document.documentElement.dataset.theme==="dark"?"light_mode":"dark_mode";}};b.addEventListener("click",()=>{{const d=document.documentElement.dataset.theme==="dark";if(d)delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme="dark";try{{localStorage.setItem("walcoach-theme",d?"light":"dark");}}catch{{}}paint();}});paint();}})();
+document.getElementById("menuBtn").addEventListener("click",()=>{{const n=document.getElementById("mobileNav");const o=n.classList.toggle("hidden");n.classList.toggle("flex",o);document.getElementById("menuBtn").setAttribute("aria-expanded",String(o));}});</script>
 '''
 
 FOOTER = '''<footer class="relative z-10 mt-16">

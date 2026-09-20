@@ -77,6 +77,18 @@ The "Memory" switch in the header turns recall + learning off so you can see the
 API (all JSON): `POST /api/chat {userId, name, text}` → `{reply, memories}`,
 `GET /api/memories?userId=`, `POST /api/remember`, `POST /api/memory {enabled}`, `POST /api/reset`.
 
+## Mentor voices, themes, background
+
+- Each mentor has a **voice** (`VOICES` in [src/areas.ts](src/areas.ts)); the chat header toggles
+  **Character voice / Neutral** (default neutral, remembered per browser).
+- **Light / dark** toggle on every page (light default, stored in `localStorage`, applied before paint).
+- **Liquid background**: a ~2 KB WebGL fragment shader ([public/liquid.js](public/liquid.js)) —
+  soft white/blue in light, navy/cyan in dark; 30 fps at half resolution, pauses on hidden tabs,
+  static under `prefers-reduced-motion`. No Three.js needed, so the CSP stays `script-src 'self'`.
+- Mentor cards animate in and float; after each reply the mentor image reacts (nod / bounce / tilt)
+  or swaps to a pose file if present — see [public/characters/README.md](public/characters/README.md).
+- Three conversation starters per mentor (`STARTERS`), shown as chips in the chat.
+
 ## Proof it's on Walrus
 
 Every memory in the panel has an ↗ link to its blob on the Walrus explorer

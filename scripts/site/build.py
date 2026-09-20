@@ -17,16 +17,19 @@ def page(name, title, description, active, body):
 
 # ------------------------------------------------------------------ HOME
 mentor_cards = ""
-for m in MENTORS[:6]:
+for m in MENTORS:
     mentor_cards += f'''
-      <article class="glass rounded-3xl p-6 flex flex-col items-center text-center transition hover:-translate-y-0.5 hover:shadow-glass-lg">
-        <div class="avatar-ring w-32 h-32"><img src="/characters/{m['id']}.webp" alt="{m['label']} mentor" loading="lazy"></div>
-        <span class="chip mt-4"><span class="pulse"></span> Memory active</span>
-        <h3 class="font-display text-xl font-semibold mt-3">{m['label']}</h3>
-        <p class="text-sm text-on-surface-variant mt-2 leading-relaxed">{m['blurb']}</p>
-        <a class="btn-glass mt-5 w-full text-sm" href="/chat?context={m['id']}" data-mentor="{m['id']}" data-label="{m['label']}">Train with this coach {icon('arrow_forward','text-[18px]')}</a>
+      <article class="mentor-card glass rounded-3xl p-5 flex flex-col transition hover:-translate-y-0.5 hover:shadow-glass-lg">
+        <div class="flex items-center gap-4">
+          <div class="avatar-ring w-28 h-28 sm:w-32 sm:h-32 flex-none"><img src="/characters/{m['id']}.webp" alt="{m['label']} mentor" loading="lazy"></div>
+          <div class="min-w-0">
+            <span class="chip"><span class="pulse"></span> Memory active</span>
+            <h3 class="font-display text-lg font-semibold mt-2 leading-tight">{m['label']}</h3>
+            <p class="text-sm text-on-surface-variant mt-1 leading-relaxed">{m['blurb']}</p>
+          </div>
+        </div>
+        <a class="btn-ghost mt-4 self-start !px-3" href="/chat?context={m['id']}" data-mentor="{m['id']}" data-label="{m['label']}">Train with this coach {icon('arrow_forward','text-[18px]')}</a>
       </article>'''
-food = MENTORS[6]
 home = f'''
 <main class="relative z-10 pt-28 max-w-[1440px] mx-auto px-4 lg:px-8">
   <!-- hero -->
@@ -49,21 +52,11 @@ home = f'''
         <div class="glass rounded-2xl p-4"><div class="font-display text-2xl font-bold text-primary">100%</div><div class="text-xs text-on-surface-variant mt-1">of memories are yours to inspect</div></div>
       </div>
     </div>
-    <div class="glass-hi rounded-[2rem] p-6 lg:p-8 relative">
-      <div class="flex items-center justify-between text-xs">
-        <span class="inline-flex items-center gap-2 font-semibold text-primary"><span class="pulse"></span> WALRUS AGENT · ON-CHAIN MEMORY</span>
-        <span class="chip">Qwen 27B</span>
-      </div>
-      <div class="flex justify-center my-6">
-        <div class="relative">
-          <div class="avatar-ring w-56 h-56 shadow-glow"><img src="/characters/mascot.webp" alt="WalCoach"></div>
-          <span class="chip absolute -top-2 -right-4 bg-white">{icon('psychology','text-[14px]')} Long memory</span>
-          <span class="chip absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white">{icon('verified_user','text-[14px]')} Walrus blobs</span>
-        </div>
-      </div>
-      <div class="flex items-center justify-between text-xs text-on-surface-variant">
-        <span class="inline-flex items-center gap-1">{icon('sync','text-[16px]')} Recall before every reply</span>
-        <span class="inline-flex items-center gap-1">{icon('bolt','text-[16px]')} Facts stored after each one</span>
+    <div class="glass-hi rounded-[2rem] p-3 relative overflow-hidden">
+      <div class="relative rounded-[1.6rem] overflow-hidden aspect-[1369/1149]">
+        <img src="/characters/hero.webp" alt="WalCoach, the coach that remembers you" class="w-full h-full object-cover" fetchpriority="high">
+        <div class="absolute top-3 left-3 flex flex-wrap gap-2"><span class="chip !bg-white/85"><span class="pulse"></span> Walrus agent · on-chain memory</span><span class="chip !bg-white/85">Qwen 27B</span></div>
+        <div class="absolute bottom-3 left-3 right-3 flex flex-wrap justify-between gap-2 text-[11px]"><span class="chip !bg-white/85">{icon('psychology','text-[14px]')} Recall before every reply</span><span class="chip !bg-white/85">{icon('verified_user','text-[14px]')} Facts stored on Walrus after each</span></div>
       </div>
     </div>
   </section>
@@ -78,17 +71,8 @@ home = f'''
       </div>
       <span class="chip">{icon('hub','text-[14px]')} 7 mentors ready</span>
     </div>
-    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5 mt-8">{mentor_cards}
+    <div class="grid md:grid-cols-2 2xl:grid-cols-3 gap-5 mt-8">{mentor_cards}
     </div>
-    <article class="glass rounded-3xl p-6 mt-5 flex flex-col md:flex-row items-center gap-6">
-      <div class="avatar-ring w-28 h-28 flex-none"><img src="/characters/{food['id']}.webp" alt="{food['label']} mentor" loading="lazy"></div>
-      <div class="flex-1 text-center md:text-left">
-        <span class="chip"><span class="pulse"></span> Memory active · new mentor</span>
-        <h3 class="font-display text-xl font-semibold mt-2">{food['label']}</h3>
-        <p class="text-sm text-on-surface-variant mt-1">{food['blurb']}</p>
-      </div>
-      <a class="btn-primary flex-none" href="/chat?context={food['id']}" data-mentor="{food['id']}" data-label="{food['label']}">Train with the Chef {icon('restaurant','text-[20px]')}</a>
-    </article>
   </section>
 
   <!-- key -->

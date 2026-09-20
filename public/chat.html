@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/app.css">
+<script>try{const t=localStorage.getItem("walcoach-theme");if(t==="dark")document.documentElement.dataset.theme="dark";}catch{}</script>
 <style>
   /* chat-only bits */
   .msg { max-width: min(72ch, 92%); animation: rise .18s ease-out; }
@@ -42,11 +43,13 @@
   .srcs a span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:34ch; }
   dialog { border:0; border-radius:2rem; padding:0; background:transparent; max-width:560px; width:calc(100% - 32px); }
   dialog::backdrop { background:rgba(11,28,48,.45); backdrop-filter:blur(6px); }
+  .topbar { background: rgba(255,255,255,.85) !important; } [data-theme="dark"] .topbar { background: rgba(10,19,32,.85) !important; }
   .banner { display:none; } .banner.show { display:flex; }
   .msg.bot.err .bubble { background: rgba(255,218,214,.8); border: 1px solid rgba(186,26,26,.3); color: #93000a; }
 </style>
 </head>
 <body class="relative min-h-screen overflow-x-hidden">
+<canvas id="liquid" aria-hidden="true"></canvas>
 <div class="blooms" aria-hidden="true"><i></i></div>
 
 <div class="relative z-10 min-h-screen flex">
@@ -71,20 +74,21 @@
   <!-- ============ main ============ -->
   <div class="flex-1 min-w-0 flex flex-col xl:h-screen">
     <!-- top bar -->
-    <header class="glass-nav !bg-white/85 sticky top-0 z-30 px-4 lg:px-6 h-16 flex-none flex items-center justify-between gap-3">
+    <header class="glass-nav topbar sticky top-0 z-30 px-4 lg:px-6 h-16 flex-none flex items-center justify-between gap-3">
       <div class="flex items-center gap-3 min-w-0">
-        <a class="xl:hidden flex items-center gap-2" href="/"><img class="w-8 h-8 object-contain" src="/characters/mascot.webp" alt=""><span class="font-display font-bold hidden sm:inline">WalCoach</span></a>
+        <a class="xl:hidden flex items-center gap-2 flex-none" href="/"><img class="w-8 h-8 object-contain" src="/characters/mascot.webp" alt=""><span class="font-display font-bold hidden md:inline">WalCoach</span></a>
         <span class="hidden md:inline-flex chip"><span class="pulse"></span> Session connected</span>
         <span class="hidden lg:inline text-xs text-on-surface-variant truncate">Open-weight Qwen 3.8 27B · memory on Walrus</span>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2">
         <label class="inline-flex items-center gap-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none" title="Turn long-term memory off to see how a forgetful bot behaves">
           <input type="checkbox" id="memToggle" class="sr-only" checked>
           <span class="w-10 h-6 rounded-full bg-outline-variant relative transition" id="memSwitch"><span class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition" id="memKnob"></span></span>
           <span id="memLabel" class="hidden sm:inline">Memory on</span>
         </label>
-        <button class="btn-glass !py-2 !px-3 text-xs" id="voiceBtn" type="button" title="Character voice: the mentor's own style. Neutral: plain coach."><span class="material-symbols-outlined text-[18px]">theater_comedy</span> <span id="voiceLabel">Neutral</span></button>
-        <button class="btn-glass !py-2 !px-3 text-xs panel-toggle" id="panelBtn" type="button"><span class="material-symbols-outlined text-[18px]">psychology</span> <span id="memCount">Memory</span></button>
+        <button class="btn-glass !py-2 !px-3 text-xs" id="voiceBtn" type="button" title="Character voice: the mentor's own style. Neutral: plain coach."><span class="material-symbols-outlined text-[18px]">theater_comedy</span> <span id="voiceLabel" class="hidden sm:inline">Neutral</span></button>
+        <button class="btn-glass !py-2 !px-3 text-xs panel-toggle" id="panelBtn" type="button"><span class="material-symbols-outlined text-[18px]">psychology</span> <span id="memCount" class="whitespace-nowrap">Memory</span></button>
+        <button class="w-10 h-10 rounded-full glass grid place-items-center" id="themeBtn" type="button" aria-label="Toggle dark mode"><span class="material-symbols-outlined" id="themeIcon">dark_mode</span></button>
         <button class="w-10 h-10 rounded-full glass grid place-items-center" id="youBtn" type="button" aria-label="Your key and settings"><span class="material-symbols-outlined">person</span></button>
       </div>
     </header>
@@ -132,6 +136,7 @@
           <span class="chip flex-none" id="modeChip">Mode: coach</span>
         </div>
         <div class="flex-1 overflow-y-auto px-4 lg:px-6 py-5 flex flex-col gap-4" id="messages" aria-live="polite"></div>
+        <div class="px-4 lg:px-6 pb-2 flex flex-wrap gap-2" id="starters" hidden></div>
         <form class="p-3 lg:p-4 border-t border-white/60" id="composer">
           <div class="flex items-end gap-2">
             <textarea class="field !rounded-3xl flex-1 resize-none min-h-[48px] max-h-40" id="input" rows="1" placeholder="Type your message to WalCoach…" aria-label="Message"></textarea>
@@ -191,6 +196,7 @@
   </div>
 </dialog>
 
+<script src="/liquid.js" defer></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -235,7 +241,10 @@
   $("closeLeft").addEventListener("click", () => $("leftCol").classList.remove("open"));
   $("copyKey").addEventListener("click", async () => { try { await navigator.clipboard.writeText(user.id); $("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Copied'; setTimeout(() => ($("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">content_copy</span> Copy'), 1500); } catch { prompt("Your memory key:", user.id); } });
   $("switchBtn").addEventListener("click", () => { $("youDialog").close(); try { localStorage.removeItem("walrus-coach-key-saved"); localStorage.removeItem("walrus-coach-context"); } catch {} user = { id: null, name: "" }; history = []; messages.innerHTML = ""; contextId = null; askName(); });
-  $("resetBtn").addEventListener("click", () => { $("youDialog").close(); history = []; addBot("Short-term context cleared. I still remember the long-term stuff — say hi to see it in action.", { system: true }); });
+  $("resetBtn").addEventListener("click", () => { $("youDialog").close(); history = []; addBot("Short-term context cleared. I still remember the long-term stuff — say hi to see it in action.", { system: true }); renderStarters(); });
+
+  // ---------- theme ----------
+  (() => { const b = $("themeBtn"), i = $("themeIcon"); const paint = () => { i.textContent = document.documentElement.dataset.theme === "dark" ? "light_mode" : "dark_mode"; }; b.addEventListener("click", () => { const d = document.documentElement.dataset.theme === "dark"; if (d) delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = "dark"; try { localStorage.setItem("walcoach-theme", d ? "light" : "dark"); } catch {} paint(); }); paint(); })();
 
   // ---------- voice: character vs neutral ----------
   let voice = "neutral";
@@ -251,16 +260,30 @@
 
   // ---------- areas, characters, about ----------
   let AREAS = [], CHARACTERS = {}, ABOUT = {};
-  const STARTERS = {
-    mind: "I get stressed and don't really have a way to deal with it.",
-    focus: "I procrastinate on the one task that actually matters at work.",
-    training: "I want to start running but I've never managed to stick with it.",
-    reading: "I have an exam coming up and I keep leaving subjects behind.",
-    pets: "I just adopted a puppy and I want to get the routine right.",
-    creative: "I've been meaning to practise guitar again and never do.",
-    food: "I want to cook at home more instead of ordering in.",
-    life: "Something's on my mind that doesn't fit a category.",
-  };
+  const startersOf = (id) => (AREAS.find((a) => a.id === id) || {}).starters || [];
+  function renderStarters() {
+    const box = $("starters"); box.innerHTML = "";
+    const list = startersOf(contextId || "life").slice(0, 3);
+    box.hidden = !list.length || history.length > 0;
+    for (const t of list) { const b = el("button", "btn-glass !py-1.5 !px-3 text-xs text-left"); b.type = "button"; b.textContent = t; b.addEventListener("click", () => { input.value = t; autosize(); composer.requestSubmit(); }); box.append(b); }
+  }
+  // Poses: if public/characters/<id>-<pose>.webp exists it is shown for a moment after each reply;
+  // otherwise the base image plays a small reaction animation. Poses: talk, happy, think.
+  const POSES = ["talk", "happy", "think"];
+  const poseCache = {};
+  async function poseFor(id, pose) {
+    const key = id + "-" + pose; if (key in poseCache) return poseCache[key];
+    try { const r = await fetch(`/characters/${key}.webp`, { method: "HEAD" }); poseCache[key] = r.ok ? `/characters/${key}.webp` : null; } catch { poseCache[key] = null; }
+    return poseCache[key];
+  }
+  async function react(text) {
+    const id = contextId || "life"; const base = CHARACTERS[id] || CHARACTERS.mascot;
+    const pose = /\?\s*$/.test(text) ? "think" : /!|great|good|nice|boa|ótimo|parabéns|congrat/i.test(text) ? "happy" : "talk";
+    const img = $("agentImg"); const cls = pose === "happy" ? "react-bounce" : pose === "think" ? "react-think" : "react-nod";
+    img.classList.remove("react-bounce", "react-nod", "react-think"); void img.offsetWidth; img.classList.add(cls);
+    const src = await poseFor(id, pose);
+    if (src) { img.src = src; setTimeout(() => { if (base) img.src = base; }, 4000); }
+  }
   let contextId = null;
   try { contextId = localStorage.getItem("walrus-coach-context"); } catch {}
 
@@ -279,7 +302,7 @@
     const a = AREAS.find((x) => x.id === id);
     for (const b of $("mods").children) b.classList.toggle("on", b.textContent.includes(a?.short || " "));
     if (a) { $("agentName").textContent = a.id === "life" ? "WalCoach AI" : a.label; $("agentSub").textContent = a.id === "life" ? "Personal coach · one memory of you" : a.hint; $("modeChip").textContent = "Mode: " + a.short; if (CHARACTERS[a.id]) $("agentImg").src = CHARACTERS[a.id]; }
-    if (prefill && !input.value.trim() && STARTERS[id]) { input.value = STARTERS[id]; autosize(); input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+    renderStarters(); if (prefill) input.focus();
     $("leftCol").classList.remove("open");
   }
   function applyContextFromUrl() {
@@ -415,6 +438,7 @@
       const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history, context: contextId && contextId !== "life" ? contextId : undefined, voice });
       t.remove(); remember("user", text); remember("assistant", data.reply);
       addBot(data.reply, { memories: data.memories || [], sources: data.sources || [], memoryOn: data.memory });
+      react(data.reply); renderStarters();
       if (data.memory && data.memoryAvailable === false) setBanner("Walrus Memory is unreachable right now — this reply was made without your memories. New facts are queued and will be saved when it's back."); else if (data.memory) setBanner("");
       outboxAdd(data.facts);
       setTimeout(loadAll, 5000); setTimeout(loadAll, GRACE_MS + 5000);
@@ -432,7 +456,7 @@
   function boot() {
     $("whoName").textContent = user.name; $("keyText").textContent = user.id;
     if (!messages.children.length) addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on — a habit, a goal, something you keep putting off.`, { system: true });
-    loadAll(); pushInit(); input.focus();
+    loadAll(); pushInit(); renderStarters(); input.focus();
   }
   Promise.all([
     fetch("/api/areas").then((r) => r.json()).catch(() => ({ areas: [] })),
