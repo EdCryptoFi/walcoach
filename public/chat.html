@@ -115,6 +115,15 @@
           </div>
         </div>
 
+        <div class="glass rounded-3xl p-5 flex-none" id="weekCard">
+          <div class="flex items-center justify-between">
+            <h2 class="font-display font-semibold inline-flex items-center gap-2"><span class="material-symbols-outlined text-primary">insights</span> Your week</h2>
+            <button class="btn-ghost !py-1 !px-2 text-xs" id="weekBtn" type="button"><span class="material-symbols-outlined text-[16px]">refresh</span> Refresh</button>
+          </div>
+          <p class="text-sm mt-2 font-semibold" id="weekHeadline">Built from what the coach remembers. Send a message first.</p>
+          <div class="grid gap-2 mt-3 text-xs" id="weekBody"></div>
+        </div>
+
         <div class="glass rounded-3xl p-5 flex-none flex flex-col">
           <div class="flex items-center justify-between">
             <h2 class="font-display font-semibold inline-flex items-center gap-2"><span class="material-symbols-outlined text-primary">psychology</span> Durable facts in memory</h2>
@@ -298,19 +307,54 @@
       box.append(b);
     }
   }
+  let handoverBusy = false;
+  async function doHandover(fromId, toId) {
+    if (handoverBusy || !user?.id || toId === "life" || !lastMemories.length) return;
+    handoverBusy = true; const t = typing();
+    try { const r = await api("/api/handover", { userId: user.id, name: user.name, from: fromId || undefined, to: toId, voice }); t.remove(); if (r.text) { addBot(r.text, { memories: [], memoryOn: true, handover: true }); remember("assistant", r.text); } }
+    catch { t.remove(); }
+    finally { handoverBusy = false; }
+  }
   function setContext(id, prefill) {
+    const previous = contextId;
     contextId = id; try { localStorage.setItem("walrus-coach-context", id); } catch {}
     const a = AREAS.find((x) => x.id === id);
     for (const b of $("mods").children) b.classList.toggle("on", b.textContent.includes(a?.short || " "));
     if (a) { $("agentName").textContent = a.id === "life" ? "WalCoach AI" : a.label; $("agentSub").textContent = a.id === "life" ? "Personal coach · one memory of you" : a.hint; $("modeChip").textContent = "Mode: " + a.short; if (CHARACTERS[a.id]) $("agentImg").src = CHARACTERS[a.id]; }
     renderStarters(); if (prefill) input.focus();
     $("leftCol").classList.remove("open");
+    if (prefill && previous && previous !== id) doHandover(previous, id);
   }
   function applyContextFromUrl() {
     const ctx = new URLSearchParams(location.search).get("context");
     if (ctx && AREAS.some((a) => a.id === ctx)) { setContext(ctx, true); window.history.replaceState(null, "", "/chat"); }
     else if (contextId) setContext(contextId, false);
   }
+
+  // ---------- "your week" (cached 1h per user in the browser) ----------
+  const WEEK_KEY = "walrus-coach-week";
+  function weekRender(w) {
+    $("weekHeadline").textContent = w.headline || "";
+    const body = $("weekBody"); body.innerHTML = "";
+    const block = (title, icon, items, cls) => { if (!items || !items.length) return; const d = el("div", "rounded-2xl p-3 " + cls); d.innerHTML = `<div class="font-semibold inline-flex items-center gap-1 mb-1"><span class="material-symbols-outlined text-[14px]">${icon}</span> ${title}</div>` + items.map((i) => `<div>• ${String(i).replace(/</g, "&lt;")}</div>`).join(""); body.append(d); };
+    block("Going well", "trending_up", w.wins, "bg-primary-fixed/50");
+    block("Keeps getting in the way", "warning", w.stuck, "bg-error-container/40");
+    block("Next", "flag", w.next, "bg-white/70");
+  }
+  async function weekLoad(force) {
+    let cache = null; try { cache = JSON.parse(localStorage.getItem(WEEK_KEY) || "null"); } catch {}
+    if (!force && cache && cache.userId === user.id && Date.now() - cache.at < 3600_000) { weekRender(cache.data); return; }
+    $("weekBtn").disabled = true; $("weekHeadline").textContent = "Reading your memories…";
+    try {
+      let data = await api("/api/summary", { userId: user.id, name: user.name });
+      // The relayer occasionally returns an empty recall for a namespace that has memories; retry once.
+      if (data.facts === 0 && lastMemories.length > 0) { await new Promise((r) => setTimeout(r, 2500)); data = await api("/api/summary", { userId: user.id, name: user.name }); }
+      weekRender(data); if (data.facts > 0) { try { localStorage.setItem(WEEK_KEY, JSON.stringify({ userId: user.id, at: Date.now(), data })); } catch {} }
+    }
+    catch (e) { $("weekHeadline").textContent = "⚠ " + e.message; }
+    finally { $("weekBtn").disabled = false; }
+  }
+  $("weekBtn").addEventListener("click", () => weekLoad(true));
 
   // ---------- outbox: facts the server extracted but might not have written ----------
   const OUTBOX_KEY = "walrus-coach-outbox", GRACE_MS = 90_000;
@@ -353,7 +397,7 @@
     m.innerHTML = `<div class="text-[11px] text-on-surface-variant">You${user?.name ? " (" + user.name + ")" : ""} · ${stamp()}</div>`;
     m.append(el("div", "bubble", text)); messages.append(m); scroll();
   }
-  function addBot(text, { system = false, error = false, memories = [], sources = [], memoryOn = true } = {}) {
+  function addBot(text, { system = false, error = false, memories = [], sources = [], memoryOn = true, handover = false, facts = [] } = {}) {
     const m = el("div", "msg bot self-start flex gap-3" + (system ? " sys" : "") + (error ? " err" : ""));
     const av = el("div", "w-9 h-9 rounded-full overflow-hidden flex-none bg-white shadow"); av.innerHTML = `<img class="w-full h-full object-cover object-top" src="${$("agentImg").src}" alt="">`;
     const col = el("div", "min-w-0 flex flex-col gap-1");
@@ -363,12 +407,14 @@
     if (!system) {
       const meta = el("div", "text-[11px] text-on-surface-variant flex flex-wrap items-center gap-1.5");
       if (!memoryOn) meta.innerHTML = `<span class="material-symbols-outlined text-[14px]">visibility_off</span> memory off`;
+      else if (handover) meta.innerHTML = `<span class="material-symbols-outlined text-[14px] text-primary">swap_horiz</span> mentor handover, using your shared memory`;
       else if (memories.length) {
         meta.innerHTML = `<span class="material-symbols-outlined text-[14px] text-primary">lightbulb</span> Memories used in this reply:`;
         memories.slice(0, 3).forEach((mm) => { const { text: t } = parseTag(mm.text); const c = el("span", "memchip"); c.innerHTML = `<span class="t">${t.replace(/</g, "&lt;")}</span>`; c.title = `${t} (distance ${mm.distance.toFixed(2)})`; meta.append(c); });
         if (memories.length > 3) { const more = el("button", "memchip"); more.type = "button"; more.textContent = `+${memories.length - 3}`; more.addEventListener("click", () => { more.remove(); memories.slice(3).forEach((mm) => { const { text: t } = parseTag(mm.text); const c = el("span", "memchip"); c.innerHTML = `<span class="t">${t.replace(/</g, "&lt;")}</span>`; meta.append(c); }); }); meta.append(more); }
       } else meta.innerHTML = `<span class="material-symbols-outlined text-[14px]">search</span> nothing relevant recalled yet`;
       col.append(meta);
+      if (facts.length) { const f = el("div", "text-[11px] text-on-surface-variant inline-flex items-center gap-1"); f.dataset.pending = JSON.stringify(facts); f.innerHTML = `<span class="material-symbols-outlined text-[14px]">cloud_upload</span> saving ${facts.length} ${facts.length === 1 ? "fact" : "facts"} to Walrus…`; col.append(f); }
     }
     m.append(av, col); messages.append(m); scroll(); return m;
   }
@@ -405,6 +451,17 @@
     if (contextId) for (const b of $("mods").children) b.classList.toggle("on", b.textContent.includes(areaLabel(contextId)));
   }
   let lastMemories = [];
+  // Turn "saving N facts…" footers into "N facts saved on Walrus ↗" once the blobs exist.
+  function resolvePending(memories) {
+    const byText = new Map(memories.map((m) => [norm(parseTag(m.text).text), m]));
+    for (const f of messages.querySelectorAll("[data-pending]")) {
+      const facts = JSON.parse(f.dataset.pending); const found = facts.map((t) => byText.get(norm(parseTag(t).text))).filter(Boolean);
+      if (!found.length) continue;
+      const links = found.map((m, i) => ABOUT.blobUrl && m.blobId ? `<a class="underline" href="${ABOUT.blobUrl + m.blobId}" target="_blank" rel="noopener noreferrer" title="${parseTag(m.text).text.replace(/"/g, "&quot;")}">blob ${i + 1}</a>` : "").filter(Boolean).join(", ");
+      f.innerHTML = `<span class="material-symbols-outlined text-[14px] text-primary">verified</span> ${found.length} ${found.length === 1 ? "fact" : "facts"} saved on Walrus ${ABOUT.network || ""} ${links ? "· " + links : ""}`;
+      if (found.length >= facts.length) delete f.dataset.pending; else f.dataset.pending = JSON.stringify(facts.filter((t) => !byText.has(norm(parseTag(t).text))));
+    }
+  }
   $("exportBtn").addEventListener("click", () => {
     const data = { exportedAt: new Date().toISOString(), namespace: ABOUT.namespace || null, memories: lastMemories.map((m) => ({ ...parseTag(m.text), blobId: m.blobId, explorer: ABOUT.blobUrl ? ABOUT.blobUrl + m.blobId : null })) };
     const w = window.open("", "_blank"); if (w) { w.document.write("<pre>" + JSON.stringify(data, null, 2).replace(/</g, "&lt;") + "</pre>"); w.document.close(); } else prompt("Copy your memories (JSON):", JSON.stringify(data));
@@ -426,6 +483,7 @@
       $("nsLine").textContent = `${data.namespace} · ${lastMemories.length} encrypted blobs`; $("nsMini").innerHTML = `<span class="material-symbols-outlined text-[16px]">database</span> ${data.namespace}`;
       $("sessionSub").textContent = `Long-term memory loaded · ${lastMemories.length} facts on Walrus ${ABOUT.network || ""}`;
       await outboxReconcile(lastMemories);
+      resolvePending(lastMemories);
     } catch (e) { $("nsLine").textContent = "⚠ " + e.message; $("sessionSub").textContent = "Memory panel unavailable: " + e.message; setBanner(e.message); }
   }
 
@@ -438,8 +496,9 @@
     try {
       const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history, context: contextId && contextId !== "life" ? contextId : undefined, voice });
       t.remove(); remember("user", text); remember("assistant", data.reply);
-      addBot(data.reply, { memories: data.memories || [], sources: data.sources || [], memoryOn: data.memory });
+      addBot(data.reply, { memories: data.memories || [], sources: data.sources || [], memoryOn: data.memory, facts: data.facts || [] });
       react(data.reply); renderStarters();
+      if ((data.facts || []).length) setTimeout(() => weekLoad(true), 8000);
       if (data.memory && data.memoryAvailable === false) setBanner("Walrus Memory is unreachable right now, this reply was made without your memories. New facts are queued and will be saved when it's back."); else if (data.memory) setBanner("");
       outboxAdd(data.facts);
       setTimeout(loadAll, 5000); setTimeout(loadAll, GRACE_MS + 5000);
@@ -458,6 +517,7 @@
     $("whoName").textContent = user.name; $("keyText").textContent = user.id;
     if (!messages.children.length) addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on, a habit, a goal, something you keep putting off.`, { system: true });
     loadAll(); pushInit(); renderStarters(); input.focus();
+    setTimeout(() => weekLoad(false), 3000);
   }
   Promise.all([
     fetch("/api/areas").then((r) => r.json()).catch(() => ({ areas: [] })),

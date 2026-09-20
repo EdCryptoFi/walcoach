@@ -89,6 +89,15 @@ API (all JSON): `POST /api/chat {userId, name, text}` → `{reply, memories}`,
   or swaps to a pose file if present — see [public/characters/README.md](public/characters/README.md).
 - Three conversation starters per mentor (`STARTERS`), shown as chips in the chat.
 
+## Memory doing visible work
+
+- **Your week** card: wins / what keeps getting in the way / next steps, generated only from the
+  user's memories (`POST /api/summary`), cached an hour in the browser, refreshed after new facts land.
+- **Mentor handover**: switching mentor triggers one opening line from the new mentor that cites
+  something remembered from another area (`POST /api/handover`), proving the seven share one memory.
+- **Saved on Walrus** footer: each reply shows "saving N facts…" and, once the blobs exist,
+  "N facts saved on Walrus mainnet · blob 1, blob 2" with explorer links.
+
 ## Proof it's on Walrus
 
 Every memory in the panel has an ↗ link to its blob on the Walrus explorer

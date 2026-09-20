@@ -17,6 +17,7 @@ import { listMemories, memwal, namespaceFor, rememberExplicit } from "./memory.j
 import { stats } from "./stats.js";
 import { hashUserId, nudgeEveryone, pushEnabled, subscribe } from "./push.js";
 import { log } from "./log.js";
+import { handover, weekSummary } from "./insights.js";
 
 // Web user ids are strings; the pipeline keys everything by number, so hash them.
 export const numericId = hashUserId;
@@ -27,7 +28,7 @@ const VALID_ID = /^web-[a-z0-9-]{8,64}$/i;
 // shared Walrus/Groq budget. In-memory, so per function instance on serverless -
 // a soft limit; the relayer's own rate limit is the hard one and we degrade gracefully.
 const WINDOW_MS = 60_000;
-const LIMITS = { user: 10, ip: 30, global: 200 };
+const LIMITS = { chat: 10, light: 40, ip: 90, global: 400 };
 const buckets = new Map<string, number[]>();
 function take(key: string, max: number): boolean {
   const now = Date.now();
@@ -41,10 +42,10 @@ function clientIp(c: { req: { header: (n: string) => string | undefined } }): st
   return (c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip") ?? "local").split(",")[0].trim();
 }
 /** Returns an error message when the caller should back off, else null. */
-function throttled(c: { req: { header: (n: string) => string | undefined } }, userId: string): string | null {
+function throttled(c: { req: { header: (n: string) => string | undefined } }, userId: string, kind: "chat" | "light" = "light"): string | null {
   if (!take("global", LIMITS.global)) return "The coach is busy right now, try again in a minute.";
   if (!take(`ip:${clientIp(c)}`, LIMITS.ip)) return "Too many requests from your network, try again in a minute.";
-  if (!take(`user:${userId}`, LIMITS.user)) return "Slow down a little, 10 messages per minute.";
+  if (!take(`${kind}:${userId}`, LIMITS[kind])) return kind === "chat" ? "Slow down a little, 10 messages per minute." : "Too many requests, try again in a minute.";
   return null;
 }
 
@@ -166,7 +167,7 @@ export function createApp() {
     const body = (await c.req.json().catch(() => ({}))) as ChatBody;
     const { userId, name, text } = body;
     if (!userId || !VALID_ID.test(userId) || !text?.trim()) return c.json({ error: "userId and text are required" }, 400);
-    const wait = throttled(c, userId);
+    const wait = throttled(c, userId, "chat");
     if (wait) return c.json({ error: wait }, 429);
     const id = numericId(userId);
     const userName = (name || "friend").slice(0, 40);
@@ -215,6 +216,26 @@ export function createApp() {
       log.error("remember.failed", err, { user: numericId(userId) });
       return c.json({ error: "Could not save that to Walrus right now. It stays queued in your browser and will be retried.", detail: (err as Error).message.slice(0, 200) }, 503);
     }
+  });
+
+  // "Your week": a progress card built only from the user's memories.
+  app.post("/api/summary", async (c) => {
+    const { userId, name } = (await c.req.json().catch(() => ({}))) as { userId?: string; name?: string };
+    if (!userId || !VALID_ID.test(userId)) return c.json({ error: "invalid userId" }, 400);
+    const wait = throttled(c, userId);
+    if (wait) return c.json({ error: wait }, 429);
+    try { return c.json(await weekSummary(numericId(userId), (name || "friend").slice(0, 40))); }
+    catch (err) { log.error("summary.failed", err, { user: numericId(userId) }); return c.json({ error: "Could not build your summary right now. Try again in a minute." }, 503); }
+  });
+
+  // Mentor handover: one opening line from the new mentor that proves the shared memory.
+  app.post("/api/handover", async (c) => {
+    const { userId, name, from, to, voice } = (await c.req.json().catch(() => ({}))) as { userId?: string; name?: string; from?: string; to?: string; voice?: string };
+    if (!userId || !VALID_ID.test(userId) || !to) return c.json({ error: "userId and to are required" }, 400);
+    const wait = throttled(c, userId);
+    if (wait) return c.json({ error: wait }, 429);
+    try { return c.json({ text: await handover(numericId(userId), (name || "friend").slice(0, 40), from, to, voice === "character" ? "character" : "neutral") }); }
+    catch (err) { log.error("handover.failed", err, { user: numericId(userId) }); return c.json({ text: null }); }
   });
 
   app.get("/api/health", async (c) => {

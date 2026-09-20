@@ -14,7 +14,7 @@ Run locally against the current build (`npm run web`), then re-verified on the V
 ## API
 | Endpoint | Validation | Happy path |
 |---|---|---|
-| `POST /api/chat` | 400 on missing/invalid `userId`/`text`; 429 after 10/min per user (verified: 10×200 then 429) | 200 with `reply, memories, memoryAvailable, facts, sources` — neutral and character voices both verified |
+| `POST /api/chat` | 400 on missing/invalid `userId`/`text`; 429 after 10/min per user (verified: 10×200 then 429); other endpoints 40/min | 200 with `reply, memories, memoryAvailable, facts, sources` — neutral and character voices both verified |
 | `POST /api/memories` | 400 on bad key | 200 `{memories, namespace}` (empty right after first write: indexing lag, expected) |
 | `POST /api/remember` | 400 on empty fact; dedupes | 200 `{blobId}` |
 | `POST /api/push/subscribe` | 400 on malformed subscription | 200 (verified earlier with a real registry write) |
