@@ -7,7 +7,7 @@
  * model gives us a stable language, a consistent "<Name> ..." subject and
  * cheap dedup before anything hits Walrus.
  */
-import OpenAI from "openai";
+import { OpenAI } from "openai";
 import { config } from "./config.js";
 
 const groq = new OpenAI({ apiKey: config.groqApiKey, baseURL: "https://api.groq.com/openai/v1" });

@@ -6,6 +6,8 @@
  * on/off flag with every request, and identity is an opaque `userId` the
  * browser generates once (`web-<uuid>`). Long-term memory lives on Walrus.
  */
+import { readFileSync } from "node:fs";
+import { waitUntil } from "@vercel/functions";
 import { Hono } from "hono";
 import { chat } from "./chat.js";
 import { config } from "./config.js";
@@ -46,9 +48,23 @@ function cleanHistory(h: unknown): Turn[] {
     .slice(-12);
 }
 
-/** `keepAlive` lets a serverless host keep the function alive while learning finishes. */
-export function createApp(keepAlive: (p: Promise<unknown>) => void = () => {}) {
+// On Vercel, waitUntil keeps the function alive while background learning finishes.
+// Outside Vercel it is a no-op (there is no request context), and the promise just runs.
+function keepAlive(p: Promise<unknown>) {
+  try { waitUntil(p); } catch { /* not on Vercel */ }
+}
+
+let indexHtml: string | undefined;
+function page(): string {
+  indexHtml ??= readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+  return indexHtml;
+}
+
+export function createApp() {
   const app = new Hono();
+
+  // The page itself. Local dev also serves ./public statically (src/web.ts).
+  app.get("/", (c) => c.html(page()));
 
   app.post("/api/chat", async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as ChatBody;
@@ -90,3 +106,6 @@ export function createApp(keepAlive: (p: Promise<unknown>) => void = () => {}) {
 
   return app;
 }
+
+/** Vercel's Hono preset looks for a default export on the entrypoint. */
+export default createApp();

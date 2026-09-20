@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { OpenAI } from "openai";
 import { config } from "./config.js";
 import type { Memory } from "./memory.js";
 

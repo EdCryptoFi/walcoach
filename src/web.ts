@@ -1,12 +1,11 @@
 /** Local Node server: static page + the shared API (see src/app.ts). */
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { createApp } from "./app.js";
+import app from "./app.js";
 import { config } from "./config.js";
 import { memwal } from "./memory.js";
 
 const PORT = Number(process.env.PORT ?? 3000);
-const app = createApp();
 app.use("/*", serveStatic({ root: "./public" }));
 
 const health = await memwal.health();

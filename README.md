@@ -133,9 +133,10 @@ a good share of that, so run it at most once an hour or the writes start failing
 ```
 src/app.ts      The JSON API (Hono, stateless) shared by local server and Vercel
 src/web.ts      Local Node server: static page + API
-api/index.ts    Vercel function entry (waitUntil keeps learning alive)
+
 public/index.html  The chat UI (vanilla HTML/CSS/JS, light + dark)
-src/index.ts    Telegram adapter (optional)
+src/telegram.ts Telegram adapter (optional)
+src/index.ts    Vercel entrypoint (re-exports the app)
 src/memory.ts   Walrus Memory SDK wrapper (per-user namespaces)
 src/llm.ts      Groq client and coach system prompt
 src/extract.ts  Fact extraction with our own model (JSON out)

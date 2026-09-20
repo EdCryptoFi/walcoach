@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/telegram.ts",
     "start": "tsx src/web.ts",
     "check": "tsx scripts/check.ts",
     "stats": "tsx scripts/stats.ts",
@@ -13,7 +13,7 @@
     "eval": "tsx scripts/eval.ts",
     "web": "tsx src/web.ts",
     "web:dev": "tsx watch src/web.ts",
-    "telegram": "tsx src/index.ts",
+    "telegram": "tsx src/telegram.ts",
     "vercel-build": "echo skip"
   },
   "dependencies": {
