@@ -36,9 +36,12 @@ memories, even though both are written by the same delegate key.
 ![Walrus Coach web UI](docs/screenshot-chat.png)
 
 [public/index.html](public/index.html) is a single-page chat served by [src/web.ts](src/web.ts).
-On first visit you type a name; the browser generates an opaque id (`web-<uuid>`) and keeps
-it in `localStorage`. That id becomes the user's memory namespace. Swapping it for a signed
-Sui wallet address later is a change in one place.
+Identity is deliberately Web2-flavoured: no wallet, no account. On first visit you type a
+name; the browser generates a **memory key** (`web-<uuid>`), keeps it in `localStorage`, and
+that key becomes the user's memory namespace on Walrus. The key is shown in the side panel
+with a Copy button; pasting it on another device ("I have a memory key") restores the same
+memories there. Under the hood every memory is still an encrypted blob on Walrus with
+on-chain ownership — the user just never sees a wallet.
 
 The side panel is the point of the UI: it shows **which memories were recalled for the last
 reply** (with their cosine distance) and **everything stored for this user on Walrus**.

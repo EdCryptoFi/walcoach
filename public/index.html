@@ -98,6 +98,14 @@
   .status .ok { color: var(--ok); }
   .status .warn { color: var(--warn); }
 
+  .key { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
+  .key code { flex: 1; min-width: 0; font-size: 12px; padding: 7px 9px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .tabs button { flex: 1; height: 36px; border-radius: 9px; border: 1px solid var(--border); background: var(--panel-2); color: var(--muted); font-size: 13px; font-weight: 500; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .field-error { color: var(--warn); font-size: 13px; margin: -8px 0 12px; min-height: 1em; }
+
   /* ---- name dialog ---- */
   dialog { border: 1px solid var(--border); border-radius: 16px; background: var(--panel); color: var(--text); padding: 24px; max-width: 420px; width: calc(100% - 32px); box-shadow: var(--shadow); }
   dialog::backdrop { background: rgba(6, 18, 22, .55); }
@@ -147,6 +155,11 @@
         </div>
       </div>
       <div class="status" id="status" style="margin-top: 8px;"></div>
+      <div class="key">
+        <code id="keyText" title="Your memory key">…</code>
+        <button class="btn" id="copyKey" title="Copy your memory key">Copy</button>
+      </div>
+      <div class="hint">Your memory key. Paste it on another device to bring your memories with you.</div>
     </section>
 
     <section class="recalled">
@@ -172,10 +185,19 @@
 <dialog id="nameDialog">
   <form method="dialog" id="nameForm">
     <h3>Who am I talking to?</h3>
-    <p>Your name is only used so the coach can address you. Memories are stored in your own encrypted namespace on Walrus.</p>
+    <p>No account, no password. A private memory key is created in this browser; keep it to continue on another device.</p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tabNew" aria-selected="true">I'm new here</button>
+      <button type="button" role="tab" id="tabKey" aria-selected="false">I have a memory key</button>
+    </div>
     <label for="nameInput">Your first name</label>
     <input id="nameInput" required maxlength="40" autocomplete="given-name" placeholder="Ana">
-    <button type="submit">Start</button>
+    <div id="keyField" hidden>
+      <label for="keyInput">Memory key</label>
+      <input id="keyInput" maxlength="70" autocomplete="off" spellcheck="false" placeholder="web-xxxxxxxx-xxxx-…">
+    </div>
+    <div class="field-error" id="formError"></div>
+    <button type="submit" id="startBtn">Start</button>
   </form>
 </dialog>
 
@@ -190,15 +212,41 @@
   let user = null;
   try { user = JSON.parse(localStorage.getItem("walrus-coach-user") || "null"); } catch {}
   const newId = () => "web-" + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
-  function saveUser(u) { user = u; try { localStorage.setItem("walrus-coach-user", JSON.stringify(u)); } catch {} $("whoName").textContent = u.name; }
+  function saveUser(u) { user = u; try { localStorage.setItem("walrus-coach-user", JSON.stringify(u)); } catch {} $("whoName").textContent = u.name; $("keyText").textContent = u.id; }
+  const KEY_RE = /^web-[a-z0-9-]{8,64}$/i;
+
+  $("copyKey").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(user.id); $("copyKey").textContent = "Copied"; setTimeout(() => ($("copyKey").textContent = "Copy"), 1500); }
+    catch { prompt("Your memory key:", user.id); }
+  });
+
+  let mode = "new";
+  function setMode(m) {
+    mode = m;
+    $("tabNew").setAttribute("aria-selected", String(m === "new"));
+    $("tabKey").setAttribute("aria-selected", String(m === "key"));
+    $("keyField").hidden = m !== "key";
+    $("startBtn").textContent = m === "key" ? "Restore my memories" : "Start";
+    $("formError").textContent = "";
+  }
+  $("tabNew").addEventListener("click", () => setMode("new"));
+  $("tabKey").addEventListener("click", () => setMode("key"));
 
   const dialog = $("nameDialog");
-  $("nameForm").addEventListener("submit", () => {
+  $("nameForm").addEventListener("submit", (ev) => {
     const name = $("nameInput").value.trim() || "friend";
-    saveUser({ id: user?.id || newId(), name });
+    if (mode === "key") {
+      const key = $("keyInput").value.trim();
+      if (!KEY_RE.test(key)) { ev.preventDefault(); $("formError").textContent = "That doesn't look like a memory key (it starts with web-)."; return; }
+      saveUser({ id: key, name });
+      messages.innerHTML = "";
+      addBot(`Welcome back, ${name}. Your memories are loading on the right — say hi and I'll pick up where we left off.`, [], true);
+    } else {
+      saveUser({ id: user?.id || newId(), name });
+    }
     boot();
   });
-  function askName() { $("nameInput").value = ""; dialog.showModal(); }
+  function askName() { $("nameInput").value = ""; $("keyInput").value = ""; setMode("new"); dialog.showModal(); }
 
   // Short-term history lives in the browser and is sent with every request (the API is stateless).
   let history = [];
@@ -292,6 +340,7 @@
 
   function boot() {
     $("whoName").textContent = user.name;
+    $("keyText").textContent = user.id;
     if (!messages.children.length) addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on — a habit, a goal, something you keep putting off.`, [], true);
     loadAll();
     input.focus();
