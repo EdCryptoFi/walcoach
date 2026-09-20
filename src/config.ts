@@ -21,6 +21,7 @@ export const config = {
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
   vapidSubject: process.env.VAPID_SUBJECT ?? "mailto:hello@example.com",
+  tavilyKey: process.env.TAVILY_API_KEY ?? "",
   cronSecret: process.env.CRON_SECRET ?? "",
   extractor: (process.env.MEMORY_EXTRACTOR === "relayer" ? "relayer" : "llm") as "llm" | "relayer",
 };

@@ -18,6 +18,7 @@ const PROMPT = `You extract durable facts about a person from their latest messa
 Rules:
 - Only facts about the USER that will still matter in future conversations: goals, deadlines, schedule, constraints, health notes, preferences, habits, struggles, progress, life context.
 - Ignore small talk, questions, and anything the coach said.
+- Ignore transient states and one-off events ("no motivation today", "slept badly", "skipped the gym once") unless the user frames them as a pattern ("I never manage to…", "every week…"). Progress worth keeping is a milestone or a decision, not a mood.
 - Each fact is one short, self-contained sentence starting with the user's name, prefixed with ONE life-area tag in square brackets from this list:
 ${AREAS.map((a) => `  [${a.id}] — ${a.hint}`).join("\n")}
 - Write facts in the same language the user wrote in.

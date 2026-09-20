@@ -24,7 +24,7 @@ bot.command("start", async (ctx) => {
   const known = memoryDisabled.has(userId) ? [] : (await recallForUser(userId, `who is ${name}, their goals and current focus`, 5)).memories;
   if (known.length > 0) {
     const reply = await generateReply(name, known, [{ role: "user", content: "Hi, I'm back. Greet me briefly and pick up where we left off." }]);
-    await ctx.reply(reply);
+    await ctx.reply(reply.text);
   } else {
     await ctx.reply(
       `Hey ${name}! I'm ${config.botName}, a coach that actually remembers you between conversations (memories are encrypted and stored on Walrus).\n\nTell me what you're working on — a habit, a goal, something you keep putting off.`,
@@ -89,8 +89,8 @@ bot.on("message:text", async (ctx) => {
 
   try {
     // recall → generate → learn (see src/chat.ts). Learning runs in the background.
-    const { reply } = await chat(userId, name, text, useMemory);
-    await ctx.reply(reply);
+    const { reply, sources } = await chat(userId, name, text, useMemory);
+    await ctx.reply(sources.length ? `${reply}\n\n${sources.map((s, i) => `[${i + 1}] ${s.url}`).join("\n")}` : reply);
   } catch (err) {
     console.error(`[error] user=${userId}`, err);
     await ctx.reply("Something broke on my side — try again in a moment.");

@@ -59,6 +59,22 @@ The "Memory" switch in the header turns recall + learning off so you can see the
 API (all JSON): `POST /api/chat {userId, name, text}` → `{reply, memories}`,
 `GET /api/memories?userId=`, `POST /api/remember`, `POST /api/memory {enabled}`, `POST /api/reset`.
 
+## Web search (optional)
+
+Set `TAVILY_API_KEY` and the model gets one tool, `web_search` ([src/search.ts](src/search.ts)).
+It is instructed to use it only for current, local or factual questions (a race, a price, a
+place) — never for coaching or habits — and to cite sources as [1], [2]. The UI shows
+"searched the web, N sources" with clickable chips. Search results are never stored as
+memories; only facts about the user are. Without the key the coach says plainly when a
+question needs information it doesn't have.
+
+## Privacy & terms
+
+`/privacy` explains in plain language what the service is, that it is an AI and can be wrong,
+that there are no cookies or accounts (only a memory key in `localStorage`), and exactly where
+each kind of data goes (Groq, Walrus Memory relayer/Walrus, Tavily, Vercel logs). Both pages
+carry a one-line disclaimer.
+
 ## Daily nudges (Web Push)
 
 Memory that only answers is half the story; the coach also **reaches out**. In the chat

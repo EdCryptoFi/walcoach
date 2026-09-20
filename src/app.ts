@@ -91,6 +91,7 @@ export function createApp() {
   // Pages. Local dev also serves ./public statically (src/web.ts).
   app.get("/", (c) => c.html(page("index.html")));
   app.get("/chat", (c) => c.html(page("chat.html")));
+  app.get("/privacy", (c) => c.html(page("privacy.html")));
   app.get("/sw.js", (c) => c.body(page("sw.js"), 200, { "content-type": "application/javascript; charset=utf-8", "service-worker-allowed": "/" }));
   app.get("/icon.svg", (c) => c.body(page("icon.svg"), 200, { "content-type": "image/svg+xml" }));
 
@@ -135,9 +136,9 @@ export function createApp() {
     const useMemory = body.memory !== false;
     stats.recordMessage(id, userName);
     try {
-      const { reply, memories, memoryAvailable, facts, learning } = await chat(id, userName, text.trim().slice(0, 2000), { useMemory, history: cleanHistory(body.history) });
+      const { reply, memories, memoryAvailable, facts, sources, learning } = await chat(id, userName, text.trim().slice(0, 2000), { useMemory, history: cleanHistory(body.history) });
       keepAlive(learning);
-      return c.json({ reply, memories, memory: useMemory, memoryAvailable, facts });
+      return c.json({ reply, memories, memory: useMemory, memoryAvailable, facts, sources });
     } catch (err) {
       console.error(`[web] user=${id}`, err);
       return c.json({ error: "Something broke on my side — try again in a moment." }, 500);

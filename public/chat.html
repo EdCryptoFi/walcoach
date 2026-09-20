@@ -78,7 +78,12 @@
   .typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
   @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
 
-  .composer { display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--panel); }
+  .composer { display: flex; gap: 10px; padding: 14px 20px 6px; border-top: 1px solid var(--border); background: var(--panel); }
+  .legal { font-size: 12px; color: var(--muted); padding: 0 20px 10px; background: var(--panel); }
+  .legal a { color: inherit; }
+  .sources { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .sources a { font-size: 12px; color: var(--accent); text-decoration: none; border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sources a:hover { border-color: var(--accent); }
   .composer textarea { flex: 1; resize: none; min-height: 46px; max-height: 160px; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); }
   .composer button { min-width: 46px; height: 46px; border-radius: 12px; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; transition: filter .15s; }
   .composer button:hover { filter: brightness(1.08); }
@@ -198,6 +203,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
       </button>
     </form>
+    <div class="legal">AI coach, not a professional — it can be wrong. Web answers cite their sources. <a href="/privacy">Privacy &amp; terms</a></div>
   </main>
 
   <aside id="panel">
@@ -503,14 +509,26 @@
   // ---- rendering ----
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function addUser(text) { const m = el("div", "msg user", text); messages.append(m); scroll(); }
-  function addBot(text, memories, system) {
-    const m = el("div", "msg bot" + (system ? " nomem" : ""), text);
+  // Minimal, safe formatting: escape everything, then allow **bold** and *italic* only.
+  function fmt(text) {
+    const esc = String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return esc.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+  }
+  function addBot(text, memories, system, sources) {
+    const m = el("div", "msg bot" + (system ? " nomem" : ""));
+    m.innerHTML = fmt(text);
+    if (sources && sources.length) {
+      const box = el("div", "sources");
+      sources.forEach((s, i) => { const a = el("a", null, `[${i + 1}] ${s.title || s.url}`); a.href = s.url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.title = s.url; box.append(a); });
+      m.append(box);
+    }
     if (!system) {
       const meta = el("div", "meta");
       const n = memories ? memories.length : 0;
-      meta.innerHTML = memToggle.checked
+      const searched = sources && sources.length ? ` · searched the web, ${sources.length} ${sources.length === 1 ? "source" : "sources"}` : "";
+      meta.innerHTML = (memToggle.checked
         ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg> recalled ${n} ${n === 1 ? "memory" : "memories"}`
-        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><circle cx="11" cy="11" r="7"/></svg> memory off`;
+        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><circle cx="11" cy="11" r="7"/></svg> memory off`) + searched;
       m.append(meta);
     }
     messages.append(m); scroll();
@@ -559,7 +577,7 @@
       t.remove();
       remember("user", text);
       remember("assistant", data.reply);
-      addBot(data.reply, data.memories, false);
+      addBot(data.reply, data.memories, false, data.sources);
       if (data.memory && data.memoryAvailable === false) setBanner("Walrus Memory is unreachable right now — this reply was made without your memories. New facts are queued and will be saved when it's back.");
       else if (data.memory) setBanner("");
       outboxAdd(data.facts);

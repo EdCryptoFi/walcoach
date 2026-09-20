@@ -3,6 +3,7 @@
  * evaluation harness run exactly the same code.
  */
 import { generateReply, type Turn } from "./llm.js";
+import type { Source } from "./search.js";
 import { extractNewFacts, learnFromExchange, recallForUser, type Memory } from "./memory.js";
 
 const history = new Map<number, Turn[]>();
@@ -25,6 +26,8 @@ export interface ChatResult {
   memoryAvailable: boolean;
   /** Facts extracted from this message; being written to Walrus in the background. */
   facts: string[];
+  /** Web sources consulted for this reply (empty when no search happened). */
+  sources: Source[];
   /** Resolves when background learning finishes (the bot doesn't await it). */
   learning: Promise<void>;
 }
@@ -53,14 +56,15 @@ export async function chat(userId: number, userName: string, text: string, optio
   // Extraction runs alongside generation (both are one model call) so the caller
   // gets the facts back with the reply and can retry the write if it fails later.
   const context = turns.slice(-3, -1).map((t) => `${t.role === "user" ? "User" : "Coach"}: ${t.content}`).join("\n");
-  const [reply, facts] = await Promise.all([
+  const [generated, facts] = await Promise.all([
     generateReply(userName, memories, turns),
     useMemory ? extractNewFacts(userName, text, context, memories).catch((err) => { console.error("[extract]", (err as Error).message); return [] as string[]; }) : Promise.resolve([] as string[]),
   ]);
+  const reply = generated.text;
   if (!given) pushTurn(userId, { role: "assistant", content: reply });
 
   // 3. Store the facts (caller decides whether to await).
   const learning = useMemory && facts.length > 0 ? learnFromExchange(userId, userName, text, reply, memories, facts) : Promise.resolve();
 
-  return { reply, memories, memoryAvailable: recall.available, facts, learning };
+  return { reply, memories, memoryAvailable: recall.available, facts, sources: generated.sources, learning };
 }
