@@ -59,6 +59,43 @@ The "Memory" switch in the header turns recall + learning off so you can see the
 API (all JSON): `POST /api/chat {userId, name, text}` → `{reply, memories}`,
 `GET /api/memories?userId=`, `POST /api/remember`, `POST /api/memory {enabled}`, `POST /api/reset`.
 
+## Daily nudges (Web Push)
+
+Memory that only answers is half the story; the coach also **reaches out**. In the chat
+panel, "Daily nudge → Turn on" asks for notification permission and registers a Web Push
+subscription. Once a day a Vercel Cron hits `/api/cron/nudge`, which:
+
+1. recalls the subscription registry (a Walrus Memory namespace — no database),
+2. for each user recalls their core profile (goal, schedule, struggle),
+3. asks the model for one line grounded in those memories and today's weekday
+   (e.g. *"It's Thursday — run day. How's the knee since Tuesday?"*), or skips,
+4. pushes it. Expired subscriptions are dropped.
+
+Config: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (generate with
+`npx web-push generate-vapid-keys`) and `CRON_SECRET`. Trigger manually with
+`curl -H "Authorization: Bearer $CRON_SECRET" https://<host>/api/cron/nudge`.
+
+## When Walrus Memory is down
+
+- **Recall fails** → the coach still answers, without memories, and the UI shows a
+  banner saying so (`memoryAvailable: false` in the API).
+- **Write fails** → facts are extracted alongside the reply and returned to the browser,
+  which keeps an *outbox* in `localStorage`. When the memory list refreshes and a fact still
+  isn't on Walrus after 90 s, the browser resends it through `/api/remember`, which dedupes
+  (distance < 0.15) so late-landing writes never double up.
+- Transient relayer errors (500/503/429, `Too Many Requests` from its Sui RPC) are retried
+  with backoff and honour `retry_after_seconds`.
+
+## Security notes
+
+- The only server secret is the Walrus Memory delegate key. It can read/write every user's
+  namespace, so it lives in env vars only, never in the repo. Rotate it at memory.walrus.xyz
+  if it leaks.
+- A user's memory key (`web-<uuid>`) *is* their identity — unguessable, but anyone holding
+  it is that user. It is sent in POST bodies only (never URLs) so it stays out of logs.
+- Throttles per user (10/min), per IP (30/min) and per instance (200/min); message length
+  caps; strict CSP and standard security headers; memory texts are not logged in production.
+
 ## Telegram (optional)
 
 Same pipeline, different adapter ([src/index.ts](src/index.ts)). Set `TELEGRAM_BOT_TOKEN`
@@ -146,6 +183,9 @@ a good share of that, so run it at most once an hour or the writes start failing
 
 ```
 src/app.ts      The JSON API (Hono, stateless) shared by local server and Vercel
+src/push.ts     Web Push subscriptions (stored on Walrus) and the daily nudge job
+src/areas.ts    Life areas used to tag facts and drive badges
+public/sw.js    Service worker for push notifications
 src/web.ts      Local Node server: static page + API
 
 public/index.html  The chat UI (vanilla HTML/CSS/JS, light + dark)

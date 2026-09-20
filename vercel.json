@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "hono",
-  "functions": { "src/index.ts": { "maxDuration": 120, "includeFiles": "public/**" } }
+  "functions": { "src/index.ts": { "maxDuration": 120, "includeFiles": "public/**" } },
+  "crons": [{ "path": "/api/cron/nudge", "schedule": "0 12 * * *" }]
 }

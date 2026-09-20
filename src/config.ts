@@ -18,5 +18,9 @@ export const config = {
   memwalServerUrl: process.env.MEMWAL_SERVER_URL ?? "https://relayer.memory.walrus.xyz",
   namespacePrefix: process.env.MEMWAL_NAMESPACE_PREFIX ?? "coach",
   botName: process.env.BOT_NAME ?? "Coach",
+  vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
+  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
+  vapidSubject: process.env.VAPID_SUBJECT ?? "mailto:hello@example.com",
+  cronSecret: process.env.CRON_SECRET ?? "",
   extractor: (process.env.MEMORY_EXTRACTOR === "relayer" ? "relayer" : "llm") as "llm" | "relayer",
 };

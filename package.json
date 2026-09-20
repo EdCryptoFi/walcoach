@@ -25,10 +25,12 @@
     "dotenv": "^16.4.5",
     "grammy": "^1.30.0",
     "hono": "^4.13.8",
-    "openai": "^4.77.0"
+    "openai": "^4.77.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "@types/web-push": "^3.6.4",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },

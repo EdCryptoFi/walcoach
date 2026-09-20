@@ -15,13 +15,10 @@ import { config } from "./config.js";
 import type { Turn } from "./llm.js";
 import { listMemories, memwal, namespaceFor, rememberExplicit } from "./memory.js";
 import { stats } from "./stats.js";
+import { hashUserId, nudgeEveryone, pushEnabled, subscribe } from "./push.js";
 
 // Web user ids are strings; the pipeline keys everything by number, so hash them.
-export function numericId(userId: string): number {
-  let h = 2166136261;
-  for (const ch of userId) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
-  return (h >>> 0) % 2_000_000_000;
-}
+export const numericId = hashUserId;
 
 const VALID_ID = /^web-[a-z0-9-]{8,64}$/i;
 
@@ -94,8 +91,38 @@ export function createApp() {
   // Pages. Local dev also serves ./public statically (src/web.ts).
   app.get("/", (c) => c.html(page("index.html")));
   app.get("/chat", (c) => c.html(page("chat.html")));
+  app.get("/sw.js", (c) => c.body(page("sw.js"), 200, { "content-type": "application/javascript; charset=utf-8", "service-worker-allowed": "/" }));
+  app.get("/icon.svg", (c) => c.body(page("icon.svg"), 200, { "content-type": "image/svg+xml" }));
 
   app.get("/api/areas", (c) => c.json({ areas: AREAS }));
+
+  // ---- proactive nudges (Web Push) ----
+  app.get("/api/push/config", (c) => c.json({ enabled: pushEnabled, publicKey: config.vapidPublicKey }));
+
+  app.post("/api/push/subscribe", async (c) => {
+    if (!pushEnabled) return c.json({ error: "push is not configured" }, 503);
+    const { userId, name, subscription } = (await c.req.json().catch(() => ({}))) as { userId?: string; name?: string; subscription?: { endpoint?: string; keys?: { p256dh?: string; auth?: string } } };
+    if (!userId || !VALID_ID.test(userId) || !subscription?.endpoint || !subscription.keys?.p256dh || !subscription.keys.auth) return c.json({ error: "userId and subscription are required" }, 400);
+    if (!/^https:\/\//.test(subscription.endpoint) || subscription.endpoint.length > 1024) return c.json({ error: "invalid endpoint" }, 400);
+    const wait = throttled(c, userId);
+    if (wait) return c.json({ error: wait }, 429);
+    try {
+      await subscribe(userId, (name || "friend").slice(0, 40), { endpoint: subscription.endpoint, keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth } });
+      return c.json({ ok: true });
+    } catch (err) {
+      console.error("[push] subscribe failed", (err as Error).message.slice(0, 200));
+      return c.json({ error: "Could not save the subscription right now." }, 503);
+    }
+  });
+
+  // Called by Vercel Cron (Authorization: Bearer <CRON_SECRET>) or manually with the same header.
+  app.get("/api/cron/nudge", async (c) => {
+    if (!config.cronSecret || c.req.header("authorization") !== `Bearer ${config.cronSecret}`) return c.json({ error: "unauthorized" }, 401);
+    if (!pushEnabled) return c.json({ error: "push is not configured" }, 503);
+    const report = await nudgeEveryone();
+    console.log("[nudge]", JSON.stringify(report));
+    return c.json(report);
+  });
 
   app.post("/api/chat", async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as ChatBody;

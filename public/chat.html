@@ -183,6 +183,14 @@
       <div class="hint">Your memory key. Paste it on another device to bring your memories with you.</div>
     </section>
 
+    <section id="nudgeSection" hidden>
+      <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg> Daily nudge</h2>
+      <div class="row" style="justify-content: space-between; flex-wrap: wrap;">
+        <span class="hint" id="nudgeText" style="margin:0">One short check-in a day, written from what it remembers about you.</span>
+        <button class="btn" id="nudgeBtn">Turn on</button>
+      </div>
+    </section>
+
     <section>
       <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.4l-4.8 2.5.9-5.4L4.2 7.7l5.4-.8z"/></svg> Life areas covered</h2>
       <div class="badges" id="badges"></div>
@@ -388,6 +396,47 @@
     b.classList.toggle("show", Boolean(text));
   }
 
+  // ---- proactive nudges (Web Push) ----
+  const nudgeSection = $("nudgeSection"), nudgeBtn = $("nudgeBtn"), nudgeText = $("nudgeText");
+  const pushSupported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  let vapidKey = null;
+  function b64ToU8(b64) { const s = atob((b64 + "=".repeat((4 - b64.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(s, (c) => c.charCodeAt(0)); }
+  async function pushState() {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    const on = Boolean(sub) && Notification.permission === "granted";
+    nudgeBtn.textContent = on ? "Turn off" : "Turn on";
+    nudgeText.textContent = on ? "On — you'll get one check-in a day, based on your memories." : Notification.permission === "denied" ? "Notifications are blocked for this site in your browser settings." : "One short check-in a day, written from what it remembers about you.";
+    nudgeBtn.disabled = Notification.permission === "denied";
+    return { reg, sub, on };
+  }
+  async function pushInit() {
+    if (!pushSupported) return;
+    try {
+      const cfg = await (await fetch("/api/push/config")).json();
+      if (!cfg.enabled) return;
+      vapidKey = cfg.publicKey;
+      nudgeSection.hidden = false;
+      await navigator.serviceWorker.register("/sw.js");
+      await pushState();
+    } catch (e) { console.warn("push init", e); }
+  }
+  nudgeBtn.addEventListener("click", async () => {
+    nudgeBtn.disabled = true;
+    try {
+      const { reg, sub, on } = await pushState();
+      if (on) { await sub.unsubscribe(); addBot("Daily nudges are off.", [], true); }
+      else {
+        const perm = await Notification.requestPermission();
+        if (perm !== "granted") return;
+        const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(vapidKey) });
+        await api("/api/push/subscribe", { userId: user.id, name: user.name, subscription: newSub.toJSON() });
+        addBot("Daily nudges are on. Once a day I'll send one line based on what I remember — a goal, a training day, a thing you said you'd do.", [], true);
+      }
+    } catch (e) { addBot("Couldn't set up nudges: " + e.message, [], true); }
+    finally { nudgeBtn.disabled = false; await pushState(); }
+  });
+
   // ---- rendering ----
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function addUser(text) { const m = el("div", "msg user", text); messages.append(m); scroll(); }
@@ -467,6 +516,7 @@
     if (!messages.children.length) addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on — a habit, a goal, something you keep putting off.`, [], true);
     renderStarters();
     loadAll();
+    pushInit();
     input.focus();
   }
 
