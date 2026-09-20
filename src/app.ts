@@ -9,6 +9,7 @@
 import { readFileSync } from "node:fs";
 import { waitUntil } from "@vercel/functions";
 import { Hono } from "hono";
+import { AREAS } from "./areas.js";
 import { chat } from "./chat.js";
 import { config } from "./config.js";
 import type { Turn } from "./llm.js";
@@ -54,17 +55,24 @@ function keepAlive(p: Promise<unknown>) {
   try { waitUntil(p); } catch { /* not on Vercel */ }
 }
 
-let indexHtml: string | undefined;
-function page(): string {
-  indexHtml ??= readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
-  return indexHtml;
+const pages = new Map<string, string>();
+function page(name: string): string {
+  let html = pages.get(name);
+  if (!html) {
+    html = readFileSync(new URL(`../public/${name}`, import.meta.url), "utf8");
+    pages.set(name, html);
+  }
+  return html;
 }
 
 export function createApp() {
   const app = new Hono();
 
-  // The page itself. Local dev also serves ./public statically (src/web.ts).
-  app.get("/", (c) => c.html(page()));
+  // Pages. Local dev also serves ./public statically (src/web.ts).
+  app.get("/", (c) => c.html(page("index.html")));
+  app.get("/chat", (c) => c.html(page("chat.html")));
+
+  app.get("/api/areas", (c) => c.json({ areas: AREAS }));
 
   app.post("/api/chat", async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as ChatBody;

@@ -23,7 +23,7 @@ Ask at most one question per reply. Never invent facts about the user.`;
   const lines = memories.map((m) => `- ${m.text}`).join("\n");
   return `${base}
 
-What you remember about ${userName} from previous conversations (retrieved from Walrus Memory, most relevant first):
+What you remember about ${userName} from previous conversations (retrieved from Walrus Memory, most relevant first; the [tag] is the life area):
 ${lines}
 
 Use these memories naturally when they matter: follow up on goals, reference past struggles, notice progress, respect stated preferences. Do not recite the list or say "according to my memory" — just act like someone who remembers.`;

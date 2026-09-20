@@ -3,351 +3,162 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Walrus Coach</title>
-<meta name="description" content="A coach that remembers you between conversations. Memory stored encrypted on Walrus.">
+<title>Walrus Coach — a coach that remembers you</title>
+<meta name="description" content="A personal coach that remembers your goals, routines and setbacks between conversations. No account, no wallet. Your memories are encrypted and stored on Walrus.">
 <style>
   :root {
     --bg: #f4f7f8; --panel: #ffffff; --panel-2: #eef3f5; --border: #d5dfe3;
-    --text: #12242b; --muted: #4b636c; --accent: #0e8aa3; --accent-ink: #ffffff;
-    --user: #0e8aa3; --user-ink: #ffffff; --bot: #ffffff; --ok: #0f8a5f; --warn: #b45309;
-    --shadow: 0 1px 2px rgba(18,36,43,.06), 0 8px 24px rgba(18,36,43,.06);
+    --text: #12242b; --muted: #4b636c; --accent: #0e8aa3; --accent-ink: #ffffff; --ok: #0f8a5f;
+    --shadow: 0 1px 2px rgba(18,36,43,.06), 0 12px 32px rgba(18,36,43,.08);
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #0d1518; --panel: #131e22; --panel-2: #182529; --border: #263840;
-      --text: #e6eef1; --muted: #93a8b1; --accent: #35b8d3; --accent-ink: #06181d;
-      --user: #1c8ea6; --user-ink: #ffffff; --bot: #182529; --ok: #4ad19b; --warn: #f5b04c;
-      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+      --text: #e6eef1; --muted: #93a8b1; --accent: #35b8d3; --accent-ink: #06181d; --ok: #4ad19b;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35);
       color-scheme: dark;
     }
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
-  }
-  button, input, textarea { font: inherit; color: inherit; }
-  button { cursor: pointer; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
 
-  .app { display: grid; grid-template-columns: minmax(0, 1fr) 340px; height: 100dvh; }
-  @media (max-width: 860px) { .app { grid-template-columns: 1fr; grid-template-rows: 1fr auto; } }
+  nav { display: flex; align-items: center; gap: 12px; padding: 22px 0; }
+  .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
+  nav b { font-weight: 650; }
+  nav .spacer { flex: 1; }
+  nav a { font-size: 15px; color: var(--muted); text-decoration: none; }
+  nav a:hover { color: var(--text); }
 
-  /* ---- chat column ---- */
-  .chat { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--border); }
-  @media (max-width: 860px) { .chat { border-right: 0; } }
-  header {
-    display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border);
-    background: var(--panel);
-  }
-  header h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
-  header .sub { color: var(--muted); font-size: 13px; }
-  .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; }
-  .spacer { flex: 1; }
-  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); user-select: none; cursor: pointer; min-height: 44px; }
-  .toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
-  .switch { width: 40px; height: 22px; border-radius: 999px; background: var(--border); position: relative; transition: background .2s; }
-  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
-  .toggle input:checked + .switch { background: var(--ok); }
-  .toggle input:checked + .switch::after { transform: translateX(18px); }
-  .toggle input:focus-visible + .switch { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .hero { padding: 56px 0 40px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; padding-top: 24px; } }
+  h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1.08; letter-spacing: -.025em; margin: 0 0 18px; font-weight: 700; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 19px; color: var(--muted); margin: 0 0 28px; max-width: 52ch; }
+  .cta { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 22px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 650; font-size: 17px; transition: filter .15s; }
+  .cta:hover { filter: brightness(1.08); }
+  .cta svg { width: 20px; height: 20px; }
+  .fine { font-size: 14px; color: var(--muted); margin-top: 14px; }
 
-  .messages { flex: 1; overflow-y: auto; padding: 24px 20px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
-  @media (prefers-reduced-motion: reduce) { .messages { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
-  .msg { max-width: min(72ch, 88%); padding: 11px 15px; border-radius: 16px; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: var(--shadow); animation: rise .18s ease-out; }
-  @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-  .msg.user { align-self: flex-end; background: var(--user); color: var(--user-ink); border-bottom-right-radius: 6px; }
-  .msg.bot { align-self: flex-start; background: var(--bot); border: 1px solid var(--border); border-bottom-left-radius: 6px; }
-  .msg.bot.nomem { border-style: dashed; }
-  .meta { font-size: 12px; color: var(--muted); margin-top: 6px; display: flex; gap: 6px; align-items: center; }
-  .meta svg { width: 14px; height: 14px; }
-  .msg.user .meta { display: none; }
-  .typing { display: inline-flex; gap: 4px; padding: 4px 0; }
-  .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1s infinite; }
-  .typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
-  @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+  /* mock conversation */
+  .demo { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; }
+  .demo .day { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); text-align: center; margin: 4px 0; }
+  .b { max-width: 88%; padding: 10px 14px; border-radius: 14px; font-size: 15px; line-height: 1.45; }
+  .b.u { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 5px; }
+  .b.c { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border); border-bottom-left-radius: 5px; }
+  .b.c mark { background: none; color: var(--ok); font-weight: 600; }
+  .demo .tag { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; margin-left: 4px; }
+  .demo .tag svg { width: 13px; height: 13px; }
 
-  .composer { display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--panel); }
-  .composer textarea { flex: 1; resize: none; min-height: 46px; max-height: 160px; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); }
-  .composer button { min-width: 46px; height: 46px; border-radius: 12px; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; transition: filter .15s; }
-  .composer button:hover { filter: brightness(1.08); }
-  .composer button:disabled { opacity: .5; cursor: default; }
-  .composer svg { width: 20px; height: 20px; }
+  section { padding: 40px 0; }
+  h2 { font-size: 26px; letter-spacing: -.015em; margin: 0 0 8px; }
+  .sub { color: var(--muted); margin: 0 0 24px; max-width: 60ch; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 17px; display: flex; align-items: center; gap: 10px; }
+  .card h3 span { width: 30px; height: 30px; border-radius: 9px; background: var(--panel-2); display: grid; place-items: center; color: var(--accent); }
+  .card h3 svg { width: 17px; height: 17px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
 
-  /* ---- memory panel ---- */
-  aside { background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
-  @media (max-width: 860px) { aside { max-height: 42dvh; border-top: 1px solid var(--border); } }
-  aside section { padding: 16px 18px; border-bottom: 1px solid var(--border); }
-  aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; font-weight: 650; display: flex; align-items: center; gap: 8px; }
-  aside h2 svg { width: 15px; height: 15px; }
-  .recalled { flex: 0 0 auto; max-height: 45%; overflow-y: auto; }
-  .all { flex: 1; overflow-y: auto; min-height: 0; }
-  ul.mem { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-  ul.mem li { font-size: 14px; line-height: 1.45; padding: 9px 11px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-start; }
-  ul.mem li .d { flex: none; font-variant-numeric: tabular-nums; font-size: 11px; color: var(--muted); background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; margin-top: 2px; }
-  ul.mem li .d.strong { color: var(--ok); border-color: var(--ok); }
-  .empty { color: var(--muted); font-size: 14px; }
-  .row { display: flex; gap: 8px; align-items: center; }
-  .btn { min-height: 36px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--panel-2); font-size: 13px; transition: background .15s, border-color .15s; }
-  .btn:hover { border-color: var(--accent); }
-  .who { font-size: 13px; color: var(--muted); }
-  .who b { color: var(--text); }
-  .status { font-size: 12px; color: var(--muted); }
-  .status .ok { color: var(--ok); }
-  .status .warn { color: var(--warn); }
+  .areas { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-size: 14px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); color: var(--text); }
 
-  .key { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
-  .key code { flex: 1; min-width: 0; font-size: 12px; padding: 7px 9px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
-  .tabs button { flex: 1; height: 36px; border-radius: 9px; border: 1px solid var(--border); background: var(--panel-2); color: var(--muted); font-size: 13px; font-weight: 500; }
-  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  .field-error { color: var(--warn); font-size: 13px; margin: -8px 0 12px; min-height: 1em; }
+  .steps { counter-reset: s; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
+  .step { position: relative; padding: 20px 20px 20px 58px; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; }
+  .step::before { counter-increment: s; content: counter(s); position: absolute; left: 18px; top: 18px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+  .step b { display: block; margin-bottom: 4px; }
+  .step p { margin: 0; color: var(--muted); font-size: 15px; }
 
-  /* ---- name dialog ---- */
-  dialog { border: 1px solid var(--border); border-radius: 16px; background: var(--panel); color: var(--text); padding: 24px; max-width: 420px; width: calc(100% - 32px); box-shadow: var(--shadow); }
-  dialog::backdrop { background: rgba(6, 18, 22, .55); }
-  dialog h3 { margin: 0 0 6px; font-size: 20px; }
-  dialog p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
-  dialog label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-  dialog input { width: 100%; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); margin-bottom: 14px; }
-  dialog button { width: 100%; height: 44px; border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .honest { border-left: 3px solid var(--accent); padding: 4px 0 4px 18px; color: var(--muted); font-size: 15px; max-width: 70ch; }
+  footer { padding: 32px 0 48px; color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 16px; }
+  footer a { text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
-<div class="app">
-  <main class="chat">
-    <header>
-      <div class="logo" aria-hidden="true">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.9A4 4 0 0 0 7 19h1a4 4 0 0 0 8 0h1a4 4 0 0 0 2-7.1A4 4 0 0 0 16 8V7a4 4 0 0 0-4-4z"/><path d="M12 3v16"/></svg>
+<div class="wrap">
+  <nav>
+    <div class="logo" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.9A4 4 0 0 0 7 19h1a4 4 0 0 0 8 0h1a4 4 0 0 0 2-7.1A4 4 0 0 0 16 8V7a4 4 0 0 0-4-4z"/><path d="M12 3v16"/></svg></div>
+    <b>Walrus Coach</b>
+    <div class="spacer"></div>
+    <a href="#how">How it works</a>
+    <a href="https://github.com/MystenLabs/MemWal" target="_blank" rel="noopener">Walrus Memory</a>
+  </nav>
+
+  <div class="hero">
+    <div>
+      <h1>A coach that <em>remembers</em> what you told it last week.</h1>
+      <p class="lead">Most chatbots forget you the moment you close the tab. Walrus Coach keeps track of your goals, your routine and the things you keep putting off — and brings them up when it matters.</p>
+      <a class="cta" href="/chat">Start coaching <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
+      <div class="fine">No account, no password, no wallet. Free. Works in your language.</div>
+    </div>
+
+    <div class="demo" aria-label="Example conversation across two days">
+      <div class="day">Monday</div>
+      <div class="b u">I want to run 5k by November. Never ran in my life, and my left knee is dodgy.</div>
+      <div class="b c">Good goal, and thanks for the knee heads-up — we'll build up slowly. When could you fit two short runs a week?</div>
+      <div class="b u">Tuesdays and Thursdays, 6am, before my night shift.</div>
+      <div class="day">Thursday · new conversation</div>
+      <div class="b u">ugh, zero motivation today</div>
+      <div class="b c">It's Thursday — <mark>run day</mark>. You don't need motivation for 15 minutes in the park. <mark>How's the knee</mark> been since Tuesday?</div>
+      <div class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg> recalled 4 memories from Monday</div>
+    </div>
+  </div>
+
+  <section id="how">
+    <h2>What changes when a coach remembers</h2>
+    <p class="sub">You stop repeating yourself, and the coach starts noticing patterns: the excuse you used last week, the goal you set a month ago, the thing that always trips you up at 4pm.</p>
+    <div class="grid">
+      <div class="card">
+        <h3><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></span>It follows up</h3>
+        <p>Set a goal on Monday, get asked about it on Thursday. Mention a bad knee once, and it's never forgotten.</p>
       </div>
-      <div>
-        <h1>Walrus Coach</h1>
-        <div class="sub">Remembers you between sessions · memory on Walrus</div>
+      <div class="card">
+        <h3><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>It's yours</h3>
+        <p>Every memory is encrypted and stored in your own space on Walrus, a decentralized network. We don't keep a database of you.</p>
       </div>
-      <div class="spacer"></div>
-      <label class="toggle" title="Turn long-term memory off to see how a forgetful bot behaves">
-        <input type="checkbox" id="memToggle" checked>
-        <span class="switch" aria-hidden="true"></span>
-        <span id="memLabel">Memory on</span>
-      </label>
-    </header>
-
-    <div class="messages" id="messages" aria-live="polite"></div>
-
-    <form class="composer" id="composer">
-      <textarea id="input" rows="1" placeholder="Tell me what you're working on…" aria-label="Message" autocomplete="off"></textarea>
-      <button type="submit" id="send" aria-label="Send">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
-      </button>
-    </form>
-  </main>
-
-  <aside>
-    <section>
-      <div class="row" style="justify-content: space-between; flex-wrap: wrap;">
-        <div class="who">Talking as <b id="whoName">…</b></div>
-        <div class="row">
-          <button class="btn" id="resetBtn" title="Clear short-term context; long-term memory stays">New session</button>
-          <button class="btn" id="switchBtn" title="Chat as a different person (new memory namespace)">Switch user</button>
-        </div>
+      <div class="card">
+        <h3><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg></span>It's transparent</h3>
+        <p>Every reply shows exactly which memories it used, and you can see and export everything it knows about you.</p>
       </div>
-      <div class="status" id="status" style="margin-top: 8px;"></div>
-      <div class="key">
-        <code id="keyText" title="Your memory key">…</code>
-        <button class="btn" id="copyKey" title="Copy your memory key">Copy</button>
-      </div>
-      <div class="hint">Your memory key. Paste it on another device to bring your memories with you.</div>
-    </section>
+    </div>
+  </section>
 
-    <section class="recalled">
-      <h2>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        Recalled for the last reply
-      </h2>
-      <ul class="mem" id="recalled"><li class="empty" style="background:none;border:0;padding:0">Nothing yet — say something.</li></ul>
-    </section>
+  <section>
+    <h2>Bring more than one part of your life</h2>
+    <p class="sub">The coach gets better the more areas it knows about, because real life overlaps: bad sleep ruins training, stress at work turns into 4pm cake. Each area you talk about earns a badge.</p>
+    <div class="areas" id="areas"></div>
+  </section>
 
-    <section class="all">
-      <h2>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        Everything it remembers
-        <span class="spacer"></span>
-        <button class="btn" id="refreshBtn" style="min-height:30px;padding:0 10px;">Refresh</button>
-      </h2>
-      <ul class="mem" id="all"><li class="empty" style="background:none;border:0;padding:0">Loads after your first message.</li></ul>
-    </section>
-  </aside>
+  <section>
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step"><b>You talk</b><p>Tell it what you're working on, in any language. It replies like a good coach: short, direct, one question at a time.</p></div>
+      <div class="step"><b>It learns</b><p>After each reply it extracts the durable facts — goals, schedule, constraints, progress — and stores each one encrypted on Walrus.</p></div>
+      <div class="step"><b>It recalls</b><p>Next time, your message is matched against your memories and the relevant ones shape the reply. No re-explaining.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="honest">Built for <a href="https://www.deepsurge.xyz/hackathons/c0141a4a-21be-4009-bc63-7c168608c849" target="_blank" rel="noopener">Walrus Session 8: Chatbots That Remember</a>. Runs on an open-weight model (Qwen 3.8 27B via Groq) and <a href="https://memory.walrus.xyz" target="_blank" rel="noopener">Walrus Memory</a>. It's a prototype: expect the occasional slow reply while a memory is being written.</p>
+  </section>
+
+  <footer>
+    <a href="/chat">Open the coach</a>
+    <a href="https://github.com/MystenLabs/MemWal" target="_blank" rel="noopener">Walrus Memory on GitHub</a>
+    <span>Open source · MIT</span>
+  </footer>
 </div>
-
-<dialog id="nameDialog">
-  <form method="dialog" id="nameForm">
-    <h3>Who am I talking to?</h3>
-    <p>No account, no password. A private memory key is created in this browser; keep it to continue on another device.</p>
-    <div class="tabs" role="tablist">
-      <button type="button" role="tab" id="tabNew" aria-selected="true">I'm new here</button>
-      <button type="button" role="tab" id="tabKey" aria-selected="false">I have a memory key</button>
-    </div>
-    <label for="nameInput">Your first name</label>
-    <input id="nameInput" required maxlength="40" autocomplete="given-name" placeholder="Ana">
-    <div id="keyField" hidden>
-      <label for="keyInput">Memory key</label>
-      <input id="keyInput" maxlength="70" autocomplete="off" spellcheck="false" placeholder="web-xxxxxxxx-xxxx-…">
-    </div>
-    <div class="field-error" id="formError"></div>
-    <button type="submit" id="startBtn">Start</button>
-  </form>
-</dialog>
-
 <script>
-(() => {
-  const $ = (id) => document.getElementById(id);
-  const messages = $("messages"), input = $("input"), send = $("send"), composer = $("composer");
-  const recalledEl = $("recalled"), allEl = $("all"), statusEl = $("status");
-  const memToggle = $("memToggle"), memLabel = $("memLabel");
-
-  // ---- identity: opaque id kept in this browser only ----
-  let user = null;
-  try { user = JSON.parse(localStorage.getItem("walrus-coach-user") || "null"); } catch {}
-  const newId = () => "web-" + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
-  function saveUser(u) { user = u; try { localStorage.setItem("walrus-coach-user", JSON.stringify(u)); } catch {} $("whoName").textContent = u.name; $("keyText").textContent = u.id; }
-  const KEY_RE = /^web-[a-z0-9-]{8,64}$/i;
-
-  $("copyKey").addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(user.id); $("copyKey").textContent = "Copied"; setTimeout(() => ($("copyKey").textContent = "Copy"), 1500); }
-    catch { prompt("Your memory key:", user.id); }
-  });
-
-  let mode = "new";
-  function setMode(m) {
-    mode = m;
-    $("tabNew").setAttribute("aria-selected", String(m === "new"));
-    $("tabKey").setAttribute("aria-selected", String(m === "key"));
-    $("keyField").hidden = m !== "key";
-    $("startBtn").textContent = m === "key" ? "Restore my memories" : "Start";
-    $("formError").textContent = "";
-  }
-  $("tabNew").addEventListener("click", () => setMode("new"));
-  $("tabKey").addEventListener("click", () => setMode("key"));
-
-  const dialog = $("nameDialog");
-  $("nameForm").addEventListener("submit", (ev) => {
-    const name = $("nameInput").value.trim() || "friend";
-    if (mode === "key") {
-      const key = $("keyInput").value.trim();
-      if (!KEY_RE.test(key)) { ev.preventDefault(); $("formError").textContent = "That doesn't look like a memory key (it starts with web-)."; return; }
-      saveUser({ id: key, name });
-      messages.innerHTML = "";
-      addBot(`Welcome back, ${name}. Your memories are loading on the right — say hi and I'll pick up where we left off.`, [], true);
-    } else {
-      saveUser({ id: user?.id || newId(), name });
-    }
-    boot();
-  });
-  function askName() { $("nameInput").value = ""; $("keyInput").value = ""; setMode("new"); dialog.showModal(); }
-
-  // Short-term history lives in the browser and is sent with every request (the API is stateless).
-  let history = [];
-  const MAX_TURNS = 12;
-  function remember(role, content) { history.push({ role, content }); history = history.slice(-MAX_TURNS); }
-
-  $("switchBtn").addEventListener("click", () => { user = { id: newId(), name: "" }; history = []; messages.innerHTML = ""; askName(); });
-  $("resetBtn").addEventListener("click", () => {
-    history = [];
-    addBot("Short-term context cleared. I still remember the long-term stuff — say hi to see it in action.", [], true);
-  });
-  $("refreshBtn").addEventListener("click", loadAll);
-
-  memToggle.addEventListener("change", () => {
-    const on = memToggle.checked;
-    memLabel.textContent = on ? "Memory on" : "Memory off";
-    addBot(on ? "Memory ON — I recall and learn again." : "Memory OFF — I'll answer like a bot that forgets you. Ask me something I should know.", [], true);
-  });
-
-  async function api(path, body) {
-    const res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || res.statusText);
-    return data;
-  }
-
-  // ---- rendering ----
-  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-  function addUser(text) { const m = el("div", "msg user", text); messages.append(m); scroll(); }
-  function addBot(text, memories, system) {
-    const m = el("div", "msg bot" + (system ? " nomem" : ""), text);
-    if (!system) {
-      const meta = el("div", "meta");
-      const n = memories ? memories.length : 0;
-      meta.innerHTML = memToggle.checked
-        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg> recalled ${n} ${n === 1 ? "memory" : "memories"}`
-        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><circle cx="11" cy="11" r="7"/></svg> memory off`;
-      m.append(meta);
-    }
-    messages.append(m); scroll();
-  }
-  function typing() { const m = el("div", "msg bot"); m.innerHTML = '<span class="typing" aria-label="Thinking"><i></i><i></i><i></i></span>'; messages.append(m); scroll(); return m; }
-  function scroll() { messages.scrollTop = messages.scrollHeight; }
-
-  function renderList(target, memories, emptyText) {
-    target.innerHTML = "";
-    if (!memories || memories.length === 0) { const li = el("li", "empty", emptyText); li.style.cssText = "background:none;border:0;padding:0"; target.append(li); return; }
-    for (const m of memories) {
-      const li = el("li");
-      const d = el("span", "d" + (m.distance < 0.55 ? " strong" : ""), m.distance.toFixed(2));
-      d.title = "cosine distance — lower is more relevant";
-      li.append(d, el("span", null, m.text));
-      target.append(li);
-    }
-  }
-
-  async function loadAll() {
-    try {
-      const res = await fetch("/api/memories?userId=" + encodeURIComponent(user.id));
-      const data = await res.json();
-      renderList(allEl, (data.memories || []).sort((a, b) => a.distance - b.distance), "No memories stored yet.");
-      statusEl.innerHTML = `namespace <code>${data.namespace}</code> · <span class="ok">${(data.memories || []).length} memories on Walrus</span>`;
-    } catch (e) { statusEl.innerHTML = `<span class="warn">could not load memories: ${e.message}</span>`; }
-  }
-
-  // ---- send ----
-  let busy = false;
-  composer.addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    const text = input.value.trim();
-    if (!text || busy) return;
-    busy = true; send.disabled = true; input.value = ""; autosize();
-    addUser(text);
-    const t = typing();
-    try {
-      const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history });
-      t.remove();
-      remember("user", text);
-      remember("assistant", data.reply);
-      addBot(data.reply, data.memories, false);
-      renderList(recalledEl, data.memories, data.memory ? "Nothing relevant was recalled for this message." : "Memory is off — nothing recalled.");
-      setTimeout(loadAll, 4000); // give background learning a moment to land on Walrus
-    } catch (e) {
-      t.remove();
-      addBot("Something broke: " + e.message, [], true);
-    } finally { busy = false; send.disabled = false; input.focus(); }
-  });
-  input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); composer.requestSubmit(); } });
-  function autosize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 160) + "px"; }
-  input.addEventListener("input", autosize);
-
-  function boot() {
-    $("whoName").textContent = user.name;
-    $("keyText").textContent = user.id;
-    if (!messages.children.length) addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on — a habit, a goal, something you keep putting off.`, [], true);
-    loadAll();
-    input.focus();
-  }
-
-  if (user && user.id && user.name) boot(); else { user = user || { id: newId() }; askName(); }
-})();
+  fetch("/api/areas").then((r) => r.json()).then(({ areas }) => {
+    const box = document.getElementById("areas");
+    for (const a of areas) { const c = document.createElement("span"); c.className = "chip"; c.textContent = a.label; box.append(c); }
+  }).catch(() => {});
 </script>
 </body>
 </html>

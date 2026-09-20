@@ -33,7 +33,16 @@ memories, even though both are written by the same delegate key.
 
 ## The web UI
 
+`/` is a landing page that explains the product; `/chat` is the coach.
+
 ![Walrus Coach web UI](docs/screenshot-chat.png)
+
+**Life areas.** Every stored fact is tagged with one of 11 life areas
+([src/areas.ts](src/areas.ts)) chosen by the extractor — `[training] Ana runs on
+Tuesdays`. The chat shows conversation starters per area on an empty screen and lights
+up a badge for each area the user has memories in. It nudges people to bring more of
+their life to the coach (which is where memory pays off: bad sleep ruins training), and
+it costs no database — the badges are computed from the user's own memories.
 
 [public/index.html](public/index.html) is a single-page chat served by [src/web.ts](src/web.ts).
 Identity is deliberately Web2-flavoured: no wallet, no account. On first visit you type a

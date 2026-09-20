@@ -8,6 +8,7 @@
  * cheap dedup before anything hits Walrus.
  */
 import { OpenAI } from "openai";
+import { AREAS, AREA_IDS } from "./areas.js";
 import { config } from "./config.js";
 
 const groq = new OpenAI({ apiKey: config.groqApiKey, baseURL: "https://api.groq.com/openai/v1" });
@@ -17,13 +18,14 @@ const PROMPT = `You extract durable facts about a person from one exchange betwe
 Rules:
 - Only facts about the USER that will still matter in future conversations: goals, deadlines, schedule, constraints, health notes, preferences, habits, struggles, progress, life context.
 - Ignore small talk, questions, and anything the coach said.
-- Each fact is one short, self-contained sentence starting with the user's name.
+- Each fact is one short, self-contained sentence starting with the user's name, prefixed with ONE life-area tag in square brackets from this list:
+${AREAS.map((a) => `  [${a.id}] — ${a.hint}`).join("\n")}
 - Write facts in the same language the user wrote in.
 - Include concrete details (days, times, dates, numbers, names) when present.
 - Do NOT repeat or rephrase anything already in "Already known". Only genuinely new information or a real update (e.g. a changed date, progress made).
 - Return 0 to 4 facts. Return an empty list if there is nothing new.
 
-Respond with JSON only: {"facts": ["...", "..."]}`;
+Respond with JSON only: {"facts": ["[training] Ana runs on Tuesdays and Thursdays at 6am", "..."]}`;
 
 export async function extractFacts(userName: string, userMessage: string, assistantReply: string, known: string[] = []): Promise<string[]> {
   const knownBlock = known.length > 0 ? `Already known:\n${known.map((k) => `- ${k}`).join("\n")}\n\n` : "";
@@ -41,7 +43,10 @@ export async function extractFacts(userName: string, userMessage: string, assist
   try {
     const parsed = JSON.parse(raw) as { facts?: unknown };
     if (!Array.isArray(parsed.facts)) return [];
-    return parsed.facts.filter((f): f is string => typeof f === "string" && f.trim().length > 0).map((f) => f.trim());
+    return parsed.facts
+      .filter((f): f is string => typeof f === "string" && f.trim().length > 0)
+      .map((f) => f.trim())
+      .map((f) => (AREA_IDS.some((id) => f.toLowerCase().startsWith(`[${id}]`)) ? f : `[life] ${f}`));
   } catch {
     console.error("[extract] could not parse model output:", raw.slice(0, 200));
     return [];
