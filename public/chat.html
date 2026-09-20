@@ -106,6 +106,10 @@
   .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .field-error { color: var(--warn); font-size: 13px; margin: -8px 0 12px; min-height: 1em; }
 
+  .banner { display: none; align-items: center; gap: 8px; font-size: 13px; padding: 8px 20px; background: color-mix(in srgb, var(--warn) 12%, var(--panel)); color: var(--warn); border-bottom: 1px solid var(--border); }
+  .banner.show { display: flex; }
+  .banner svg { width: 15px; height: 15px; flex: none; }
+
   /* ---- starters ---- */
   .starters { display: flex; flex-wrap: wrap; gap: 8px; max-width: 72ch; }
   .starters button { font-size: 14px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); color: var(--text); transition: border-color .15s, background .15s; text-align: left; }
@@ -148,6 +152,10 @@
       </label>
     </header>
 
+    <div class="banner" id="banner" role="status">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      <span id="bannerText"></span>
+    </div>
     <div class="messages" id="messages" aria-live="polite"></div>
 
     <form class="composer" id="composer">
@@ -343,6 +351,43 @@
   }
   fetch("/api/areas").then((r) => r.json()).then((d) => { AREAS = d.areas || []; if (user && user.name) { renderStarters(); loadAll(); } }).catch(() => {});
 
+  // ---- outbox: facts the server extracted but might not have managed to write ----
+  // Each reply returns the facts being written in the background. We keep them here
+  // with a timestamp; when the memory list refreshes and a fact still isn't there
+  // after a grace period, we resend it through /api/remember (which dedupes).
+  const OUTBOX_KEY = "walrus-coach-outbox";
+  const GRACE_MS = 90_000;
+  function outboxLoad() { try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || "{}"); } catch { return {}; } }
+  function outboxSave(o) { try { localStorage.setItem(OUTBOX_KEY, JSON.stringify(o)); } catch {} }
+  function outboxAdd(facts) {
+    if (!facts || !facts.length) return;
+    const o = outboxLoad(); const mine = o[user.id] || [];
+    for (const f of facts) if (!mine.some((x) => x.text === f)) mine.push({ text: f, at: Date.now(), tries: 0 });
+    o[user.id] = mine; outboxSave(o);
+  }
+  const norm = (t) => (t || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  async function outboxReconcile(memories) {
+    const o = outboxLoad(); const mine = o[user.id] || []; if (!mine.length) return;
+    const stored = new Set((memories || []).map((m) => norm(m.text)));
+    const keep = [];
+    for (const item of mine) {
+      if (stored.has(norm(item.text))) continue;                       // landed
+      if (Date.now() - item.at < GRACE_MS) { keep.push(item); continue; } // still in flight
+      if (item.tries >= 3) continue;                                     // give up quietly
+      try {
+        await api("/api/remember", { userId: user.id, name: user.name, fact: item.text });
+        console.info("[outbox] resent:", item.text);
+      } catch (e) { item.tries++; item.at = Date.now(); keep.push(item); }
+    }
+    o[user.id] = keep; outboxSave(o);
+    if (keep.length) setBanner(`${keep.length} ${keep.length === 1 ? "memory is" : "memories are"} still waiting to be saved — I'll retry automatically.`);
+  }
+
+  function setBanner(text) {
+    const b = $("banner"); $("bannerText").textContent = text || "";
+    b.classList.toggle("show", Boolean(text));
+  }
+
   // ---- rendering ----
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function addUser(text) { const m = el("div", "msg user", text); messages.append(m); scroll(); }
@@ -381,6 +426,7 @@
       renderList(allEl, (data.memories || []).sort((a, b) => a.distance - b.distance), "No memories stored yet.");
       renderBadges(data.memories || []);
       statusEl.innerHTML = `namespace <code>${data.namespace}</code> · <span class="ok">${(data.memories || []).length} memories on Walrus</span>`;
+      await outboxReconcile(data.memories || []);
     } catch (e) { statusEl.innerHTML = `<span class="warn">could not load memories: ${e.message}</span>`; }
   }
 
@@ -400,8 +446,12 @@
       remember("user", text);
       remember("assistant", data.reply);
       addBot(data.reply, data.memories, false);
+      if (data.memory && data.memoryAvailable === false) setBanner("Walrus Memory is unreachable right now — this reply was made without your memories. New facts are queued and will be saved when it's back.");
+      else if (data.memory) setBanner("");
+      outboxAdd(data.facts);
       renderList(recalledEl, data.memories, data.memory ? "Nothing relevant was recalled for this message." : "Memory is off — nothing recalled.");
-      setTimeout(loadAll, 4000); // give background learning a moment to land on Walrus
+      setTimeout(loadAll, 5000);            // background write usually lands in a few seconds
+      setTimeout(loadAll, GRACE_MS + 5000); // …and this pass resends anything that didn't
     } catch (e) {
       t.remove();
       addBot("Something broke: " + e.message, [], true);

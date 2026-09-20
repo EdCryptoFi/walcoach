@@ -21,7 +21,7 @@ function nameOf(ctx: { from?: { first_name?: string; username?: string } }): str
 bot.command("start", async (ctx) => {
   const userId = ctx.from!.id;
   const name = nameOf(ctx);
-  const known = memoryDisabled.has(userId) ? [] : await recallForUser(userId, `who is ${name}, their goals and current focus`, 5);
+  const known = memoryDisabled.has(userId) ? [] : (await recallForUser(userId, `who is ${name}, their goals and current focus`, 5)).memories;
   if (known.length > 0) {
     const reply = await generateReply(name, known, [{ role: "user", content: "Hi, I'm back. Greet me briefly and pick up where we left off." }]);
     await ctx.reply(reply);

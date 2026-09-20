@@ -13,7 +13,7 @@ import { config } from "./config.js";
 
 const groq = new OpenAI({ apiKey: config.groqApiKey, baseURL: "https://api.groq.com/openai/v1" });
 
-const PROMPT = `You extract durable facts about a person from one exchange between them and their coach.
+const PROMPT = `You extract durable facts about a person from their latest message to their coach (earlier turns are given only as context).
 
 Rules:
 - Only facts about the USER that will still matter in future conversations: goals, deadlines, schedule, constraints, health notes, preferences, habits, struggles, progress, life context.
@@ -27,7 +27,7 @@ ${AREAS.map((a) => `  [${a.id}] — ${a.hint}`).join("\n")}
 
 Respond with JSON only: {"facts": ["[training] Ana runs on Tuesdays and Thursdays at 6am", "..."]}`;
 
-export async function extractFacts(userName: string, userMessage: string, assistantReply: string, known: string[] = []): Promise<string[]> {
+export async function extractFacts(userName: string, userMessage: string, context: string, known: string[] = []): Promise<string[]> {
   const knownBlock = known.length > 0 ? `Already known:\n${known.map((k) => `- ${k}`).join("\n")}\n\n` : "";
   const completion = await groq.chat.completions.create({
     model: config.groqModel,
@@ -36,7 +36,7 @@ export async function extractFacts(userName: string, userMessage: string, assist
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: PROMPT },
-      { role: "user", content: `User name: ${userName}\n\n${knownBlock}User: ${userMessage}\n\nCoach: ${assistantReply}` },
+      { role: "user", content: `User name: ${userName}\n\n${knownBlock}${context}\n\nUser (latest message): ${userMessage}` },
     ],
   });
   const raw = completion.choices[0]?.message?.content ?? "{}";

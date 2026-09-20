@@ -32,6 +32,12 @@ export interface Memory {
   blobId: string;
 }
 
+export interface Recall {
+  memories: Memory[];
+  /** false when the relayer could not be reached — the caller is answering blind. */
+  available: boolean;
+}
+
 // Cosine-distance cutoff observed with the relayer's embedding model.
 // Cross-language hits (PT question, EN fact) land around 0.55–0.75, so the
 // cutoff is deliberately loose; the LLM is told to ignore what isn't useful.
@@ -98,7 +104,7 @@ async function profileFor(userId: number): Promise<Memory[]> {
  * the message, merged with the (cached) core profile. If the relayer is rate
  * limited we answer without memory rather than make the user wait.
  */
-export async function recallForUser(userId: number, query: string, limit = 8, attempt = 1): Promise<Memory[]> {
+export async function recallForUser(userId: number, query: string, limit = 8, attempt = 1): Promise<Recall> {
   const started = Date.now();
   const namespace = namespaceFor(userId);
   let byMessage: Memory[] = [];
@@ -110,7 +116,7 @@ export async function recallForUser(userId: number, query: string, limit = 8, at
     ]);
   } catch (err) {
     console.error(`[recall] user=${userId} unavailable, answering without memory: ${(err as Error).message.slice(0, 120)}`);
-    return [];
+    return { memories: [], available: false };
   }
 
   const seen = new Set<string>();
@@ -127,9 +133,10 @@ export async function recallForUser(userId: number, query: string, limit = 8, at
     return recallForUser(userId, query, limit, attempt + 1);
   }
 
-  console.log(`[recall] user=${userId} q="${query.slice(0, 60)}" hits=${memories.length} (msg=${byMessage.length}, profile=${profile.length}) ${Date.now() - started}ms`);
+  console.log(`[recall] user=${userId} hits=${memories.length} (msg=${byMessage.length}, profile=${profile.length}) ${Date.now() - started}ms`);
+  detail(`         q="${query.slice(0, 60)}"`);
   for (const m of memories) detail(`         ${m.distance.toFixed(3)}  ${m.text}`);
-  return memories;
+  return { memories, available: true };
 }
 
 /** Broad recall used by /memories — no relevance cutoff. */
@@ -147,17 +154,28 @@ export async function listMemories(userId: number, limit = 25): Promise<Memory[]
 
 const normalize = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 
+/** Facts already extracted for this turn (see chat.ts), to be stored without re-extracting. */
+export type FactList = string[];
+
+/** Extract facts only (no storage). `known` keeps the extractor from re-stating what we have. */
+export async function extractNewFacts(userName: string, userMessage: string, context: string, known: Memory[] = []): Promise<FactList> {
+  const knownTexts = known.map((m) => m.text);
+  const knownSet = new Set(knownTexts.map(normalize));
+  return (await extractFacts(userName, userMessage, context, knownTexts)).filter((f) => !knownSet.has(normalize(f)));
+}
+
 /**
- * Extract durable facts from the latest exchange and store them on Walrus in
- * one bulk write. Runs after the reply is sent so the user never waits.
+ * Store facts from the latest exchange on Walrus in one bulk write. Runs after
+ * the reply is sent so the user never waits.
  *
  * `known` is what was recalled for this turn: it is passed to the extractor
  * so it doesn't re-state facts we already have (no extra relayer calls).
+ * When `facts` is given (already extracted), extraction is skipped.
  *
  * MEMORY_EXTRACTOR=llm (default): our model extracts, then `rememberBulkAndWait`.
  * MEMORY_EXTRACTOR=relayer: the relayer's `analyzeAndWait` does extraction + storage.
  */
-export async function learnFromExchange(userId: number, userName: string, userMessage: string, assistantReply: string, known: Memory[] = []) {
+export async function learnFromExchange(userId: number, userName: string, userMessage: string, assistantReply: string, known: Memory[] = [], facts?: FactList) {
   const namespace = namespaceFor(userId);
   try {
     if (config.extractor === "relayer") {
@@ -170,20 +188,18 @@ export async function learnFromExchange(userId: number, userName: string, userMe
       return;
     }
 
-    const knownTexts = known.map((m) => m.text);
-    const knownSet = new Set(knownTexts.map(normalize));
-    const facts = (await extractFacts(userName, userMessage, assistantReply, knownTexts)).filter((f) => !knownSet.has(normalize(f)));
-    if (facts.length === 0) {
+    const toStore = facts ?? (await extractNewFacts(userName, userMessage, `Coach: ${assistantReply}`, known));
+    if (toStore.length === 0) {
       console.log(`[learn]  user=${userId} no new facts`);
       return;
     }
 
     const result = await withRetry("remember", () =>
-      memwal.rememberBulkAndWait(facts.map((text) => ({ text, namespace })), { timeoutMs: 90_000, pollIntervalMs: 3000 }),
+      memwal.rememberBulkAndWait(toStore.map((text) => ({ text, namespace })), { timeoutMs: 90_000, pollIntervalMs: 3000 }),
     );
-    const stored = facts.filter((_, i) => result.results[i]?.status === "done");
-    result.results.forEach((r, i) => detail(`         ${r.status === "done" ? "+" : "!"} ${facts[i]}  [${r.blob_id || r.error}]`));
-    console.log(`[learn]  user=${userId} stored ${stored.length}/${facts.length} facts`);
+    const stored = toStore.filter((_, i) => result.results[i]?.status === "done");
+    result.results.forEach((r, i) => detail(`         ${r.status === "done" ? "+" : "!"} ${toStore[i]}  [${r.blob_id || r.error}]`));
+    console.log(`[learn]  user=${userId} stored ${stored.length}/${toStore.length} facts`);
     stats.recordFacts(userId, userName, stored);
     if (stored.length > 0) profileCache.delete(userId);
   } catch (err) {
@@ -191,9 +207,19 @@ export async function learnFromExchange(userId: number, userName: string, userMe
   }
 }
 
-/** Store one explicit fact the user asked us to remember. */
+/**
+ * Store one explicit fact (from /remember or the browser outbox retrying a
+ * failed background write). Dedupes first, since a retried fact may have
+ * landed after all.
+ */
 export async function rememberExplicit(userId: number, userName: string, fact: string) {
-  const result = await withRetry("remember", () => memwal.rememberAndWait(fact, namespaceFor(userId), { timeoutMs: 60_000, pollIntervalMs: 3000 }));
+  const namespace = namespaceFor(userId);
+  const dup = await withRetry("recall", () => memwal.recall({ query: fact, namespace, limit: 1, maxDistance: 0.15 }), { tries: 2, maxWaitMs: 3000 });
+  if (dup.results[0]) {
+    console.log(`[remember] user=${userId} already stored (d=${dup.results[0].distance.toFixed(3)})`);
+    return { blob_id: dup.results[0].blob_id, duplicate: true };
+  }
+  const result = await withRetry("remember", () => memwal.rememberAndWait(fact, namespace, { timeoutMs: 60_000, pollIntervalMs: 3000 }));
   stats.recordFacts(userId, userName, [fact]);
   profileCache.delete(userId);
   console.log(`[remember] user=${userId} blob=${result.blob_id}`);
