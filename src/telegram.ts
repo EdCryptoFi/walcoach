@@ -1,5 +1,6 @@
 import { Bot } from "grammy";
 import { config } from "./config.js";
+import { log } from "./log.js";
 import { chat, resetHistory } from "./chat.js";
 import { generateReply } from "./llm.js";
 import { listMemories, memwal, recallForUser, rememberExplicit } from "./memory.js";
@@ -92,12 +93,12 @@ bot.on("message:text", async (ctx) => {
     const { reply, sources } = await chat(userId, name, text, useMemory);
     await ctx.reply(sources.length ? `${reply}\n\n${sources.map((s, i) => `[${i + 1}] ${s.url}`).join("\n")}` : reply);
   } catch (err) {
-    console.error(`[error] user=${userId}`, err);
+    log.error("telegram.chat.failed", err, { user: userId });
     await ctx.reply("Something broke on my side — try again in a moment.");
   }
 });
 
-bot.catch((err) => console.error("[bot]", err));
+bot.catch((err) => log.error("telegram.bot", err));
 
 async function main() {
   const health = await memwal.health();

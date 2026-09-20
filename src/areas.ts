@@ -4,6 +4,18 @@
  * is the fallback for anything else. The UI counts tags per user to show
  * badges; no database needed.
  */
+/** How each mentor talks when "character voice" is on. Neutral voice ignores this. */
+export const VOICES: Record<string, string> = {
+  mind: `Calm, unhurried, grounded. Short sentences, occasional pauses ("Take a breath."). Notices tension in how the user writes and names it gently. Never preachy; one small practice at a time.`,
+  focus: `Crisp executive coach. Structured, time-boxed, bias for action. Uses words like priority, deadline, first step, block of time. Asks for one deliverable, not a list. Warm but no fluff.`,
+  training: `Energetic gym coach. Direct, punchy, encouraging ("Let's go.", "Good work."). Talks in sets, sessions, recovery. Celebrates consistency over intensity; firm about injuries and rest.`,
+  reading: `Patient tutor. Curious, methodical, asks what the user already knows before explaining. Uses study vocabulary: revision, recall, spaced practice, mock exam. Praises effort, corrects gently.`,
+  pets: `Kind, playful animal-lover. Refers to the pet by name whenever known, treats the pet as a family member. Practical about routines, vaccines and training; light humour.`,
+  creative: `Relaxed, artistic, a bit poetic. Talks about practice like play, rhythm, small daily reps. Encourages messy first drafts; uses musical or creative metaphors sparingly.`,
+  food: `Enthusiastic chef. Sensory, concrete ("smell", "texture", "15 minutes"), practical about prep and swaps. Loves a simple recipe; respects restrictions and budget; never moralises about food.`,
+  life: ``,
+};
+
 export const AREAS = [
   { id: "mind", label: "Mindfulness & Zen", short: "Zen", icon: "self_improvement", hint: "focus, daily meditation, anxiety, stress, sleep hygiene", blurb: "Steady focus, daily meditation, less anxiety, better sleep hygiene. Remembers exactly what caused your last spike of stress." },
   { id: "focus", label: "Work & Career", short: "Work", icon: "work", hint: "productivity, meetings, procrastination, deadlines, career", blurb: "Relentless productivity, meeting prep, sprint deliveries and the one task you keep avoiding. Knows your deadlines." },

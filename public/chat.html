@@ -43,6 +43,7 @@
   dialog { border:0; border-radius:2rem; padding:0; background:transparent; max-width:560px; width:calc(100% - 32px); }
   dialog::backdrop { background:rgba(11,28,48,.45); backdrop-filter:blur(6px); }
   .banner { display:none; } .banner.show { display:flex; }
+  .msg.bot.err .bubble { background: rgba(255,218,214,.8); border: 1px solid rgba(186,26,26,.3); color: #93000a; }
 </style>
 </head>
 <body class="relative min-h-screen overflow-x-hidden">
@@ -82,6 +83,7 @@
           <span class="w-10 h-6 rounded-full bg-outline-variant relative transition" id="memSwitch"><span class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition" id="memKnob"></span></span>
           <span id="memLabel" class="hidden sm:inline">Memory on</span>
         </label>
+        <button class="btn-glass !py-2 !px-3 text-xs" id="voiceBtn" type="button" title="Character voice: the mentor's own style. Neutral: plain coach."><span class="material-symbols-outlined text-[18px]">theater_comedy</span> <span id="voiceLabel">Neutral</span></button>
         <button class="btn-glass !py-2 !px-3 text-xs panel-toggle" id="panelBtn" type="button"><span class="material-symbols-outlined text-[18px]">psychology</span> <span id="memCount">Memory</span></button>
         <button class="w-10 h-10 rounded-full glass grid place-items-center" id="youBtn" type="button" aria-label="Your key and settings"><span class="material-symbols-outlined">person</span></button>
       </div>
@@ -235,6 +237,13 @@
   $("switchBtn").addEventListener("click", () => { $("youDialog").close(); try { localStorage.removeItem("walrus-coach-key-saved"); localStorage.removeItem("walrus-coach-context"); } catch {} user = { id: null, name: "" }; history = []; messages.innerHTML = ""; contextId = null; askName(); });
   $("resetBtn").addEventListener("click", () => { $("youDialog").close(); history = []; addBot("Short-term context cleared. I still remember the long-term stuff — say hi to see it in action.", { system: true }); });
 
+  // ---------- voice: character vs neutral ----------
+  let voice = "neutral";
+  try { voice = localStorage.getItem("walrus-coach-voice") === "character" ? "character" : "neutral"; } catch {}
+  function paintVoice() { $("voiceLabel").textContent = voice === "character" ? "Character voice" : "Neutral"; $("voiceBtn").classList.toggle("!bg-primary-fixed", voice === "character"); }
+  $("voiceBtn").addEventListener("click", () => { voice = voice === "character" ? "neutral" : "character"; try { localStorage.setItem("walrus-coach-voice", voice); } catch {} paintVoice(); addBot(voice === "character" ? "Character voice on — each mentor now talks in their own style." : "Neutral voice — plain coach, no persona.", { system: true }); });
+  paintVoice();
+
   // memory switch visuals
   function paintSwitch() { const on = memToggle.checked; $("memSwitch").style.background = on ? "#0f8a5f" : ""; $("memKnob").style.transform = on ? "translateX(16px)" : ""; memLabel.textContent = on ? "Memory on" : "Memory off"; $("syncLabel").textContent = on ? "Memory synced" : "Memory off"; }
   memToggle.addEventListener("change", () => { paintSwitch(); addBot(memToggle.checked ? "Memory ON — I recall and learn again." : "Memory OFF — I'll answer like a bot that forgets you. Ask me something I should know.", { system: true }); });
@@ -320,8 +329,8 @@
     m.innerHTML = `<div class="text-[11px] text-on-surface-variant">You${user?.name ? " (" + user.name + ")" : ""} · ${stamp()}</div>`;
     m.append(el("div", "bubble", text)); messages.append(m); scroll();
   }
-  function addBot(text, { system = false, memories = [], sources = [], memoryOn = true } = {}) {
-    const m = el("div", "msg bot self-start flex gap-3" + (system ? " sys" : ""));
+  function addBot(text, { system = false, error = false, memories = [], sources = [], memoryOn = true } = {}) {
+    const m = el("div", "msg bot self-start flex gap-3" + (system ? " sys" : "") + (error ? " err" : ""));
     const av = el("div", "w-9 h-9 rounded-full overflow-hidden flex-none bg-white shadow"); av.innerHTML = `<img class="w-full h-full object-cover object-top" src="${$("agentImg").src}" alt="">`;
     const col = el("div", "min-w-0 flex flex-col gap-1");
     col.innerHTML = `<div class="text-[11px] text-on-surface-variant">${$("agentName").textContent} · ${stamp()}</div>`;
@@ -377,7 +386,14 @@
     const w = window.open("", "_blank"); if (w) { w.document.write("<pre>" + JSON.stringify(data, null, 2).replace(/</g, "&lt;") + "</pre>"); w.document.close(); } else prompt("Copy your memories (JSON):", JSON.stringify(data));
   });
 
-  async function api(path, body) { const res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); const data = await res.json().catch(() => ({})); if (!res.ok) throw new Error(data.error || res.statusText); return data; }
+  async function api(path, body) {
+    let res;
+    try { res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); }
+    catch { throw new Error("No connection — check your internet and try again."); }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { console.error("[api]", path, res.status, data); throw new Error(data.error || `Server error (${res.status})`); }
+    return data;
+  }
   async function loadAll() {
     try {
       const data = await api("/api/memories", { userId: user.id });
@@ -386,7 +402,7 @@
       $("nsLine").textContent = `${data.namespace} · ${lastMemories.length} encrypted blobs`; $("nsMini").innerHTML = `<span class="material-symbols-outlined text-[16px]">database</span> ${data.namespace}`;
       $("sessionSub").textContent = `Long-term memory loaded · ${lastMemories.length} facts on Walrus ${ABOUT.network || ""}`;
       await outboxReconcile(lastMemories);
-    } catch (e) { $("nsLine").textContent = "could not load memories: " + e.message; }
+    } catch (e) { $("nsLine").textContent = "⚠ " + e.message; $("sessionSub").textContent = "Memory panel unavailable: " + e.message; setBanner(e.message); }
   }
 
   // ---------- send ----------
@@ -396,18 +412,21 @@
     busy = true; send.disabled = true; input.value = ""; autosize();
     addUser(text); const t = typing();
     try {
-      const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history, context: contextId && contextId !== "life" ? contextId : undefined });
+      const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history, context: contextId && contextId !== "life" ? contextId : undefined, voice });
       t.remove(); remember("user", text); remember("assistant", data.reply);
       addBot(data.reply, { memories: data.memories || [], sources: data.sources || [], memoryOn: data.memory });
       if (data.memory && data.memoryAvailable === false) setBanner("Walrus Memory is unreachable right now — this reply was made without your memories. New facts are queued and will be saved when it's back."); else if (data.memory) setBanner("");
       outboxAdd(data.facts);
       setTimeout(loadAll, 5000); setTimeout(loadAll, GRACE_MS + 5000);
-    } catch (e) { t.remove(); addBot("Something broke: " + e.message, { system: true }); }
+    } catch (e) { t.remove(); addBot("⚠ " + e.message, { system: true, error: true }); setBanner(e.message); }
     finally { busy = false; send.disabled = false; input.focus(); }
   });
   input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); composer.requestSubmit(); } });
   function autosize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 160) + "px"; }
   input.addEventListener("input", autosize);
+
+  window.addEventListener("error", (e) => { console.error("[ui]", e.message); setBanner("Interface error: " + e.message); });
+  window.addEventListener("unhandledrejection", (e) => { console.error("[ui]", e.reason); setBanner("Interface error: " + (e.reason?.message || e.reason)); });
 
   // ---------- boot ----------
   function boot() {

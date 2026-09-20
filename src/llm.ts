@@ -1,6 +1,8 @@
 import { OpenAI } from "openai";
 import { config } from "./config.js";
+import { log } from "./log.js";
 import type { Memory } from "./memory.js";
+import { AREAS, VOICES } from "./areas.js";
 import { extractPage, extractTool, searchEnabled, searchTool, webSearch, type Source, type TimeRange } from "./search.js";
 
 // Groq exposes an OpenAI-compatible API, so the official openai client works as-is.
@@ -11,8 +13,12 @@ export interface Turn {
   content: string;
 }
 
-function systemPrompt(userName: string, memories: Memory[], context?: string): string {
-  const base = `You are ${config.botName}, a warm, direct personal coach talking with ${userName}.${context ? ` They came to you today about "${context}" — lead with that area, but connect it to the rest of their life when it helps.` : ""}
+export type Voice = "character" | "neutral";
+
+function systemPrompt(userName: string, memories: Memory[], context?: string, voice: Voice = "neutral"): string {
+  const area = AREAS.find((a) => a.label === context || a.id === context);
+  const persona = voice === "character" && area && VOICES[area.id] ? `\nVoice: you are the ${area.label} mentor. ${VOICES[area.id]} Stay in this voice consistently, but never let style get in the way of clarity or safety.` : "";
+  const base = `You are ${config.botName}, a warm, direct personal coach talking with ${userName}.${context ? ` They came to you today about "${context}" — lead with that area, but connect it to the rest of their life when it helps.` : ""}${persona}
 Help them with habits, goals, routines, motivation and follow-through.
 Keep replies short (2-5 sentences), conversational, plain text (bold sparingly, no headings, no bullet lists unless asked). Reply in the same language the user writes in.
 Ask at most one question per reply. Never invent facts about the user.
@@ -37,8 +43,8 @@ export interface Reply { text: string; sources: Source[] }
 
 const MAX_SEARCHES = 2;
 
-export async function generateReply(userName: string, memories: Memory[], history: Turn[], context?: string): Promise<Reply> {
-  const messages: OpenAI.ChatCompletionMessageParam[] = [{ role: "system", content: systemPrompt(userName, memories, context) }, ...history];
+export async function generateReply(userName: string, memories: Memory[], history: Turn[], context?: string, voice: Voice = "neutral"): Promise<Reply> {
+  const messages: OpenAI.ChatCompletionMessageParam[] = [{ role: "system", content: systemPrompt(userName, memories, context, voice) }, ...history];
   const sources: Source[] = [];
   let searches = 0;
   const lastUser = [...history].reverse().find((t) => t.role === "user")?.content ?? "";
@@ -68,14 +74,15 @@ export async function generateReply(userName: string, memories: Memory[], histor
           // Only pages the user actually pasted — the model must not browse on its own.
           const url = pastedUrls.find((u) => u === args.url) ?? pastedUrls[0];
           if (url) { const r = await extractPage(url); content = r.context; for (const src of r.sources) if (!sources.some((x) => x.url === src.url)) sources.push(src); console.log(`[read] ${url.slice(0, 60)}`); }
-        } else if (args.query) {
-          const r = await webSearch(String(args.query), args.time_range);
+        } else if (args.query && String(args.query).trim()) {
+          const range = ["day", "week", "month", "year"].includes(String(args.time_range)) ? (args.time_range as TimeRange) : undefined;
+          const r = await webSearch(String(args.query).trim().slice(0, 300), range);
           content = r.context;
           for (const src of r.sources) if (!sources.some((x) => x.url === src.url)) sources.push(src);
           console.log(`[search] q="${String(args.query).slice(0, 60)}"${args.time_range ? ` range=${args.time_range}` : ""} results=${r.sources.length}`);
         }
       } catch (err) {
-        console.error(`[${call.function.name}] failed:`, (err as Error).message);
+        log.error("tool.failed", err, { tool: call.function.name, args: JSON.stringify(args).slice(0, 200) });
       }
       messages.push({ role: "tool", tool_call_id: call.id, content });
     }

@@ -2,8 +2,9 @@
  * The memory-aware chat pipeline, independent of Telegram so the bot and the
  * evaluation harness run exactly the same code.
  */
-import { generateReply, type Turn } from "./llm.js";
+import { generateReply, type Turn, type Voice } from "./llm.js";
 import type { Source } from "./search.js";
+import { log } from "./log.js";
 import { extractNewFacts, learnFromExchange, recallForUser, type Memory } from "./memory.js";
 
 const history = new Map<number, Turn[]>();
@@ -38,10 +39,12 @@ export interface ChatOptions {
   history?: Turn[];
   /** Life area the user picked on the landing page (label), if any. */
   context?: string;
+  /** "character" = the mentor's own style; "neutral" = plain coach voice (default). */
+  voice?: Voice;
 }
 
 export async function chat(userId: number, userName: string, text: string, options: ChatOptions | boolean = {}): Promise<ChatResult> {
-  const { useMemory = true, history: given, context: area } = typeof options === "boolean" ? { useMemory: options } : options;
+  const { useMemory = true, history: given, context: area, voice = "neutral" } = typeof options === "boolean" ? { useMemory: options } : options;
 
   // 1. Recall what we know that is relevant to this message.
   const recall = useMemory ? await recallForUser(userId, text) : { memories: [], available: true };
@@ -59,8 +62,8 @@ export async function chat(userId: number, userName: string, text: string, optio
   // gets the facts back with the reply and can retry the write if it fails later.
   const context = turns.slice(-3, -1).map((t) => `${t.role === "user" ? "User" : "Coach"}: ${t.content}`).join("\n");
   const [generated, facts] = await Promise.all([
-    generateReply(userName, memories, turns, area),
-    useMemory ? extractNewFacts(userName, text, context, memories).catch((err) => { console.error("[extract]", (err as Error).message); return [] as string[]; }) : Promise.resolve([] as string[]),
+    generateReply(userName, memories, turns, area, voice),
+    useMemory ? extractNewFacts(userName, text, context, memories).catch((err) => { log.error("extract.failed", err, { user: userId }); return [] as string[]; }) : Promise.resolve([] as string[]),
   ]);
   const reply = generated.text;
   if (!given) pushTurn(userId, { role: "assistant", content: reply });

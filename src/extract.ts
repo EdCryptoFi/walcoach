@@ -10,6 +10,7 @@
 import { OpenAI } from "openai";
 import { AREAS, AREA_IDS } from "./areas.js";
 import { config } from "./config.js";
+import { log } from "./log.js";
 
 const groq = new OpenAI({ apiKey: config.groqApiKey, baseURL: "https://api.groq.com/openai/v1" });
 
@@ -49,7 +50,7 @@ export async function extractFacts(userName: string, userMessage: string, contex
       .map((f) => f.trim())
       .map((f) => (AREA_IDS.some((id) => f.toLowerCase().startsWith(`[${id}]`)) ? f : `[life] ${f}`));
   } catch {
-    console.error("[extract] could not parse model output:", raw.slice(0, 200));
+    log.warn("extract.unparseable", { raw: raw.slice(0, 200) });
     return [];
   }
 }

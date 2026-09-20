@@ -14,6 +14,7 @@ import { MemWal } from "@mysten-incubation/memwal";
 import { config } from "./config.js";
 import { extractFacts } from "./extract.js";
 import { stats } from "./stats.js";
+import { log } from "./log.js";
 
 export const memwal = MemWal.create({
   key: config.memwalKey,
@@ -71,7 +72,7 @@ async function withRetry<T>(label: string, fn: () => Promise<T>, { tries = 3, ma
       const transient = /\b(429|5\d\d)\b|Too Many Requests|seal encrypt failed|job failed|ECONNRESET|ETIMEDOUT|fetch failed|timed out/i.test(msg);
       if (!transient || attempt === tries) throw err;
       const delay = Math.min(retryAfterMs(err) ?? 2000 * 2 ** (attempt - 1), maxWaitMs);
-      console.warn(`[retry]  ${label} attempt ${attempt} failed (${msg.slice(0, 90)}), retrying in ${delay}ms`);
+      log.warn("relayer.retry", { op: label, attempt, delayMs: delay, error: msg.slice(0, 160) });
       await sleep(delay);
     }
   }
@@ -115,7 +116,7 @@ export async function recallForUser(userId: number, query: string, limit = 8, at
       profileFor(userId),
     ]);
   } catch (err) {
-    console.error(`[recall] user=${userId} unavailable, answering without memory: ${(err as Error).message.slice(0, 120)}`);
+    log.error("recall.unavailable", err, { user: userId });
     return { memories: [], available: false };
   }
 
@@ -127,7 +128,7 @@ export async function recallForUser(userId: number, query: string, limit = 8, at
   if (memories.length === 0 && attempt < 2 && knownToHaveMemories(userId)) {
     // Observed: the relayer occasionally returns an empty result set (no error)
     // for a namespace that has memories. Retry once before answering blind.
-    console.warn(`[recall] user=${userId} empty result for a user with stored facts — retrying`);
+    log.warn("recall.empty_for_known_user", { user: userId, attempt });
     profileCache.delete(userId);
     await sleep(1500);
     return recallForUser(userId, query, limit, attempt + 1);
@@ -146,7 +147,7 @@ export async function listMemories(userId: number, limit = 25): Promise<Memory[]
       memwal.recall({ query: "facts, preferences, goals, habits, struggles and personal details about the user", namespace: namespaceFor(userId), limit }),
     );
     if (result.results.length > 0 || !knownToHaveMemories(userId)) return result.results.map(toMemory);
-    console.warn(`[recall] user=${userId} /memories came back empty for a user with stored facts — retrying`);
+    log.warn("memories.empty_for_known_user", { user: userId, attempt });
     await sleep(1500);
   }
   return [];
@@ -203,7 +204,7 @@ export async function learnFromExchange(userId: number, userName: string, userMe
     stats.recordFacts(userId, userName, stored);
     if (stored.length > 0) profileCache.delete(userId);
   } catch (err) {
-    console.error(`[learn]  user=${userId} failed:`, (err as Error).message.slice(0, 200));
+    log.error("learn.failed", err, { user: userId });
   }
 }
 

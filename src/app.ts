@@ -16,6 +16,7 @@ import type { Turn } from "./llm.js";
 import { listMemories, memwal, namespaceFor, rememberExplicit } from "./memory.js";
 import { stats } from "./stats.js";
 import { hashUserId, nudgeEveryone, pushEnabled, subscribe } from "./push.js";
+import { log } from "./log.js";
 
 // Web user ids are strings; the pipeline keys everything by number, so hash them.
 export const numericId = hashUserId;
@@ -47,7 +48,7 @@ function throttled(c: { req: { header: (n: string) => string | undefined } }, us
   return null;
 }
 
-interface ChatBody { userId?: string; name?: string; text?: string; memory?: boolean; history?: Turn[]; context?: string }
+interface ChatBody { userId?: string; name?: string; text?: string; memory?: boolean; history?: Turn[]; context?: string; voice?: string }
 
 function cleanHistory(h: unknown): Turn[] {
   if (!Array.isArray(h)) return [];
@@ -76,8 +77,16 @@ function page(name: string): string {
 export function createApp() {
   const app = new Hono();
 
+  app.onError((err, c) => {
+    log.error("unhandled", err, { path: c.req.path });
+    return c.json({ error: "Something went wrong on the server. Please try again." }, 500);
+  });
+  app.notFound((c) => c.req.path.startsWith("/api/") ? c.json({ error: "Not found" }, 404) : c.text("Not found", 404));
+
   app.use("*", async (c, next) => {
+    const started = Date.now();
     await next();
+    if (c.req.path.startsWith("/api/")) log.info("request", { method: c.req.method, path: c.req.path, status: c.res.status, ms: Date.now() - started });
     c.header("X-Content-Type-Options", "nosniff");
     c.header("Referrer-Policy", "no-referrer");
     c.header("X-Frame-Options", "DENY");
@@ -137,8 +146,8 @@ export function createApp() {
       await subscribe(userId, (name || "friend").slice(0, 40), { endpoint: subscription.endpoint, keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth } });
       return c.json({ ok: true });
     } catch (err) {
-      console.error("[push] subscribe failed", (err as Error).message.slice(0, 200));
-      return c.json({ error: "Could not save the subscription right now." }, 503);
+      log.error("push.subscribe.failed", err);
+      return c.json({ error: "Could not save the subscription right now — try again later.", detail: (err as Error).message.slice(0, 200) }, 503);
     }
   });
 
@@ -147,7 +156,7 @@ export function createApp() {
     if (!config.cronSecret || c.req.header("authorization") !== `Bearer ${config.cronSecret}`) return c.json({ error: "unauthorized" }, 401);
     if (!pushEnabled) return c.json({ error: "push is not configured" }, 503);
     const report = await nudgeEveryone();
-    console.log("[nudge]", JSON.stringify(report));
+    log.info("nudge.run", report as unknown as Record<string, unknown>);
     return c.json(report);
   });
 
@@ -163,12 +172,17 @@ export function createApp() {
     stats.recordMessage(id, userName);
     try {
       const context = AREAS.find((a) => a.id === body.context)?.label;
-      const { reply, memories, memoryAvailable, facts, sources, learning } = await chat(id, userName, text.trim().slice(0, 2000), { useMemory, history: cleanHistory(body.history), context });
+      const voice = body.voice === "character" ? "character" : "neutral";
+      const { reply, memories, memoryAvailable, facts, sources, learning } = await chat(id, userName, text.trim().slice(0, 2000), { useMemory, history: cleanHistory(body.history), context, voice });
       keepAlive(learning);
       return c.json({ reply, memories, memory: useMemory, memoryAvailable, facts, sources });
     } catch (err) {
-      console.error(`[web] user=${id}`, err);
-      return c.json({ error: "Something broke on my side — try again in a moment." }, 500);
+      log.error("chat.failed", err, { user: id });
+      const msg = (err as Error).message || "";
+      const friendly = /429|rate limit/i.test(msg) ? "The model or memory service is rate-limited right now — try again in a minute."
+        : /timed? ?out|ETIMEDOUT|AbortError/i.test(msg) ? "The reply took too long. Try again — it usually works on the second attempt."
+        : "Something broke on my side — try again in a moment.";
+      return c.json({ error: friendly, detail: msg.slice(0, 200) }, 500);
     }
   });
 
@@ -182,8 +196,8 @@ export function createApp() {
       const memories = await listMemories(numericId(userId));
       return c.json({ memories, namespace: namespaceFor(numericId(userId)) });
     } catch (err) {
-      console.error(`[web] memories user=${numericId(userId)}`, (err as Error).message.slice(0, 200));
-      return c.json({ error: "Memory is temporarily unavailable." }, 503);
+      log.error("memories.failed", err, { user: numericId(userId) });
+      return c.json({ error: "Walrus Memory is temporarily unavailable — your memories are safe, just not readable right now.", detail: (err as Error).message.slice(0, 200) }, 503);
     }
   });
 
@@ -196,8 +210,8 @@ export function createApp() {
       const result = await rememberExplicit(numericId(userId), (name || "friend").slice(0, 40), fact.trim().slice(0, 500));
       return c.json({ blobId: result.blob_id });
     } catch (err) {
-      console.error(`[web] remember user=${numericId(userId)}`, (err as Error).message.slice(0, 200));
-      return c.json({ error: "Memory is temporarily unavailable." }, 503);
+      log.error("remember.failed", err, { user: numericId(userId) });
+      return c.json({ error: "Could not save that to Walrus right now. It stays queued in your browser and will be retried.", detail: (err as Error).message.slice(0, 200) }, 503);
     }
   });
 

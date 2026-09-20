@@ -21,7 +21,7 @@ export async function webSearch(query: string, timeRange?: TimeRange, maxResults
     body: JSON.stringify({ api_key: config.tavilyKey, query, max_results: maxResults, search_depth: "basic", include_answer: false, ...(timeRange ? { time_range: timeRange } : {}) }),
     signal: AbortSignal.timeout(10_000),
   });
-  if (!res.ok) throw new Error(`Tavily ${res.status}`);
+  if (!res.ok) throw new Error(`Tavily ${res.status}: ${(await res.text()).slice(0, 160)}`);
   const data = (await res.json()) as { results?: Array<{ title: string; url: string; content: string }> };
   const results = (data.results ?? []).slice(0, maxResults);
   const context = results.map((r, i) => `[${i + 1}] ${r.title}\n${r.url}\n${r.content.slice(0, 600)}`).join("\n\n");

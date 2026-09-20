@@ -9,6 +9,7 @@
 import webpush, { type PushSubscription } from "web-push";
 import { OpenAI } from "openai";
 import { config } from "./config.js";
+import { log } from "./log.js";
 import { memwal, namespaceFor, type Memory } from "./memory.js";
 
 export const pushEnabled = Boolean(config.vapidPublicKey && config.vapidPrivateKey);
@@ -84,7 +85,7 @@ export async function nudgeEveryone(): Promise<NudgeReport> {
     } catch (err) {
       const status = (err as { statusCode?: number }).statusCode;
       if (status === 404 || status === 410) report.expired++;
-      else { report.failed++; console.error(`[nudge] failed:`, (err as Error).message.slice(0, 160)); }
+      else { report.failed++; log.error("nudge.failed", err, { user: hashUserId(reg.userId) }); }
     }
     await new Promise((r) => setTimeout(r, 1500));
   }

@@ -15,7 +15,9 @@
     "web:dev": "LOG_MEMORIES=1 tsx watch src/web.ts",
     "telegram": "tsx src/telegram.ts",
     "vercel-build": "npm run build:css",
-    "build:css": "tailwindcss -i src/styles.css -o public/app.css --minify"
+    "build:css": "tailwindcss -i src/styles.css -o public/app.css --minify",
+    "logs": "tail -n 50 logs/app.log",
+    "logs:errors": "tail -n 50 logs/error.log"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
