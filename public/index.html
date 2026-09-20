@@ -32,6 +32,7 @@
   nav .spacer { flex: 1; }
   nav a { font-size: 15px; color: var(--muted); text-decoration: none; }
   nav a:hover { color: var(--text); }
+  @media (max-width: 480px) { nav a.ext { display: none; } }
 
   .hero { padding: 56px 0 40px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
   @media (max-width: 860px) { .hero { grid-template-columns: 1fr; padding-top: 24px; } }
@@ -87,7 +88,7 @@
     <b>Walrus Coach</b>
     <div class="spacer"></div>
     <a href="#how">How it works</a>
-    <a href="https://github.com/MystenLabs/MemWal" target="_blank" rel="noopener">Walrus Memory</a>
+    <a class="ext" href="https://github.com/MystenLabs/MemWal" target="_blank" rel="noopener">Walrus Memory</a>
   </nav>
 
   <div class="hero">

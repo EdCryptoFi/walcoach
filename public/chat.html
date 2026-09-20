@@ -44,6 +44,15 @@
   }
   header h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
   header .sub { color: var(--muted); font-size: 13px; }
+  .iconbtn { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-2); font-size: 13px; font-weight: 500; transition: border-color .15s; }
+  .iconbtn:hover { border-color: var(--accent); }
+  .iconbtn svg { width: 16px; height: 16px; }
+  #memBtn { display: none; }
+  @media (max-width: 860px) {
+    #memBtn { display: inline-flex; }
+    header .sub { display: none; }
+    .toggle span:last-child { display: none; }
+  }
   .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; }
   .spacer { flex: 1; }
   .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); user-select: none; cursor: pointer; min-height: 44px; }
@@ -78,14 +87,22 @@
 
   /* ---- memory panel ---- */
   aside { background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
-  @media (max-width: 860px) { aside { max-height: 42dvh; border-top: 1px solid var(--border); } }
+  @media (max-width: 860px) {
+    .app { grid-template-rows: 1fr; }
+    aside { position: fixed; inset: 0; z-index: 30; transform: translateX(100%); transition: transform .25s ease; padding-top: env(safe-area-inset-top, 0px); }
+    aside.open { transform: none; }
+    .drawer-head { display: flex !important; }
+  }
+  .drawer-head { display: none; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 650; }
+  .drawer-head .spacer { flex: 1; }
   aside section { padding: 16px 18px; border-bottom: 1px solid var(--border); }
   aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; font-weight: 650; display: flex; align-items: center; gap: 8px; }
   aside h2 svg { width: 15px; height: 15px; }
   .recalled { flex: 0 0 auto; max-height: 45%; overflow-y: auto; }
   .all { flex: 1; overflow-y: auto; min-height: 0; }
   ul.mem { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-  ul.mem li { font-size: 14px; line-height: 1.45; padding: 9px 11px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-start; }
+  ul.mem li { font-size: 14px; line-height: 1.45; padding: 9px 11px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: flex-start; }
+  ul.mem li > span:nth-child(2) { flex: 1 1 160px; min-width: 0; }
   ul.mem li .d { flex: none; font-variant-numeric: tabular-nums; font-size: 11px; color: var(--muted); background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; margin-top: 2px; }
   ul.mem li .d.strong { color: var(--ok); border-color: var(--ok); }
   .empty { color: var(--muted); font-size: 14px; }
@@ -121,7 +138,20 @@
   .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel-2); color: var(--muted); }
   .badge.on { border-color: var(--ok); color: var(--ok); background: transparent; }
   .badge.on b { font-weight: 650; }
-  ul.mem li .a { flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); border: 1px solid var(--border); border-radius: 6px; padding: 2px 5px; margin-top: 3px; }
+  ul.mem li .a { flex: none; margin-left: auto; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); border: 1px solid var(--border); border-radius: 6px; padding: 2px 5px; margin-top: 3px; }
+
+  /* ---- "you" popover ---- */
+  .you { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .you .who { flex: 1; min-width: 0; }
+  #youDialog { max-width: 460px; }
+  #youDialog h3 { font-size: 18px; }
+  #youDialog section { padding: 14px 0; border-top: 1px solid var(--border); }
+  #youDialog section:first-of-type { border-top: 0; padding-top: 4px; }
+  #youDialog h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  #youDialog .row { flex-wrap: wrap; }
+  #youDialog button.btn { width: auto; height: auto; background: var(--panel-2); color: var(--text); font-weight: 500; }
+  #youDialog .close { width: 100%; height: 44px; margin-top: 6px; }
+  .more { font-size: 13px; color: var(--accent); background: none; border: 0; padding: 4px 0; }
 
   /* ---- name dialog ---- */
   dialog { border: 1px solid var(--border); border-radius: 16px; background: var(--panel); color: var(--text); padding: 24px; max-width: 420px; width: calc(100% - 32px); box-shadow: var(--shadow); }
@@ -142,9 +172,13 @@
       </div>
       <div>
         <h1><a href="/" style="text-decoration:none;color:inherit">Walrus Coach</a></h1>
-        <div class="sub">Remembers you between sessions · memory on Walrus</div>
+        <div class="sub">Remembers you between sessions</div>
       </div>
       <div class="spacer"></div>
+      <button class="iconbtn" id="memBtn" aria-controls="panel" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.9A4 4 0 0 0 7 19h1a4 4 0 0 0 8 0h1a4 4 0 0 0 2-7.1A4 4 0 0 0 16 8V7a4 4 0 0 0-4-4z"/><path d="M12 3v16"/></svg>
+        <span id="memCount">Memory</span>
+      </button>
       <label class="toggle" title="Turn long-term memory off to see how a forgetful bot behaves">
         <input type="checkbox" id="memToggle" checked>
         <span class="switch" aria-hidden="true"></span>
@@ -166,35 +200,20 @@
     </form>
   </main>
 
-  <aside>
-    <section>
-      <div class="row" style="justify-content: space-between; flex-wrap: wrap;">
-        <div class="who">Talking as <b id="whoName">…</b></div>
-        <div class="row">
-          <button class="btn" id="resetBtn" title="Clear short-term context; long-term memory stays">New session</button>
-          <button class="btn" id="switchBtn" title="Chat as a different person (new memory namespace)">Switch user</button>
-        </div>
-      </div>
-      <div class="status" id="status" style="margin-top: 8px;"></div>
-      <div class="key">
-        <code id="keyText" title="Your memory key">…</code>
-        <button class="btn" id="copyKey" title="Copy your memory key">Copy</button>
-      </div>
-      <div class="hint">Your memory key. Paste it on another device to bring your memories with you.</div>
-    </section>
-
-    <section id="nudgeSection" hidden>
-      <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg> Daily nudge</h2>
-      <div class="row" style="justify-content: space-between; flex-wrap: wrap;">
-        <span class="hint" id="nudgeText" style="margin:0">One short check-in a day, written from what it remembers about you.</span>
-        <button class="btn" id="nudgeBtn">Turn on</button>
-      </div>
-    </section>
+  <aside id="panel">
+    <div class="drawer-head">
+      <span>Memory</span><span class="spacer"></span>
+      <button class="iconbtn" id="closePanel" aria-label="Close">Close</button>
+    </div>
 
     <section>
-      <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.4l-4.8 2.5.9-5.4L4.2 7.7l5.4-.8z"/></svg> Life areas covered</h2>
-      <div class="badges" id="badges"></div>
-      <div class="hint" id="badgeHint">Talk about different parts of your life to light these up.</div>
+      <div class="you">
+        <div class="who">Talking as <b id="whoName">…</b><div class="status" id="status"></div></div>
+        <button class="iconbtn" id="youBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          You
+        </button>
+      </div>
     </section>
 
     <section class="recalled">
@@ -203,6 +222,12 @@
         Recalled for the last reply
       </h2>
       <ul class="mem" id="recalled"><li class="empty" style="background:none;border:0;padding:0">Nothing yet — say something.</li></ul>
+    </section>
+
+    <section>
+      <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.4l-4.8 2.5.9-5.4L4.2 7.7l5.4-.8z"/></svg> Life areas covered</h2>
+      <div class="badges" id="badges"></div>
+      <div class="hint" id="badgeHint">Talk about different parts of your life to light these up.</div>
     </section>
 
     <section class="all">
@@ -215,6 +240,33 @@
       <ul class="mem" id="all"><li class="empty" style="background:none;border:0;padding:0">Loads after your first message.</li></ul>
     </section>
   </aside>
+
+<dialog id="youDialog">
+  <h3>You</h3>
+  <section>
+    <h4>Memory key</h4>
+    <div class="key" style="margin-top:0">
+      <code id="keyText" title="Your memory key">…</code>
+      <button class="btn" id="copyKey" title="Copy your memory key">Copy</button>
+    </div>
+    <div class="hint">Paste it on another device to bring your memories with you. Anyone with this key is you — keep it private.</div>
+  </section>
+  <section id="nudgeSection" hidden>
+    <h4>Daily nudge</h4>
+    <div class="row" style="justify-content: space-between;">
+      <span class="hint" id="nudgeText" style="margin:0; flex:1">One short check-in a day, written from what it remembers about you.</span>
+      <button class="btn" id="nudgeBtn">Turn on</button>
+    </div>
+  </section>
+  <section>
+    <h4>Session</h4>
+    <div class="row">
+      <button class="btn" id="resetBtn" title="Clear short-term context; long-term memory stays">New session</button>
+      <button class="btn" id="switchBtn" title="Chat as a different person (new memory namespace)">Switch user</button>
+    </div>
+  </section>
+  <form method="dialog"><button class="close">Done</button></form>
+</dialog>
 </div>
 
 <dialog id="nameDialog">
@@ -268,6 +320,11 @@
   $("tabKey").addEventListener("click", () => setMode("key"));
 
   const dialog = $("nameDialog");
+  const panel = $("panel"), memBtn = $("memBtn");
+  function openPanel(open) { panel.classList.toggle("open", open); memBtn.setAttribute("aria-expanded", String(open)); }
+  memBtn.addEventListener("click", () => openPanel(!panel.classList.contains("open")));
+  $("closePanel").addEventListener("click", () => openPanel(false));
+  $("youBtn").addEventListener("click", () => $("youDialog").showModal());
   $("nameForm").addEventListener("submit", (ev) => {
     const name = $("nameInput").value.trim() || "friend";
     if (mode === "key") {
@@ -288,8 +345,9 @@
   const MAX_TURNS = 12;
   function remember(role, content) { history.push({ role, content }); history = history.slice(-MAX_TURNS); }
 
-  $("switchBtn").addEventListener("click", () => { user = { id: newId(), name: "" }; history = []; messages.innerHTML = ""; askName(); });
+  $("switchBtn").addEventListener("click", () => { $("youDialog").close(); user = { id: newId(), name: "" }; history = []; messages.innerHTML = ""; askName(); });
   $("resetBtn").addEventListener("click", () => {
+    $("youDialog").close(); openPanel(false);
     history = [];
     addBot("Short-term context cleared. I still remember the long-term stuff — say hi to see it in action.", [], true);
   });
@@ -349,12 +407,17 @@
     const box = el("div", "msg bot nomem");
     box.append(el("div", "starters-title", "Not sure where to start? Pick one, or just type."));
     const list = el("div", "starters");
-    for (const a of AREAS) {
-      const t = STARTERS[a.id]; if (!t) continue;
-      const b = el("button"); b.type = "button"; b.textContent = t;
-      b.addEventListener("click", () => { input.value = t; composer.requestSubmit(); });
-      list.append(b);
-    }
+    const all = AREAS.map((a) => STARTERS[a.id]).filter(Boolean);
+    const render = (limit) => {
+      list.innerHTML = "";
+      for (const t of all.slice(0, limit)) {
+        const b = el("button"); b.type = "button"; b.textContent = t;
+        b.addEventListener("click", () => { input.value = t; composer.requestSubmit(); });
+        list.append(b);
+      }
+      if (limit < all.length) { const m = el("button", "more", `Show ${all.length - limit} more`); m.type = "button"; m.addEventListener("click", () => render(all.length)); list.append(m); }
+    };
+    render(window.innerWidth < 860 ? 5 : all.length);
     box.append(list); messages.append(box); scroll();
   }
   fetch("/api/areas").then((r) => r.json()).then((d) => { AREAS = d.areas || []; if (user && user.name) { renderStarters(); loadAll(); } }).catch(() => {});
@@ -474,7 +537,9 @@
       const data = await api("/api/memories", { userId: user.id });
       renderList(allEl, (data.memories || []).sort((a, b) => a.distance - b.distance), "No memories stored yet.");
       renderBadges(data.memories || []);
-      statusEl.innerHTML = `namespace <code>${data.namespace}</code> · <span class="ok">${(data.memories || []).length} memories on Walrus</span>`;
+      const n = (data.memories || []).length;
+      statusEl.innerHTML = `<span class="ok">${n} ${n === 1 ? "memory" : "memories"} on Walrus</span> · <code>${data.namespace}</code>`;
+      $("memCount").textContent = n ? `Memory · ${n}` : "Memory";
       await outboxReconcile(data.memories || []);
     } catch (e) { statusEl.innerHTML = `<span class="warn">could not load memories: ${e.message}</span>`; }
   }
@@ -485,7 +550,7 @@
     ev.preventDefault();
     const text = input.value.trim();
     if (!text || busy) return;
-    busy = true; send.disabled = true; input.value = ""; autosize();
+    busy = true; send.disabled = true; input.value = ""; autosize(); openPanel(false);
     messages.querySelector(".starters")?.closest(".msg")?.remove();
     addUser(text);
     const t = typing();
