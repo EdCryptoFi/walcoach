@@ -377,8 +377,7 @@
 
   async function loadAll() {
     try {
-      const res = await fetch("/api/memories?userId=" + encodeURIComponent(user.id));
-      const data = await res.json();
+      const data = await api("/api/memories", { userId: user.id });
       renderList(allEl, (data.memories || []).sort((a, b) => a.distance - b.distance), "No memories stored yet.");
       renderBadges(data.memories || []);
       statusEl.innerHTML = `namespace <code>${data.namespace}</code> · <span class="ok">${(data.memories || []).length} memories on Walrus</span>`;

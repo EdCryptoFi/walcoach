@@ -10,9 +10,9 @@
     "check": "tsx scripts/check.ts",
     "stats": "tsx scripts/stats.ts",
     "typecheck": "tsc --noEmit",
-    "eval": "tsx scripts/eval.ts",
+    "eval": "LOG_MEMORIES=1 tsx scripts/eval.ts",
     "web": "tsx src/web.ts",
-    "web:dev": "tsx watch src/web.ts",
+    "web:dev": "LOG_MEMORIES=1 tsx watch src/web.ts",
     "telegram": "tsx src/telegram.ts",
     "vercel-build": "echo skip"
   },

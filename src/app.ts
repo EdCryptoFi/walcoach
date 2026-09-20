@@ -25,18 +25,29 @@ export function numericId(userId: string): number {
 
 const VALID_ID = /^web-[a-z0-9-]{8,64}$/i;
 
-// Per-user throttle so one visitor cannot burn the shared Walrus/Groq budget.
-// In-memory, so per function instance on serverless — a soft limit, good enough here.
+// Throttles so one visitor (or one script minting many userIds) cannot burn the
+// shared Walrus/Groq budget. In-memory, so per function instance on serverless —
+// a soft limit; the relayer's own rate limit is the hard one and we degrade gracefully.
 const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 10;
-const hits = new Map<string, number[]>();
-function throttled(userId: string): boolean {
+const LIMITS = { user: 10, ip: 30, global: 200 };
+const buckets = new Map<string, number[]>();
+function take(key: string, max: number): boolean {
   const now = Date.now();
-  const recent = (hits.get(userId) ?? []).filter((t) => now - t < WINDOW_MS);
-  if (recent.length >= MAX_PER_WINDOW) return true;
+  const recent = (buckets.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
+  if (recent.length >= max) return false;
   recent.push(now);
-  hits.set(userId, recent);
-  return false;
+  buckets.set(key, recent);
+  return true;
+}
+function clientIp(c: { req: { header: (n: string) => string | undefined } }): string {
+  return (c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip") ?? "local").split(",")[0].trim();
+}
+/** Returns an error message when the caller should back off, else null. */
+function throttled(c: { req: { header: (n: string) => string | undefined } }, userId: string): string | null {
+  if (!take("global", LIMITS.global)) return "The coach is busy right now — try again in a minute.";
+  if (!take(`ip:${clientIp(c)}`, LIMITS.ip)) return "Too many requests from your network — try again in a minute.";
+  if (!take(`user:${userId}`, LIMITS.user)) return "Slow down a little — 10 messages per minute.";
+  return null;
 }
 
 interface ChatBody { userId?: string; name?: string; text?: string; memory?: boolean; history?: Turn[] }
@@ -68,6 +79,18 @@ function page(name: string): string {
 export function createApp() {
   const app = new Hono();
 
+  app.use("*", async (c, next) => {
+    await next();
+    c.header("X-Content-Type-Options", "nosniff");
+    c.header("Referrer-Policy", "no-referrer");
+    c.header("X-Frame-Options", "DENY");
+    c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    c.header(
+      "Content-Security-Policy",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+    );
+  });
+
   // Pages. Local dev also serves ./public statically (src/web.ts).
   app.get("/", (c) => c.html(page("index.html")));
   app.get("/chat", (c) => c.html(page("chat.html")));
@@ -78,7 +101,8 @@ export function createApp() {
     const body = (await c.req.json().catch(() => ({}))) as ChatBody;
     const { userId, name, text } = body;
     if (!userId || !VALID_ID.test(userId) || !text?.trim()) return c.json({ error: "userId and text are required" }, 400);
-    if (throttled(userId)) return c.json({ error: "Slow down a little — 10 messages per minute." }, 429);
+    const wait = throttled(c, userId);
+    if (wait) return c.json({ error: wait }, 429);
     const id = numericId(userId);
     const userName = (name || "friend").slice(0, 40);
     const useMemory = body.memory !== false;
@@ -93,18 +117,33 @@ export function createApp() {
     }
   });
 
-  app.get("/api/memories", async (c) => {
-    const userId = c.req.query("userId") ?? "";
-    if (!VALID_ID.test(userId)) return c.json({ error: "invalid userId" }, 400);
-    const memories = await listMemories(numericId(userId));
-    return c.json({ memories, namespace: namespaceFor(numericId(userId)) });
+  // POST, not GET: the memory key is the user's identity and must not end up in URL logs.
+  app.post("/api/memories", async (c) => {
+    const { userId } = (await c.req.json().catch(() => ({}))) as { userId?: string };
+    if (!userId || !VALID_ID.test(userId)) return c.json({ error: "invalid userId" }, 400);
+    const wait = throttled(c, userId);
+    if (wait) return c.json({ error: wait }, 429);
+    try {
+      const memories = await listMemories(numericId(userId));
+      return c.json({ memories, namespace: namespaceFor(numericId(userId)) });
+    } catch (err) {
+      console.error(`[web] memories user=${numericId(userId)}`, (err as Error).message.slice(0, 200));
+      return c.json({ error: "Memory is temporarily unavailable." }, 503);
+    }
   });
 
   app.post("/api/remember", async (c) => {
     const { userId, name, fact } = (await c.req.json().catch(() => ({}))) as { userId?: string; name?: string; fact?: string };
     if (!userId || !VALID_ID.test(userId) || !fact?.trim()) return c.json({ error: "userId and fact are required" }, 400);
-    const result = await rememberExplicit(numericId(userId), (name || "friend").slice(0, 40), fact.trim().slice(0, 500));
-    return c.json({ blobId: result.blob_id });
+    const wait = throttled(c, userId);
+    if (wait) return c.json({ error: wait }, 429);
+    try {
+      const result = await rememberExplicit(numericId(userId), (name || "friend").slice(0, 40), fact.trim().slice(0, 500));
+      return c.json({ blobId: result.blob_id });
+    } catch (err) {
+      console.error(`[web] remember user=${numericId(userId)}`, (err as Error).message.slice(0, 200));
+      return c.json({ error: "Memory is temporarily unavailable." }, 503);
+    }
   });
 
   app.get("/api/health", async (c) => {

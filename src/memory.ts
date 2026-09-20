@@ -41,6 +41,10 @@ const PROFILE_TTL_MS = 10 * 60 * 1000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Memory texts are personal. Only print them when explicitly asked (local dev / eval).
+const VERBOSE = process.env.LOG_MEMORIES === "1";
+const detail = (line: string) => { if (VERBOSE) console.log(line); };
+
 function retryAfterMs(err: unknown): number | undefined {
   const m = /retry_after_seconds"?\s*:\s*(\d+)/.exec((err as Error).message ?? "");
   return m ? Number(m[1]) * 1000 : undefined;
@@ -124,7 +128,7 @@ export async function recallForUser(userId: number, query: string, limit = 8, at
   }
 
   console.log(`[recall] user=${userId} q="${query.slice(0, 60)}" hits=${memories.length} (msg=${byMessage.length}, profile=${profile.length}) ${Date.now() - started}ms`);
-  for (const m of memories) console.log(`         ${m.distance.toFixed(3)}  ${m.text}`);
+  for (const m of memories) detail(`         ${m.distance.toFixed(3)}  ${m.text}`);
   return memories;
 }
 
@@ -160,7 +164,7 @@ export async function learnFromExchange(userId: number, userName: string, userMe
       const text = `User (${userName}): ${userMessage}\nCoach: ${assistantReply}`;
       const result = await withRetry("analyze", () => memwal.analyzeAndWait(text, namespace, { timeoutMs: 60_000, pollIntervalMs: 3000 }));
       console.log(`[learn]  user=${userId} relayer stored ${result.succeeded}/${result.facts.length} facts`);
-      for (const fact of result.facts) console.log(`         + ${fact.text}`);
+      for (const fact of result.facts) detail(`         + ${fact.text}`);
       stats.recordFacts(userId, userName, result.facts.map((f) => f.text));
       profileCache.delete(userId);
       return;
@@ -178,7 +182,7 @@ export async function learnFromExchange(userId: number, userName: string, userMe
       memwal.rememberBulkAndWait(facts.map((text) => ({ text, namespace })), { timeoutMs: 90_000, pollIntervalMs: 3000 }),
     );
     const stored = facts.filter((_, i) => result.results[i]?.status === "done");
-    result.results.forEach((r, i) => console.log(`         ${r.status === "done" ? "+" : "!"} ${facts[i]}  [${r.blob_id || r.error}]`));
+    result.results.forEach((r, i) => detail(`         ${r.status === "done" ? "+" : "!"} ${facts[i]}  [${r.blob_id || r.error}]`));
     console.log(`[learn]  user=${userId} stored ${stored.length}/${facts.length} facts`);
     stats.recordFacts(userId, userName, stored);
     if (stored.length > 0) profileCache.delete(userId);
@@ -192,6 +196,7 @@ export async function rememberExplicit(userId: number, userName: string, fact: s
   const result = await withRetry("remember", () => memwal.rememberAndWait(fact, namespaceFor(userId), { timeoutMs: 60_000, pollIntervalMs: 3000 }));
   stats.recordFacts(userId, userName, [fact]);
   profileCache.delete(userId);
-  console.log(`[remember] user=${userId} blob=${result.blob_id} "${fact}"`);
+  console.log(`[remember] user=${userId} blob=${result.blob_id}`);
+  detail(`         + ${fact}`);
   return result;
 }
