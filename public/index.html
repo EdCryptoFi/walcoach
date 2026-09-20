@@ -34,8 +34,8 @@
   nav a:hover { color: var(--text); }
   @media (max-width: 480px) { nav a.ext { display: none; } }
 
-  .hero { padding: 56px 0 40px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
-  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; padding-top: 24px; } }
+  .hero-s { padding: 44px 0 8px; max-width: 64ch; }
+  @media (max-width: 600px) { .hero-s { padding-top: 20px; } }
   h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1.08; letter-spacing: -.025em; margin: 0 0 18px; font-weight: 700; }
   h1 em { font-style: normal; color: var(--accent); }
   .lead { font-size: 19px; color: var(--muted); margin: 0 0 28px; max-width: 52ch; }
@@ -69,8 +69,13 @@
   .chip { font-size: 14px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); color: var(--text); display: inline-flex; align-items: center; gap: 8px; }
   .chip img { width: 28px; height: 28px; object-fit: contain; margin: -4px 0 -4px -4px; }
   .areas.art { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-  .areas.art .chip { flex-direction: column; text-align: center; padding: 16px 12px; border-radius: 16px; gap: 10px; font-weight: 600; }
-  .areas.art .chip img { width: 92px; height: 92px; margin: 0; }
+  .areas.art .chip { flex-direction: column; text-align: center; padding: 18px 12px 14px; border-radius: 16px; gap: 8px; font-weight: 600; text-decoration: none; cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s; }
+  .areas.art .chip:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+  .areas.art .chip img { width: 88px; height: 88px; margin: 0; }
+  .areas.art .chip small { font-weight: 400; font-size: 12px; color: var(--muted); line-height: 1.3; }
+  .pick { padding-top: 24px; }
+  .pick .sub { margin-bottom: 18px; }
+  .tech { margin: 22px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 80ch; }
   .logo img { width: 34px; height: 34px; object-fit: contain; border-radius: 10px; }
   .logo.art { background: transparent; }
   .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
@@ -99,103 +104,49 @@
     <b>Walrus Coach</b>
     <div class="spacer"></div>
     <a href="#how">How it works</a>
-    <a class="ext" href="https://github.com/MystenLabs/MemWal" target="_blank" rel="noopener">Walrus Memory</a>
+    <a class="ext" href="/privacy">Privacy</a>
   </nav>
 
-  <div class="hero">
-    <div>
-      <h1>A coach that <em>remembers</em> what you told it last week.</h1>
-      <p class="lead">Most chatbots forget you the moment you close the tab. Walrus Coach keeps track of your goals, your routine and the things you keep putting off — and brings them up when it matters.</p>
-      <a class="cta" href="/chat">Start coaching <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
-      <div class="fine">No account, no password, no wallet. Free. Works in your language.</div>
-      <div class="fine" style="margin-top:6px">An AI, not a professional: replies come from an open-weight model (Qwen, via Groq) plus web search with cited sources when you ask for facts. It can be wrong. <a href="/privacy">Privacy &amp; terms</a></div>
-    </div>
+  <header class="hero-s">
+    <h1>A coach that <em>remembers</em> you.</h1>
+    <p class="lead">Tell it what you're working on. Next week it still knows — your goal, your schedule, the thing that trips you up. No account, no wallet, free.</p>
+  </header>
 
-    <div class="demo" aria-label="Example conversation across two days">
-      <div class="day">Monday</div>
-      <div class="b u">I want to run 5k by November. Never ran in my life, and my left knee is dodgy.</div>
-      <div class="b c">Good goal, and thanks for the knee heads-up — we'll build up slowly. When could you fit two short runs a week?</div>
-      <div class="b u">Tuesdays and Thursdays, 6am, before my night shift.</div>
-      <div class="day">Thursday · new conversation</div>
-      <div class="b u">ugh, zero motivation today</div>
-      <div class="b c">It's Thursday — <mark>run day</mark>. You don't need motivation for 15 minutes in the park. <mark>How's the knee</mark> been since Tuesday?</div>
-      <div class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg> recalled 4 memories from Monday</div>
-    </div>
-  </div>
+  <section class="pick">
+    <h2>Start now — pick your context</h2>
+    <p class="sub">Or <a href="/chat">just open the chat</a> and type anything.</p>
+    <div class="areas art" id="areas"></div>
+  </section>
 
   <section id="how">
-    <h2>What changes when a coach remembers</h2>
-    <p class="sub">You stop repeating yourself, and the coach starts noticing patterns: the excuse you used last week, the goal you set a month ago, the thing that always trips you up at 4pm.</p>
-    <div class="grid">
-      <div class="card">
-        <h3><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></span>It follows up</h3>
-        <p>Set a goal on Monday, get asked about it on Thursday. Mention a bad knee once, and it's never forgotten.</p>
-      </div>
-      <div class="card">
-        <h3><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>It's yours</h3>
-        <p>Every memory is encrypted and stored in your own space on Walrus, a decentralized network. We don't keep a database of you.</p>
-      </div>
-      <div class="card">
-        <h3><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg></span>It's transparent</h3>
-        <p>Every reply shows which memories it used and, when it searched the web, which sources. You can see everything it knows about you.</p>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Bring more than one part of your life</h2>
-    <p class="sub">The coach gets better the more areas it knows about, because real life overlaps: bad sleep ruins training, stress at work turns into 4pm cake. Each area you talk about earns a badge.</p>
-    <div class="areas" id="areas"></div>
-  </section>
-
-  <section id="beforeAfter" hidden>
-    <h2>Without memory vs. with it</h2>
-    <p class="sub">Same model, same question, one difference: whether it can remember you.</p>
-    <div class="pair">
-      <div class="card"><img id="imgForgetful" alt="A forgetful walrus"><h3>Every chat starts from zero</h3><p>"What's your goal again? Any injuries I should know about?"</p></div>
-      <div class="card"><img id="imgMascot" alt="The Walrus Coach"><h3>Picks up where you left off</h3><p>"It's Thursday — run day. How's the knee since Tuesday?"</p></div>
-    </div>
-  </section>
-
-  <section>
     <h2>How it works</h2>
     <div class="steps">
-      <div class="step"><b>You talk</b><p>Tell it what you're working on, in any language. It replies like a good coach: short, direct, one question at a time.</p></div>
-      <div class="step"><b>It learns</b><p>After each reply it extracts the durable facts — goals, schedule, constraints, progress — and stores each one encrypted on Walrus.</p></div>
-      <div class="step"><b>It recalls</b><p>Next time, your message is matched against your memories and the relevant ones shape the reply. No re-explaining.</p></div>
+      <div class="step"><b>You talk</b><p>In any language. It replies like a good coach: short, direct, one question at a time.</p></div>
+      <div class="step"><b>It learns</b><p>After each reply it extracts the durable facts — goals, schedule, constraints, progress — and stores each one encrypted in your own space on Walrus.</p></div>
+      <div class="step"><b>It recalls</b><p>Next time, your message is matched against your memories and the relevant ones shape the reply. Every answer shows what it used.</p></div>
     </div>
-  </section>
-
-  <section>
-    <p class="honest">Built for <a href="https://www.deepsurge.xyz/hackathons/c0141a4a-21be-4009-bc63-7c168608c849" target="_blank" rel="noopener">Walrus Session 8: Chatbots That Remember</a>. Runs on an open-weight model (Qwen 3.8 27B via Groq) and <a href="https://memory.walrus.xyz" target="_blank" rel="noopener">Walrus Memory</a>. It's a prototype: expect the occasional slow reply while a memory is being written.</p>
+    <p class="tech">Open-weight model (Qwen 3.8 27B via Groq) · memory on <a href="https://memory.walrus.xyz" target="_blank" rel="noopener">Walrus Memory</a>, encrypted, no database of you · web search with cited sources when you ask for facts · an AI, not a professional — it can be wrong. <a href="/privacy">Privacy &amp; terms</a></p>
   </section>
 
   <footer>
     <a href="/chat">Open the coach</a>
+    <a href="https://www.deepsurge.xyz/hackathons/c0141a4a-21be-4009-bc63-7c168608c849" target="_blank" rel="noopener">Built for Walrus Session 8</a>
     <a href="https://github.com/MystenLabs/MemWal" target="_blank" rel="noopener">Walrus Memory on GitHub</a>
-    <a href="/privacy">Privacy &amp; terms</a>
-    <span>Open source · MIT · No cookies, no tracking</span>
+    <span>Open source · MIT · No cookies</span>
   </footer>
 </div>
 <script>
   Promise.all([fetch("/api/areas").then((r) => r.json()), fetch("/api/characters").then((r) => r.json())]).then(([{ areas }, { characters }]) => {
     const box = document.getElementById("areas");
-    const anyArt = areas.some((a) => characters[a.id]);
-    if (anyArt) box.classList.add("art");
     for (const a of areas) {
-      const c = document.createElement("span"); c.className = "chip";
-      const src = characters[a.id] || (anyArt && characters.mascot);
+      const c = document.createElement("a"); c.className = "chip"; c.href = "/chat?context=" + encodeURIComponent(a.id);
+      const src = characters[a.id] || characters.mascot;
       if (src) { const img = document.createElement("img"); img.src = src; img.alt = ""; img.loading = "lazy"; c.append(img); }
-      c.append(document.createTextNode(a.label)); box.append(c);
+      c.append(document.createTextNode(a.label));
+      const hint = document.createElement("small"); hint.textContent = a.hint; c.append(hint);
+      box.append(c);
     }
-    if (characters.mascot) {
-      for (const logo of document.querySelectorAll(".logo")) { logo.classList.add("art"); logo.innerHTML = `<img src="${characters.mascot}" alt="">`; }
-    }
-    if (characters.mascot && characters.forgetful) {
-      document.getElementById("imgForgetful").src = characters.forgetful;
-      document.getElementById("imgMascot").src = characters.mascot;
-      document.getElementById("beforeAfter").hidden = false;
-    }
+    if (characters.mascot) for (const logo of document.querySelectorAll(".logo")) { logo.classList.add("art"); logo.innerHTML = `<img src="${characters.mascot}" alt="">`; }
   }).catch(() => {});
 </script>
 </body>

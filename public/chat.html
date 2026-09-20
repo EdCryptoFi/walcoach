@@ -457,6 +457,13 @@
     const m = /^\[([a-z]+)\]\s*(.*)$/i.exec(text || "");
     return m && AREAS.some((a) => a.id === m[1].toLowerCase()) ? { area: m[1].toLowerCase(), text: m[2] } : { area: "life", text };
   }
+  function applyContext() {
+    const ctx = new URLSearchParams(location.search).get("context");
+    if (!ctx || !STARTERS[ctx]) return;
+    input.value = STARTERS[ctx]; autosize(); input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+    history.replaceState(null, "", "/chat");
+  }
   function renderStarters() {
     if (!AREAS.length || messages.querySelector(".starters")) return;
     const box = el("div", "msg bot nomem");
@@ -479,7 +486,7 @@
     CHARACTERS = d.characters || {};
     if (CHARACTERS.mascot) for (const logo of document.querySelectorAll(".logo")) { logo.classList.add("art"); logo.innerHTML = `<img src="${CHARACTERS.mascot}" alt="">`; }
   }).catch(() => {}).finally(() =>
-    fetch("/api/areas").then((r) => r.json()).then((d) => { AREAS = d.areas || []; if (user && user.name) { renderStarters(); loadAll(); } }).catch(() => {})
+    fetch("/api/areas").then((r) => r.json()).then((d) => { AREAS = d.areas || []; if (user && user.name) { renderStarters(); loadAll(); applyContext(); } }).catch(() => {})
   );
 
   // ---- outbox: facts the server extracted but might not have managed to write ----
@@ -655,6 +662,7 @@
     loadAll();
     pushInit();
     input.focus();
+    if (AREAS.length) applyContext();
   }
 
   if (user && user.id && user.name) boot(); else { user = user || { id: null }; askName(); }
