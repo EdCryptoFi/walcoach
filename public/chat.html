@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>WalCoach — chat with the coach</title>
+<title>WalCoach, chat with the coach</title>
 <meta name="description" content="Talk to a coach that remembers you. Memories encrypted on Walrus, visible to you.">
 <link rel="icon" href="/icon.png" type="image/webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -68,6 +68,7 @@
       <div class="inline-flex items-center gap-2 font-semibold"><span class="material-symbols-outlined text-primary text-[18px]">hub</span> Walrus network active</div>
       <p class="text-on-surface-variant mt-1">No central database. Your memories are encrypted blobs on Walrus <b id="netLabel">mainnet</b>.</p>
       <a class="inline-flex items-center gap-1 text-secondary font-semibold mt-2" href="/"><span class="material-symbols-outlined text-[16px]">arrow_back</span> Back to the portal</a>
+      <div class="mt-2 text-on-surface-variant">Created by <a class="underline" href="https://x.com/EdCriptoFi" target="_blank" rel="noopener">Ed</a></div>
     </div>
   </aside>
 
@@ -125,7 +126,7 @@
             <button class="btn-glass !py-2 !px-3 text-xs" id="exportBtn" type="button"><span class="material-symbols-outlined text-[16px]">download</span> Export .json</button>
             <a class="btn-glass !py-2 !px-3 text-xs" id="explorerLink" href="#" target="_blank" rel="noopener noreferrer"><span class="material-symbols-outlined text-[16px]">open_in_new</span> Walrus explorer</a>
           </div>
-          <div class="flex items-center justify-between text-xs text-on-surface-variant mt-3 pt-3 border-t border-white/60"><span>Namespace on Walrus</span><span class="inline-flex items-center gap-1 font-semibold text-primary" id="nsMini"><span class="material-symbols-outlined text-[16px]">database</span> —</span></div>
+          <div class="flex items-center justify-between text-xs text-on-surface-variant mt-3 pt-3 border-t border-white/60"><span>Namespace on Walrus</span><span class="inline-flex items-center gap-1 font-semibold text-primary" id="nsMini"><span class="material-symbols-outlined text-[16px]">database</span> -</span></div>
         </div>
       </section>
 
@@ -142,7 +143,7 @@
             <textarea class="field !rounded-3xl flex-1 resize-none min-h-[48px] max-h-40" id="input" rows="1" placeholder="Type your message to WalCoach…" aria-label="Message"></textarea>
             <button class="btn-primary !px-5 h-12 flex-none" id="send" type="submit">Send <span class="material-symbols-outlined text-[18px]">send</span></button>
           </div>
-          <div class="flex items-center justify-between mt-2 text-[11px] text-on-surface-variant"><span>AI coach, not a professional — it can be wrong. Web answers cite sources. <a class="underline" href="/privacy">Privacy &amp; terms</a></span><span class="hidden sm:inline">Shift + ↵ for a new line</span></div>
+          <div class="flex items-center justify-between mt-2 text-[11px] text-on-surface-variant"><span>AI coach, not a professional, it can be wrong. Web answers cite sources. <a class="underline" href="/privacy">Privacy &amp; terms</a> · <a class="underline" href="https://x.com/EdCriptoFi" target="_blank" rel="noopener">Created by Ed</a></span><span class="hidden sm:inline">Shift + ↵ for a new line</span></div>
         </form>
       </section>
     </main>
@@ -153,7 +154,7 @@
 <dialog id="nameDialog">
   <form method="dialog" id="nameForm" class="glass-hi rounded-[2rem] p-7">
     <h3 class="font-display text-2xl font-bold">Who am I talking to?</h3>
-    <p class="text-sm text-on-surface-variant mt-1">No account, no password — just your first name. A memory key is created in this browser.</p>
+    <p class="text-sm text-on-surface-variant mt-1">No account, no password, just your first name. A memory key is created in this browser.</p>
     <div class="flex gap-2 mt-4 p-1 rounded-full bg-white/60" role="tablist">
       <button type="button" role="tab" id="tabNew" class="flex-1 rounded-full py-2 text-sm font-semibold bg-white shadow" aria-selected="true">I'm new here</button>
       <button type="button" role="tab" id="tabKey" class="flex-1 rounded-full py-2 text-sm font-semibold text-on-surface-variant" aria-selected="false">I have a memory key</button>
@@ -176,7 +177,7 @@
     </div>
     <div class="rounded-2xl p-4 mt-5 bg-primary-fixed/50 border border-primary-container/30 flex gap-3">
       <span class="material-symbols-outlined text-primary">verified_user</span>
-      <div class="text-sm"><b>Your memory key is active in this browser.</b><div class="text-on-surface-variant text-xs mt-1">It is the only thing that points to your namespace. Anyone with it is you — keep it private. Talking as <b class="text-on-surface" id="whoName">…</b>.</div></div>
+      <div class="text-sm"><b>Your memory key is active in this browser.</b><div class="text-on-surface-variant text-xs mt-1">It is the only thing that points to your namespace. Anyone with it is you, keep it private. Talking as <b class="text-on-surface" id="whoName">…</b>.</div></div>
     </div>
     <div class="text-[11px] font-bold tracking-wider text-on-surface-variant mt-5">YOUR MEMORY KEY</div>
     <div class="flex items-center gap-2 mt-2 glass rounded-2xl p-3"><code class="flex-1 font-mono text-sm break-all" id="keyText">…</code><button class="btn-glass !py-2 !px-3 text-xs flex-none" id="copyKey" type="button"><span class="material-symbols-outlined text-[16px]">content_copy</span> Copy</button></div>
@@ -220,7 +221,7 @@
       const key = $("keyInput").value.trim();
       if (!KEY_RE.test(key)) { ev.preventDefault(); $("formError").textContent = "That doesn't look like a memory key (it starts with web-)."; return; }
       saveUser({ id: key, name }); try { localStorage.setItem("walrus-coach-key-saved", "1"); } catch {}
-      messages.innerHTML = ""; addBot(`Welcome back, ${name}. Your memories are loading on the left — say hi and I'll pick up where we left off.`, { system: true });
+      messages.innerHTML = ""; addBot(`Welcome back, ${name}. Your memories are loading on the left, say hi and I'll pick up where we left off.`, { system: true });
     } else {
       const fresh = !user?.id; saveUser({ id: user?.id || newId(), name });
       if (fresh || !localStorage.getItem("walrus-coach-key-saved")) setTimeout(showKeyCard, 400);
@@ -241,7 +242,7 @@
   $("closeLeft").addEventListener("click", () => $("leftCol").classList.remove("open"));
   $("copyKey").addEventListener("click", async () => { try { await navigator.clipboard.writeText(user.id); $("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Copied'; setTimeout(() => ($("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">content_copy</span> Copy'), 1500); } catch { prompt("Your memory key:", user.id); } });
   $("switchBtn").addEventListener("click", () => { $("youDialog").close(); try { localStorage.removeItem("walrus-coach-key-saved"); localStorage.removeItem("walrus-coach-context"); } catch {} user = { id: null, name: "" }; history = []; messages.innerHTML = ""; contextId = null; askName(); });
-  $("resetBtn").addEventListener("click", () => { $("youDialog").close(); history = []; addBot("Short-term context cleared. I still remember the long-term stuff — say hi to see it in action.", { system: true }); renderStarters(); });
+  $("resetBtn").addEventListener("click", () => { $("youDialog").close(); history = []; addBot("Short-term context cleared. I still remember the long-term stuff, say hi to see it in action.", { system: true }); renderStarters(); });
 
   // ---------- theme ----------
   (() => { const b = $("themeBtn"), i = $("themeIcon"); const paint = () => { i.textContent = document.documentElement.dataset.theme === "dark" ? "light_mode" : "dark_mode"; }; b.addEventListener("click", () => { const d = document.documentElement.dataset.theme === "dark"; if (d) delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = "dark"; try { localStorage.setItem("walcoach-theme", d ? "light" : "dark"); } catch {} paint(); }); paint(); })();
@@ -250,12 +251,12 @@
   let voice = "neutral";
   try { voice = localStorage.getItem("walrus-coach-voice") === "character" ? "character" : "neutral"; } catch {}
   function paintVoice() { $("voiceLabel").textContent = voice === "character" ? "Character voice" : "Neutral"; $("voiceBtn").classList.toggle("!bg-primary-fixed", voice === "character"); }
-  $("voiceBtn").addEventListener("click", () => { voice = voice === "character" ? "neutral" : "character"; try { localStorage.setItem("walrus-coach-voice", voice); } catch {} paintVoice(); addBot(voice === "character" ? "Character voice on — each mentor now talks in their own style." : "Neutral voice — plain coach, no persona.", { system: true }); });
+  $("voiceBtn").addEventListener("click", () => { voice = voice === "character" ? "neutral" : "character"; try { localStorage.setItem("walrus-coach-voice", voice); } catch {} paintVoice(); addBot(voice === "character" ? "Character voice on, each mentor now talks in their own style." : "Neutral voice, plain coach, no persona.", { system: true }); });
   paintVoice();
 
   // memory switch visuals
   function paintSwitch() { const on = memToggle.checked; $("memSwitch").style.background = on ? "#0f8a5f" : ""; $("memKnob").style.transform = on ? "translateX(16px)" : ""; memLabel.textContent = on ? "Memory on" : "Memory off"; $("syncLabel").textContent = on ? "Memory synced" : "Memory off"; }
-  memToggle.addEventListener("change", () => { paintSwitch(); addBot(memToggle.checked ? "Memory ON — I recall and learn again." : "Memory OFF — I'll answer like a bot that forgets you. Ask me something I should know.", { system: true }); });
+  memToggle.addEventListener("change", () => { paintSwitch(); addBot(memToggle.checked ? "Memory ON, I recall and learn again." : "Memory OFF, I'll answer like a bot that forgets you. Ask me something I should know.", { system: true }); });
   paintSwitch();
 
   // ---------- areas, characters, about ----------
@@ -327,7 +328,7 @@
       try { await api("/api/remember", { userId: user.id, name: user.name, fact: item.text }); } catch { item.tries++; item.at = Date.now(); keep.push(item); }
     }
     o[user.id] = keep; outboxSave(o);
-    if (keep.length) setBanner(`${keep.length} ${keep.length === 1 ? "memory is" : "memories are"} still waiting to be saved — I'll retry automatically.`);
+    if (keep.length) setBanner(`${keep.length} ${keep.length === 1 ? "memory is" : "memories are"} still waiting to be saved, I'll retry automatically.`);
   }
   function setBanner(text) { $("bannerText").textContent = text || ""; $("banner").classList.toggle("show", Boolean(text)); }
 
@@ -335,9 +336,9 @@
   const pushSupported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
   let vapidKey = null;
   function b64ToU8(b64) { const s = atob((b64 + "=".repeat((4 - b64.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(s, (c) => c.charCodeAt(0)); }
-  async function pushState() { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg ? await reg.pushManager.getSubscription() : null; const on = Boolean(sub) && Notification.permission === "granted"; $("nudgeBtn").textContent = on ? "Turn off" : "Turn on"; $("nudgeText").textContent = on ? "On — one check-in a day, based on your memories." : Notification.permission === "denied" ? "Notifications are blocked for this site in your browser settings." : "One short check-in a day, written from what it remembers about you."; $("nudgeBtn").disabled = Notification.permission === "denied"; return { reg, sub, on }; }
+  async function pushState() { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg ? await reg.pushManager.getSubscription() : null; const on = Boolean(sub) && Notification.permission === "granted"; $("nudgeBtn").textContent = on ? "Turn off" : "Turn on"; $("nudgeText").textContent = on ? "On, one check-in a day, based on your memories." : Notification.permission === "denied" ? "Notifications are blocked for this site in your browser settings." : "One short check-in a day, written from what it remembers about you."; $("nudgeBtn").disabled = Notification.permission === "denied"; return { reg, sub, on }; }
   async function pushInit() { if (!pushSupported) return; try { const cfg = await (await fetch("/api/push/config")).json(); if (!cfg.enabled) return; vapidKey = cfg.publicKey; $("nudgeSection").hidden = false; await navigator.serviceWorker.register("/sw.js"); await pushState(); } catch (e) { console.warn("push init", e); } }
-  $("nudgeBtn").addEventListener("click", async () => { $("nudgeBtn").disabled = true; try { const { reg, sub, on } = await pushState(); if (on) { await sub.unsubscribe(); addBot("Daily nudges are off.", { system: true }); } else { const perm = await Notification.requestPermission(); if (perm !== "granted") return; const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(vapidKey) }); await api("/api/push/subscribe", { userId: user.id, name: user.name, subscription: newSub.toJSON() }); addBot("Daily nudges are on. Once a day I'll send one line based on what I remember — a goal, a training day, a thing you said you'd do.", { system: true }); } } catch (e) { addBot("Couldn't set up nudges: " + e.message, { system: true }); } finally { $("nudgeBtn").disabled = false; await pushState(); } });
+  $("nudgeBtn").addEventListener("click", async () => { $("nudgeBtn").disabled = true; try { const { reg, sub, on } = await pushState(); if (on) { await sub.unsubscribe(); addBot("Daily nudges are off.", { system: true }); } else { const perm = await Notification.requestPermission(); if (perm !== "granted") return; const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(vapidKey) }); await api("/api/push/subscribe", { userId: user.id, name: user.name, subscription: newSub.toJSON() }); addBot("Daily nudges are on. Once a day I'll send one line based on what I remember, a goal, a training day, a thing you said you'd do.", { system: true }); } } catch (e) { addBot("Couldn't set up nudges: " + e.message, { system: true }); } finally { $("nudgeBtn").disabled = false; await pushState(); } });
 
   // ---------- rendering ----------
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -376,7 +377,7 @@
   function showKeyCard() {
     if (messages.querySelector(".keycard")) return;
     const card = el("div", "msg bot sys keycard self-start");
-    card.innerHTML = `<div class="bubble" style="white-space:normal"><b>Save your memory key</b><div class="text-sm mt-1">This key is how the coach recognises you. No account, no password — if you lose it, your memories are gone.</div>
+    card.innerHTML = `<div class="bubble" style="white-space:normal"><b>Save your memory key</b><div class="text-sm mt-1">This key is how the coach recognises you. No account, no password, if you lose it, your memories are gone.</div>
       <div class="flex items-center gap-2 mt-3 glass rounded-2xl p-2"><code class="flex-1 font-mono text-sm break-all px-2" id="cardKey"></code><button class="btn-glass !py-2 !px-3 text-xs" id="cardCopy" type="button">Copy</button></div>
       <ul class="text-xs text-on-surface-variant mt-3 list-disc pl-5 space-y-1"><li>Paste it in your notes app, or write it on paper.</li><li>Web3 user? Keep it in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus.</li><li>You can always find it again under the <b>key icon</b> at the top right.</li></ul>
       <button class="btn-primary !py-2 !px-4 text-sm mt-3" id="cardDone" type="button">I've saved it</button></div>`;
@@ -391,7 +392,7 @@
     const list = (memories || []).slice().sort((a, b) => a.distance - b.distance);
     $("factCount").textContent = `${list.length} ${list.length === 1 ? "fact" : "facts"}`;
     $("memCount").textContent = list.length ? `Memory · ${list.length}` : "Memory";
-    if (!list.length) { allEl.innerHTML = '<div class="text-sm text-on-surface-variant">No memories stored yet — tell the coach something worth remembering.</div>'; return; }
+    if (!list.length) { allEl.innerHTML = '<div class="text-sm text-on-surface-variant">No memories stored yet, tell the coach something worth remembering.</div>'; return; }
     const counts = {};
     for (const m of list) {
       const { area, text } = parseTag(m.text); counts[area] = (counts[area] || 0) + 1;
@@ -412,7 +413,7 @@
   async function api(path, body) {
     let res;
     try { res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }); }
-    catch { throw new Error("No connection — check your internet and try again."); }
+    catch { throw new Error("No connection, check your internet and try again."); }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { console.error("[api]", path, res.status, data); throw new Error(data.error || `Server error (${res.status})`); }
     return data;
@@ -439,7 +440,7 @@
       t.remove(); remember("user", text); remember("assistant", data.reply);
       addBot(data.reply, { memories: data.memories || [], sources: data.sources || [], memoryOn: data.memory });
       react(data.reply); renderStarters();
-      if (data.memory && data.memoryAvailable === false) setBanner("Walrus Memory is unreachable right now — this reply was made without your memories. New facts are queued and will be saved when it's back."); else if (data.memory) setBanner("");
+      if (data.memory && data.memoryAvailable === false) setBanner("Walrus Memory is unreachable right now, this reply was made without your memories. New facts are queued and will be saved when it's back."); else if (data.memory) setBanner("");
       outboxAdd(data.facts);
       setTimeout(loadAll, 5000); setTimeout(loadAll, GRACE_MS + 5000);
     } catch (e) { t.remove(); addBot("⚠ " + e.message, { system: true, error: true }); setBanner(e.message); }
@@ -455,7 +456,7 @@
   // ---------- boot ----------
   function boot() {
     $("whoName").textContent = user.name; $("keyText").textContent = user.id;
-    if (!messages.children.length) addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on — a habit, a goal, something you keep putting off.`, { system: true });
+    if (!messages.children.length) addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on, a habit, a goal, something you keep putting off.`, { system: true });
     loadAll(); pushInit(); renderStarters(); input.focus();
   }
   Promise.all([

@@ -21,7 +21,7 @@ Rules:
 - Ignore small talk, questions, and anything the coach said.
 - Ignore transient states and one-off events ("no motivation today", "slept badly", "skipped the gym once") unless the user frames them as a pattern ("I never manage to…", "every week…"). Progress worth keeping is a milestone or a decision, not a mood.
 - Each fact is one short, self-contained sentence starting with the user's name, prefixed with ONE life-area tag in square brackets from this list:
-${AREAS.map((a) => `  [${a.id}] — ${a.hint}`).join("\n")}
+${AREAS.map((a) => `  [${a.id}], ${a.hint}`).join("\n")}
 - Write facts in the same language the user wrote in.
 - Include concrete details (days, times, dates, numbers, names) when present.
 - Do NOT repeat or rephrase anything already in "Already known". Only genuinely new information or a real update (e.g. a changed date, progress made).

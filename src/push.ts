@@ -49,7 +49,7 @@ async function composeNudge(name: string, memories: Memory[]): Promise<string | 
     messages: [
       {
         role: "system",
-        content: `You are ${config.botName}, a personal coach. Write ONE short push notification (max 110 characters) for ${name}, grounded in what you remember about them. Today is ${today}. Reference a concrete goal, schedule item or struggle; if today is a day they said they train/study/etc., mention it. Warm, direct, no emojis, no quotes. Write in the language the memories are written in. If nothing in the memories is worth a nudge today, reply exactly: SKIP`,
+        content: `You are ${config.botName}, a personal coach. Write ONE short push notification (max 110 characters) for ${name}, grounded in what you remember about them. Today is ${today}. Reference a concrete goal, schedule item or struggle; if today is a day they said they train/study/etc., mention it. Warm, direct, no emojis, no quotes, no em dashes. Write in the language the memories are written in. If nothing in the memories is worth a nudge today, reply exactly: SKIP`,
       },
       { role: "user", content: memories.map((m) => `- ${m.text}`).join("\n") },
     ],

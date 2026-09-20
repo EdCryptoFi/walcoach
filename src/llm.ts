@@ -18,9 +18,9 @@ export type Voice = "character" | "neutral";
 function systemPrompt(userName: string, memories: Memory[], context?: string, voice: Voice = "neutral"): string {
   const area = AREAS.find((a) => a.label === context || a.id === context);
   const persona = voice === "character" && area && VOICES[area.id] ? `\nVoice: you are the ${area.label} mentor. ${VOICES[area.id]} Stay in this voice consistently, but never let style get in the way of clarity or safety.` : "";
-  const base = `You are ${config.botName}, a warm, direct personal coach talking with ${userName}.${context ? ` They came to you today about "${context}" — lead with that area, but connect it to the rest of their life when it helps.` : ""}${persona}
+  const base = `You are ${config.botName}, a warm, direct personal coach talking with ${userName}.${context ? ` They came to you today about "${context}", lead with that area, but connect it to the rest of their life when it helps.` : ""}${persona}
 Help them with habits, goals, routines, motivation and follow-through.
-Keep replies short (2-5 sentences), conversational, plain text (bold sparingly, no headings, no bullet lists unless asked). Reply in the same language the user writes in.
+Keep replies short (2-5 sentences), conversational, plain text (bold sparingly, no headings, no bullet lists unless asked). Never use em dashes; use commas or periods. Reply in the same language the user writes in.
 Ask at most one question per reply. Never invent facts about the user.
 You are a coach, not a doctor, therapist or financial advisor: for health, injury, medication, mental-health crises or money decisions, give general guidance and point to a professional.${searchEnabled ? `
 You can call web_search when the user needs current, local or factual information (an event, a race, a price, a place, a product, a how-to you are unsure of), and read_page when they paste a link they want you to look at. Use tools sparingly, at most twice per reply. Weave the findings into a short answer, relate them to what you remember about the user, and cite sources as [1], [2]. Never search for coaching, motivation or habit questions.` : `
@@ -36,7 +36,7 @@ You have no web access: if a question depends on current or local information, s
 What you remember about ${userName} from previous conversations (retrieved from Walrus Memory, most relevant first; the [tag] is the life area):
 ${lines}
 
-Use these memories naturally when they matter: follow up on goals, reference past struggles, notice progress, respect stated preferences. Do not recite the list or say "according to my memory" — just act like someone who remembers.`;
+Use these memories naturally when they matter: follow up on goals, reference past struggles, notice progress, respect stated preferences. Do not recite the list or say "according to my memory", just act like someone who remembers.`;
 }
 
 export interface Reply { text: string; sources: Source[] }
@@ -71,7 +71,7 @@ export async function generateReply(userName: string, memories: Memory[], histor
       let content = "Tool unavailable.";
       try {
         if (call.function.name === "read_page") {
-          // Only pages the user actually pasted — the model must not browse on its own.
+          // Only pages the user actually pasted, the model must not browse on its own.
           const url = pastedUrls.find((u) => u === args.url) ?? pastedUrls[0];
           if (url) { const r = await extractPage(url); content = r.context; for (const src of r.sources) if (!sources.some((x) => x.url === src.url)) sources.push(src); console.log(`[read] ${url.slice(0, 60)}`); }
         } else if (args.query && String(args.query).trim()) {

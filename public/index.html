@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>WalCoach — a coach that actually remembers you</title>
+<title>WalCoach, a coach that actually remembers you</title>
 <meta name="description" content="A personal AI coach with long-term memory stored encrypted on Walrus. No account, no wallet. Seven mentors, one memory of you.">
 <link rel="icon" href="/icon.png" type="image/webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -49,7 +49,7 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
         <span class="chip"><span class="material-symbols-outlined text-[14px]">memory</span> Qwen 3.8 27B</span>
       </div>
       <h1 class="font-display text-[44px] leading-[52px] lg:text-[56px] lg:leading-[64px] font-bold tracking-[-0.02em]">A coach that <span class="bg-gradient-to-r from-primary-container to-secondary bg-clip-text text-transparent">actually remembers</span> you.</h1>
-      <p class="text-lg text-on-surface-variant mt-5 max-w-[56ch] leading-relaxed">Tell it what you're building or training for. Next week it still knows — your goal, your routine, the thing that trips you up. No account, no wallet, and your memories live encrypted on the Walrus network, not in a database of ours.</p>
+      <p class="text-lg text-on-surface-variant mt-5 max-w-[56ch] leading-relaxed">Tell it what you're building or training for. Next week it still knows, your goal, your routine, the thing that trips you up. No account, no wallet, and your memories live encrypted on the Walrus network, not in a database of ours.</p>
       <div class="flex flex-wrap gap-3 mt-7">
         <a class="btn-primary" href="/chat"><span class="material-symbols-outlined text-[20px]">smart_toy</span> Start talking to the coach <span class="material-symbols-outlined text-[20px]">arrow_forward</span></a>
         <a class="btn-glass" href="#key"><span class="material-symbols-outlined text-[20px]">vpn_key</span> Create my memory key</a>
@@ -75,7 +75,7 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
     <div class="flex flex-wrap items-end justify-between gap-4 mt-2">
       <div>
         <h2 class="font-display text-[36px] leading-[44px] font-semibold tracking-tight">Choose your dedicated mentor</h2>
-        <p class="text-on-surface-variant mt-2 max-w-[60ch]">Each mentor leads with its own area, but they all share one memory of you — so the sleep coach knows about your training, and the work coach knows about your stress.</p>
+        <p class="text-on-surface-variant mt-2 max-w-[60ch]">Each mentor leads with its own area, but they all share one memory of you, so the sleep coach knows about your training, and the work coach knows about your stress.</p>
       </div>
       <span class="chip"><span class="material-symbols-outlined text-[14px]">hub</span> 7 mentors ready</span>
     </div>
@@ -108,7 +108,7 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
           <div class="min-w-0">
             <span class="chip"><span class="pulse"></span> Memory active</span>
             <h3 class="font-display text-lg font-semibold mt-2 leading-tight">Fitness & Performance</h3>
-            <p class="text-sm text-on-surface-variant mt-1 leading-relaxed">Training plans, progressive load, mobility routines and the discipline that keeps your past records in mind — injuries included.</p>
+            <p class="text-sm text-on-surface-variant mt-1 leading-relaxed">Training plans, progressive load, mobility routines and the discipline that keeps your past records in mind, injuries included.</p>
           </div>
         </div>
         <a class="btn-ghost mt-4 self-start !px-3" href="/chat?context=training" data-mentor="training" data-label="Fitness & Performance">Train with this coach <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
@@ -152,7 +152,7 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
           <div class="min-w-0">
             <span class="chip"><span class="pulse"></span> Memory active</span>
             <h3 class="font-display text-lg font-semibold mt-2 leading-tight">Cooking & Nutrition</h3>
-            <p class="text-sm text-on-surface-variant mt-1 leading-relaxed">Weekly meal prep, smart ingredient swaps, techniques and a calorie balance tailored to your taste — and your restrictions.</p>
+            <p class="text-sm text-on-surface-variant mt-1 leading-relaxed">Weekly meal prep, smart ingredient swaps, techniques and a calorie balance tailored to your taste, and your restrictions.</p>
           </div>
         </div>
         <a class="btn-ghost mt-4 self-start !px-3" href="/chat?context=food" data-mentor="food" data-label="Cooking & Nutrition">Train with this coach <span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
@@ -164,7 +164,7 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
   <section class="mt-24 max-w-3xl mx-auto text-center" id="key">
     <span class="chip"><span class="material-symbols-outlined text-[14px]">key</span> Your identity, no account</span>
     <h2 class="font-display text-[36px] leading-[44px] font-semibold tracking-tight mt-4">Create your memory key</h2>
-    <p class="text-on-surface-variant mt-3 max-w-[60ch] mx-auto">No account, no password. This key is how the coach recognises you on any device — lose it and your memories are gone. It is generated right here in your browser.</p>
+    <p class="text-on-surface-variant mt-3 max-w-[60ch] mx-auto">No account, no password. This key is how the coach recognises you on any device, lose it and your memories are gone. It is generated right here in your browser.</p>
     <div class="glass-hi rounded-[2rem] p-6 lg:p-8 mt-8 text-left" id="keyCard">
       <div class="flex items-center justify-between text-xs text-on-surface-variant" id="pickedRow" hidden><span class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">school</span> Starting with <b class="text-on-surface" id="pickedLabel"></b></span><button class="btn-ghost !py-1 !px-2 text-xs" type="button" id="clearPick">change</button></div>
       <label class="block text-sm font-semibold mt-2" for="keyName">What should the coach call you? <span class="text-on-surface-variant font-normal">(first name)</span></label>
@@ -177,12 +177,12 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
       </div>
       <div class="rounded-2xl p-4 mt-4 bg-primary-fixed/40 border border-primary-container/30 flex gap-3">
         <span class="material-symbols-outlined text-primary">tips_and_updates</span>
-        <div class="text-sm"><b>Where to keep it?</b> Paste it in your notes app, write it on paper, or — if you're a Web3 user — keep it in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus. Without it, nobody (including us) can restore your history.</div>
+        <div class="text-sm"><b>Where to keep it?</b> Paste it in your notes app, write it on paper, or, if you're a Web3 user, keep it in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus. Without it, nobody (including us) can restore your history.</div>
       </div>
       <label class="flex items-center gap-2 mt-5 text-sm cursor-pointer select-none"><input type="checkbox" id="agree" class="w-4 h-4 accent-primary-container"> I saved my key somewhere safe.</label>
       <div class="flex flex-col sm:flex-row items-center justify-end gap-3 mt-4">
         <button class="btn-glass text-sm" type="button" id="haveKey">I already have a memory key</button>
-        <button class="btn-primary" type="button" id="startBtn" disabled><span class="material-symbols-outlined text-[20px]">check_circle</span> I saved my key safely — start</button>
+        <button class="btn-primary" type="button" id="startBtn" disabled><span class="material-symbols-outlined text-[20px]">check_circle</span> I saved my key safely, start</button>
       </div>
       <div class="mt-4 hidden" id="restoreRow">
         <label class="block text-sm font-semibold" for="restoreKey">Paste your existing key</label>
@@ -193,7 +193,7 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
     <div class="grid sm:grid-cols-3 gap-4 mt-8 text-left">
       <div class="glass rounded-2xl p-5"><div class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary"><span class="material-symbols-outlined ">key_off</span></div><h4 class="font-semibold mt-3">Zero tracking</h4><p class="text-sm text-on-surface-variant mt-1">No email, phone or wallet needed. No cookies, no analytics.</p></div>
       <div class="glass rounded-2xl p-5"><div class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary"><span class="material-symbols-outlined ">cloud_sync</span></div><h4 class="font-semibold mt-3">Walrus persistence</h4><p class="text-sm text-on-surface-variant mt-1">Each fact is an encrypted blob on Walrus mainnet, owned on Sui, linked from the chat.</p></div>
-      <div class="glass rounded-2xl p-5"><div class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary"><span class="material-symbols-outlined ">auto_awesome</span></div><h4 class="font-semibold mt-3">Long memory</h4><p class="text-sm text-on-surface-variant mt-1">Weeks later the coach still recalls your goals, schedule and setbacks — and shows what it used.</p></div>
+      <div class="glass rounded-2xl p-5"><div class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary"><span class="material-symbols-outlined ">auto_awesome</span></div><h4 class="font-semibold mt-3">Long memory</h4><p class="text-sm text-on-surface-variant mt-1">Weeks later the coach still recalls your goals, schedule and setbacks, and shows what it used.</p></div>
     </div>
   </section>
 </main>
@@ -233,8 +233,8 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
       </div>
     </div>
     <div class="flex flex-wrap items-center justify-between gap-3 px-2 py-6 text-xs text-on-surface-variant">
-      <span>Built for <a class="underline" href="https://www.deepsurge.xyz/hackathons/c0141a4a-21be-4009-bc63-7c168608c849" target="_blank" rel="noopener">Walrus Session 8: Chatbots That Remember</a>. MIT open source. An AI coach, not a professional — it can be wrong.</span>
-      <nav class="flex gap-4"><a href="/">Home</a><a href="/how">How it works</a><a href="/security">Security &amp; Walrus</a><a href="/privacy">Privacy</a><span>© 2026 WalCoach</span></nav>
+      <span>Built for <a class="underline" href="https://www.deepsurge.xyz/hackathons/c0141a4a-21be-4009-bc63-7c168608c849" target="_blank" rel="noopener">Walrus Session 8: Chatbots That Remember</a>. MIT open source. An AI coach, not a professional, it can be wrong.</span>
+      <nav class="flex flex-wrap gap-4"><a href="/">Home</a><a href="/how">How it works</a><a href="/security">Security &amp; Walrus</a><a href="/privacy">Privacy</a><a href="https://x.com/EdCriptoFi" target="_blank" rel="noopener">Created by Ed</a><span>© 2026 WalCoach</span></nav>
     </div>
   </div>
 </footer>

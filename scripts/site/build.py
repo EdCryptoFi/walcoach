@@ -41,7 +41,7 @@ home = f'''
         <span class="chip">{icon('memory','text-[14px]')} Qwen 3.8 27B</span>
       </div>
       <h1 class="font-display text-[44px] leading-[52px] lg:text-[56px] lg:leading-[64px] font-bold tracking-[-0.02em]">A coach that <span class="bg-gradient-to-r from-primary-container to-secondary bg-clip-text text-transparent">actually remembers</span> you.</h1>
-      <p class="text-lg text-on-surface-variant mt-5 max-w-[56ch] leading-relaxed">Tell it what you're building or training for. Next week it still knows — your goal, your routine, the thing that trips you up. No account, no wallet, and your memories live encrypted on the Walrus network, not in a database of ours.</p>
+      <p class="text-lg text-on-surface-variant mt-5 max-w-[56ch] leading-relaxed">Tell it what you're building or training for. Next week it still knows, your goal, your routine, the thing that trips you up. No account, no wallet, and your memories live encrypted on the Walrus network, not in a database of ours.</p>
       <div class="flex flex-wrap gap-3 mt-7">
         <a class="btn-primary" href="/chat">{icon('smart_toy','text-[20px]')} Start talking to the coach {icon('arrow_forward','text-[20px]')}</a>
         <a class="btn-glass" href="#key">{icon('vpn_key','text-[20px]')} Create my memory key</a>
@@ -67,7 +67,7 @@ home = f'''
     <div class="flex flex-wrap items-end justify-between gap-4 mt-2">
       <div>
         <h2 class="font-display text-[36px] leading-[44px] font-semibold tracking-tight">Choose your dedicated mentor</h2>
-        <p class="text-on-surface-variant mt-2 max-w-[60ch]">Each mentor leads with its own area, but they all share one memory of you — so the sleep coach knows about your training, and the work coach knows about your stress.</p>
+        <p class="text-on-surface-variant mt-2 max-w-[60ch]">Each mentor leads with its own area, but they all share one memory of you, so the sleep coach knows about your training, and the work coach knows about your stress.</p>
       </div>
       <span class="chip">{icon('hub','text-[14px]')} 7 mentors ready</span>
     </div>
@@ -79,7 +79,7 @@ home = f'''
   <section class="mt-24 max-w-3xl mx-auto text-center" id="key">
     <span class="chip">{icon('key','text-[14px]')} Your identity, no account</span>
     <h2 class="font-display text-[36px] leading-[44px] font-semibold tracking-tight mt-4">Create your memory key</h2>
-    <p class="text-on-surface-variant mt-3 max-w-[60ch] mx-auto">No account, no password. This key is how the coach recognises you on any device — lose it and your memories are gone. It is generated right here in your browser.</p>
+    <p class="text-on-surface-variant mt-3 max-w-[60ch] mx-auto">No account, no password. This key is how the coach recognises you on any device, lose it and your memories are gone. It is generated right here in your browser.</p>
     <div class="glass-hi rounded-[2rem] p-6 lg:p-8 mt-8 text-left" id="keyCard">
       <div class="flex items-center justify-between text-xs text-on-surface-variant" id="pickedRow" hidden><span class="inline-flex items-center gap-2">{icon('school','text-[16px]')} Starting with <b class="text-on-surface" id="pickedLabel"></b></span><button class="btn-ghost !py-1 !px-2 text-xs" type="button" id="clearPick">change</button></div>
       <label class="block text-sm font-semibold mt-2" for="keyName">What should the coach call you? <span class="text-on-surface-variant font-normal">(first name)</span></label>
@@ -92,12 +92,12 @@ home = f'''
       </div>
       <div class="rounded-2xl p-4 mt-4 bg-primary-fixed/40 border border-primary-container/30 flex gap-3">
         {icon('tips_and_updates','text-primary')}
-        <div class="text-sm"><b>Where to keep it?</b> Paste it in your notes app, write it on paper, or — if you're a Web3 user — keep it in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus. Without it, nobody (including us) can restore your history.</div>
+        <div class="text-sm"><b>Where to keep it?</b> Paste it in your notes app, write it on paper, or, if you're a Web3 user, keep it in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus. Without it, nobody (including us) can restore your history.</div>
       </div>
       <label class="flex items-center gap-2 mt-5 text-sm cursor-pointer select-none"><input type="checkbox" id="agree" class="w-4 h-4 accent-primary-container"> I saved my key somewhere safe.</label>
       <div class="flex flex-col sm:flex-row items-center justify-end gap-3 mt-4">
         <button class="btn-glass text-sm" type="button" id="haveKey">I already have a memory key</button>
-        <button class="btn-primary" type="button" id="startBtn" disabled>{icon('check_circle','text-[20px]')} I saved my key safely — start</button>
+        <button class="btn-primary" type="button" id="startBtn" disabled>{icon('check_circle','text-[20px]')} I saved my key safely, start</button>
       </div>
       <div class="mt-4 hidden" id="restoreRow">
         <label class="block text-sm font-semibold" for="restoreKey">Paste your existing key</label>
@@ -108,7 +108,7 @@ home = f'''
     <div class="grid sm:grid-cols-3 gap-4 mt-8 text-left">
       <div class="glass rounded-2xl p-5"><div class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary">{icon('key_off')}</div><h4 class="font-semibold mt-3">Zero tracking</h4><p class="text-sm text-on-surface-variant mt-1">No email, phone or wallet needed. No cookies, no analytics.</p></div>
       <div class="glass rounded-2xl p-5"><div class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary">{icon('cloud_sync')}</div><h4 class="font-semibold mt-3">Walrus persistence</h4><p class="text-sm text-on-surface-variant mt-1">Each fact is an encrypted blob on Walrus mainnet, owned on Sui, linked from the chat.</p></div>
-      <div class="glass rounded-2xl p-5"><div class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary">{icon('auto_awesome')}</div><h4 class="font-semibold mt-3">Long memory</h4><p class="text-sm text-on-surface-variant mt-1">Weeks later the coach still recalls your goals, schedule and setbacks — and shows what it used.</p></div>
+      <div class="glass rounded-2xl p-5"><div class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary">{icon('auto_awesome')}</div><h4 class="font-semibold mt-3">Long memory</h4><p class="text-sm text-on-surface-variant mt-1">Weeks later the coach still recalls your goals, schedule and setbacks, and shows what it used.</p></div>
     </div>
   </section>
 </main>
@@ -138,11 +138,11 @@ home = f'''
 }})();
 </script>
 '''
-page("index.html", "WalCoach — a coach that actually remembers you", "A personal AI coach with long-term memory stored encrypted on Walrus. No account, no wallet. Seven mentors, one memory of you.", "home", home)
+page("index.html", "WalCoach, a coach that actually remembers you", "A personal AI coach with long-term memory stored encrypted on Walrus. No account, no wallet. Seven mentors, one memory of you.", "home", home)
 
 from pages2 import how_page, security_page
-page("how.html", "How WalCoach works — memory on Walrus", "How the coach learns, encrypts and recalls: the honest data flow from your message to a blob on Walrus.", "how", how_page())
-page("security.html", "WalCoach — Security & Walrus", "What protects your memories, how encryption and storage on Walrus work, and their limits — in plain language.", "security", security_page())
+page("how.html", "How WalCoach works, memory on Walrus", "How the coach learns, encrypts and recalls: the honest data flow from your message to a blob on Walrus.", "how", how_page())
+page("security.html", "WalCoach, Security & Walrus", "What protects your memories, how encryption and storage on Walrus work, and their limits, in plain language.", "security", security_page())
 
 # ------------------------------------------------------------------ PRIVACY
 def row(data, to, why):
@@ -176,4 +176,4 @@ privacy = f'''
   <section class="glass rounded-3xl p-6 mt-4"><h2 class="font-display text-xl font-semibold">Open source</h2><p class="mt-2 text-sm leading-relaxed">The code is public under the MIT licence, so you can read exactly what happens to your data, or run your own copy.</p></section>
 </main>
 '''
-page("privacy.html", "WalCoach — Privacy & terms", "No account, no cookies, no database of you. Where each kind of data goes, in plain language.", "privacy", privacy)
+page("privacy.html", "WalCoach, Privacy & terms", "No account, no cookies, no database of you. Where each kind of data goes, in plain language.", "privacy", privacy)

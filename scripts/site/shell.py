@@ -57,8 +57,8 @@ FOOTER = '''<footer class="relative z-10 mt-16">
       </div>
     </div>
     <div class="flex flex-wrap items-center justify-between gap-3 px-2 py-6 text-xs text-on-surface-variant">
-      <span>Built for <a class="underline" href="https://www.deepsurge.xyz/hackathons/c0141a4a-21be-4009-bc63-7c168608c849" target="_blank" rel="noopener">Walrus Session 8: Chatbots That Remember</a>. MIT open source. An AI coach, not a professional — it can be wrong.</span>
-      <nav class="flex gap-4"><a href="/">Home</a><a href="/how">How it works</a><a href="/security">Security &amp; Walrus</a><a href="/privacy">Privacy</a><span>© 2026 WalCoach</span></nav>
+      <span>Built for <a class="underline" href="https://www.deepsurge.xyz/hackathons/c0141a4a-21be-4009-bc63-7c168608c849" target="_blank" rel="noopener">Walrus Session 8: Chatbots That Remember</a>. MIT open source. An AI coach, not a professional, it can be wrong.</span>
+      <nav class="flex flex-wrap gap-4"><a href="/">Home</a><a href="/how">How it works</a><a href="/security">Security &amp; Walrus</a><a href="/privacy">Privacy</a><a href="https://x.com/EdCriptoFi" target="_blank" rel="noopener">Created by Ed</a><span>© 2026 WalCoach</span></nav>
     </div>
   </div>
 </footer>

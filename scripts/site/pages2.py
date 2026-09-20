@@ -17,14 +17,14 @@ def how_page():
     <div>
       <span class="chip">{icon('memory','text-[14px]')} Memory architecture</span>
       <h1 class="font-display text-[36px] leading-[44px] lg:text-[44px] lg:leading-[52px] font-bold tracking-tight mt-4 max-w-[22ch]">How WalCoach works: an AI with its own encrypted memory</h1>
-      <p class="text-on-surface-variant mt-4 max-w-[60ch]">Most AIs forget who you are the moment you close the tab. WalCoach remembers — and the memory lives on the Walrus network, not in a database of ours.</p>
+      <p class="text-on-surface-variant mt-4 max-w-[60ch]">Most AIs forget who you are the moment you close the tab. WalCoach remembers, and the memory lives on the Walrus network, not in a database of ours.</p>
     </div>
     <div class="glass rounded-2xl px-5 py-3 text-xs"><div class="text-on-surface-variant">Sui / Walrus status</div><div class="inline-flex items-center gap-2 font-semibold text-primary mt-1"><span class="pulse"></span> Mainnet · relayer healthy</div></div>
   </section>
 
   <section class="grid md:grid-cols-2 xl:grid-cols-4 gap-5 mt-10">
     {step("01","forum","1. You talk","In any language. Replies in the style of a real mentor: direct, focused on one key question at a time, challenging your routine.","psychology","Socratic, not sycophantic")}
-    {step("02","data_thresholding","2. It learns & extracts facts","With every message, the open-weight model extracts goals, deadlines, blockers, preferences and progress — and tags each with a life area.","filter_alt","Semantic indexing")}
+    {step("02","data_thresholding","2. It learns & extracts facts","With every message, the open-weight model extracts goals, deadlines, blockers, preferences and progress, and tags each with a life area.","filter_alt","Semantic indexing")}
     {step("03","lock","3. Blobs on Walrus","Each fact is sent to the Walrus Memory relayer, which encrypts it (SEAL) and stores it as a blob on Walrus mainnet, owned by an account on Sui.","enhanced_encryption","Encrypted at rest, owned on-chain")}
     {step("04","history_edu","4. Smart recall","Next session, your message is matched against your memory vectors. Every reply shows exactly which facts were used to build it.","visibility","Context transparency")}
   </section>
@@ -69,19 +69,19 @@ def how_page():
   <section class="glass rounded-[2rem] p-6 lg:p-8 mt-16">
     <span class="eyebrow">Open engineering</span>
     <h2 class="font-display text-[28px] leading-[36px] font-semibold tracking-tight mt-2">Transparent tech stack</h2>
-    <p class="text-on-surface-variant mt-2 max-w-[70ch]">Built to answer in seconds without compromising the Web3 philosophy — and small enough to read in an afternoon.</p>
+    <p class="text-on-surface-variant mt-2 max-w-[70ch]">Built to answer in seconds without compromising the Web3 philosophy, and small enough to read in an afternoon.</p>
     <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-6">
       <div class="glass-hi rounded-2xl p-5"><span class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary">{icon('neurology')}</span><h3 class="font-semibold mt-3">Qwen 3.8 27B</h3><div class="text-xs text-secondary font-semibold">via Groq</div><p class="text-sm text-on-surface-variant mt-2">Open-weight model, not from Anthropic or OpenAI. Fast, direct, and used for replies, fact extraction and daily nudges.</p></div>
       <div class="glass-hi rounded-2xl p-5"><span class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary">{icon('deployed_code')}</span><h3 class="font-semibold mt-3">Walrus Memory</h3><div class="text-xs text-secondary font-semibold">by Mysten Labs</div><p class="text-sm text-on-surface-variant mt-2">SDK <code>@mysten-incubation/memwal</code>: recall, remember, per-user namespaces, SEAL encryption, Walrus storage.</p></div>
       <div class="glass-hi rounded-2xl p-5"><span class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary">{icon('travel_explore')}</span><h3 class="font-semibold mt-3">Search with citations</h3><div class="text-xs text-secondary font-semibold">Tavily</div><p class="text-sm text-on-surface-variant mt-2">When you need current facts (a race, a price, a place), the coach searches the web and cites sources. Never for coaching itself.</p></div>
-      <div class="glass-hi rounded-2xl p-5"><span class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary">{icon('code')}</span><h3 class="font-semibold mt-3">MIT open source</h3><div class="text-xs text-secondary font-semibold">Auditable &amp; free</div><p class="text-sm text-on-surface-variant mt-2">The whole integration — prompts, memory logic, this site — is public. Clone it and run your own.</p></div>
+      <div class="glass-hi rounded-2xl p-5"><span class="w-9 h-9 rounded-xl bg-white grid place-items-center text-primary">{icon('code')}</span><h3 class="font-semibold mt-3">MIT open source</h3><div class="text-xs text-secondary font-semibold">Auditable &amp; free</div><p class="text-sm text-on-surface-variant mt-2">The whole integration, prompts, memory logic, this site, is public. Clone it and run your own.</p></div>
     </div>
   </section>
 
   <section class="mt-16 rounded-[2rem] p-8 lg:p-12 text-center text-white bg-gradient-to-br from-primary-container via-secondary to-primary shadow-glass-lg">
     <span class="chip !bg-white/15 !border-white/30 !text-white">{icon('verified','text-[14px]')} Persistent memory, no central server</span>
     <h2 class="font-display text-[32px] leading-[40px] lg:text-[40px] lg:leading-[48px] font-bold tracking-tight mt-4">Ready for a coach that doesn't forget you?</h2>
-    <p class="text-white/80 mt-3 max-w-[50ch] mx-auto">Start today. Your goals, habits and wins preserved — and yours.</p>
+    <p class="text-white/80 mt-3 max-w-[50ch] mx-auto">Start today. Your goals, habits and wins preserved, and yours.</p>
     <div class="flex flex-wrap justify-center gap-3 mt-6"><a class="btn-glass" href="/chat">Start chatting {icon('arrow_forward','text-[18px]')}</a><a class="btn-glass" href="/#key">{icon('vpn_key','text-[18px]')} Create a memory key</a></div>
   </section>
 </main>
@@ -113,7 +113,7 @@ def security_page():
     <div>
       <span class="chip">{icon('verified_user','text-[14px]')} Honest security · no marketing claims</span>
       <h1 class="font-display text-[36px] leading-[44px] lg:text-[44px] lg:leading-[52px] font-bold tracking-tight mt-4">Radical privacy: <span class="bg-gradient-to-r from-primary-container to-secondary bg-clip-text text-transparent">your memories belong to you</span></h1>
-      <p class="text-on-surface-variant mt-4 max-w-[60ch]">WalCoach never sells your data, builds no ad profile and keeps no database of your conversations. Every fact the coach learns is encrypted and stored on the Walrus network under a namespace only your memory key points to. Below is exactly how — including the parts we don't control.</p>
+      <p class="text-on-surface-variant mt-4 max-w-[60ch]">WalCoach never sells your data, builds no ad profile and keeps no database of your conversations. Every fact the coach learns is encrypted and stored on the Walrus network under a namespace only your memory key points to. Below is exactly how, including the parts we don't control.</p>
       <div class="flex flex-wrap gap-3 mt-6"><a class="btn-primary" href="/chat">{icon('enhanced_encryption','text-[20px]')} Open the coach</a><a class="btn-glass" href="/how">{icon('account_tree','text-[20px]')} See the data flow</a></div>
     </div>
     <div class="glass rounded-3xl p-5 text-sm">
@@ -130,16 +130,16 @@ def security_page():
     <p class="text-on-surface-variant mt-2 max-w-[70ch]">Security here is not a contract promise; it is code you can read. We also say plainly what is <em>not</em> covered.</p>
     <div class="grid lg:grid-cols-2 gap-5 mt-8">
       {pillar("01","lock","Encryption at rest on Walrus","Each fact is encrypted with SEAL by the Walrus Memory relayer before it is written to Walrus, and can only be decrypted for the account that owns the namespace. Blobs on the network are unreadable to storage nodes.", p1)}
-      {pillar("02","hub","Decentralised storage on Walrus","Built on Walrus Memory (Mysten Labs): blobs are erasure-coded across storage nodes, and ownership is an object on Sui mainnet. No single server of ours holds your history — we have no database at all.", p2)}
+      {pillar("02","hub","Decentralised storage on Walrus","Built on Walrus Memory (Mysten Labs): blobs are erasure-coded across storage nodes, and ownership is an object on Sui mainnet. No single server of ours holds your history, we have no database at all.", p2)}
       {pillar("03","cookie_off","Zero tracking, no cookies","No third-party cookies, no Google Analytics or Meta Pixel, no fingerprinting. The only thing kept in your browser is your memory key and name (localStorage), which the service needs to work.", p3)}
-      {pillar("04","terminal","Open audit, MIT code","Public repository under the MIT licence. Any developer can inspect exactly how memories are extracted, tagged, sent to the relayer and recalled — and run their own copy with their own keys.", p4)}
+      {pillar("04","terminal","Open audit, MIT code","Public repository under the MIT licence. Any developer can inspect exactly how memories are extracted, tagged, sent to the relayer and recalled, and run their own copy with their own keys.", p4)}
     </div>
   </section>
 
   <section class="glass rounded-[2rem] p-6 lg:p-8 mt-16">
     <div class="text-center"><span class="eyebrow justify-center">Data path</span><h2 class="font-display text-[28px] leading-[36px] font-semibold tracking-tight mt-2">How a message travels from you to Walrus</h2></div>
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8 text-center text-sm">
-      <div><span class="w-12 h-12 rounded-full bg-white grid place-items-center text-primary mx-auto">{icon('record_voice_over')}</span><div class="text-xs text-on-surface-variant mt-3">Step 1</div><b>You send a message</b><p class="text-on-surface-variant mt-1">Plans, setbacks, goals — in your language.</p></div>
+      <div><span class="w-12 h-12 rounded-full bg-white grid place-items-center text-primary mx-auto">{icon('record_voice_over')}</span><div class="text-xs text-on-surface-variant mt-3">Step 1</div><b>You send a message</b><p class="text-on-surface-variant mt-1">Plans, setbacks, goals, in your language.</p></div>
       <div><span class="w-12 h-12 rounded-full bg-white grid place-items-center text-primary mx-auto">{icon('psychology')}</span><div class="text-xs text-on-surface-variant mt-3">Step 2</div><b>Model replies &amp; extracts facts</b><p class="text-on-surface-variant mt-1">Qwen on Groq. Groq does not train on API data.</p></div>
       <div><span class="w-12 h-12 rounded-full bg-white grid place-items-center text-primary mx-auto">{icon('shield_locked')}</span><div class="text-xs text-on-surface-variant mt-3">Step 3</div><b>Relayer encrypts (SEAL)</b><p class="text-on-surface-variant mt-1">Embeds for search, encrypts, uploads.</p></div>
       <div><span class="w-12 h-12 rounded-full bg-white grid place-items-center text-primary mx-auto">{icon('scatter_plot')}</span><div class="text-xs text-on-surface-variant mt-3">Step 4</div><b>Blob on Walrus mainnet</b><p class="text-on-surface-variant mt-1">Spread across nodes, owned on Sui, linked from the chat.</p></div>
@@ -150,7 +150,7 @@ def security_page():
     <span class="eyebrow">Your key, your responsibility</span>
     <h2 class="font-display text-[28px] leading-[36px] lg:text-[36px] lg:leading-[44px] font-semibold tracking-tight mt-2">Memory key guide &amp; recovery</h2>
     <div class="grid md:grid-cols-3 gap-5 mt-8">
-      <article class="glass rounded-3xl p-6"><span class="w-10 h-10 rounded-xl bg-error-container grid place-items-center text-on-error-container">{icon('warning')}</span><h3 class="font-semibold mt-4">What if I lose my key?</h3><p class="text-sm text-on-surface-variant mt-2">There is no account to recover from. Without the key nobody — including us — can find your namespace. Start again with a new key.</p><ul class="text-xs mt-3 space-y-1"><li class="flex gap-2">{icon('check_small','text-[16px] text-primary')} Keep it in a password manager or notes app</li><li class="flex gap-2">{icon('check_small','text-[16px] text-primary')} Or in <a class="underline" href="https://walnotes.xyz" target="_blank" rel="noopener">Walnotes</a> (encrypted notes on Walrus)</li></ul></article>
+      <article class="glass rounded-3xl p-6"><span class="w-10 h-10 rounded-xl bg-error-container grid place-items-center text-on-error-container">{icon('warning')}</span><h3 class="font-semibold mt-4">What if I lose my key?</h3><p class="text-sm text-on-surface-variant mt-2">There is no account to recover from. Without the key nobody, including us, can find your namespace. Start again with a new key.</p><ul class="text-xs mt-3 space-y-1"><li class="flex gap-2">{icon('check_small','text-[16px] text-primary')} Keep it in a password manager or notes app</li><li class="flex gap-2">{icon('check_small','text-[16px] text-primary')} Or in <a class="underline" href="https://walnotes.xyz" target="_blank" rel="noopener">Walnotes</a> (encrypted notes on Walrus)</li></ul></article>
       <article class="glass rounded-3xl p-6"><span class="w-10 h-10 rounded-xl bg-white grid place-items-center text-primary">{icon('ios_share')}</span><h3 class="font-semibold mt-4">Use it on another device</h3><p class="text-sm text-on-surface-variant mt-2">Open the site, choose "I already have a memory key", paste it. The coach loads your memories from Walrus and picks up where you left off.</p></article>
       <article class="glass rounded-3xl p-6"><span class="w-10 h-10 rounded-xl bg-white grid place-items-center text-primary">{icon('delete_forever')}</span><h3 class="font-semibold mt-4">Deleting memories</h3><p class="text-sm text-on-surface-variant mt-2">Clearing site data forgets the key on this device. Blobs already on Walrus persist for their storage period; they are encrypted and cannot be found without the key. Per-memory deletion is on the Walrus Memory roadmap.</p></article>
     </div>

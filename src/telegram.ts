@@ -28,7 +28,7 @@ bot.command("start", async (ctx) => {
     await ctx.reply(reply.text);
   } else {
     await ctx.reply(
-      `Hey ${name}! I'm ${config.botName}, a coach that actually remembers you between conversations (memories are encrypted and stored on Walrus).\n\nTell me what you're working on — a habit, a goal, something you keep putting off.`,
+      `Hey ${name}! I'm ${config.botName}, a coach that actually remembers you between conversations (memories are encrypted and stored on Walrus).\n\nTell me what you're working on, a habit, a goal, something you keep putting off.`,
     );
   }
 });
@@ -53,11 +53,11 @@ bot.command("memory", async (ctx) => {
   const arg = ctx.match?.trim().toLowerCase();
   if (arg === "off") {
     memoryDisabled.add(userId);
-    return ctx.reply("Memory OFF — I'll answer like a bot that forgets you (nothing recalled, nothing stored).");
+    return ctx.reply("Memory OFF, I'll answer like a bot that forgets you (nothing recalled, nothing stored).");
   }
   if (arg === "on") {
     memoryDisabled.delete(userId);
-    return ctx.reply("Memory ON — recall + learning enabled again.");
+    return ctx.reply("Memory ON, recall + learning enabled again.");
   }
   await ctx.reply(`Memory is ${memoryDisabled.has(userId) ? "OFF" : "ON"}. Use /memory on or /memory off.`);
 });
@@ -66,10 +66,10 @@ bot.command("help", (ctx) =>
   ctx.reply(
     [
       "Just talk to me. Commands:",
-      "/memories — what I remember about you",
-      "/remember <fact> — store something explicitly",
-      "/memory on|off — toggle long-term memory (demo the difference)",
-      "/reset — clear short-term chat context (long-term memory stays)",
+      "/memories, what I remember about you",
+      "/remember <fact>, store something explicitly",
+      "/memory on|off, toggle long-term memory (demo the difference)",
+      "/reset, clear short-term chat context (long-term memory stays)",
     ].join("\n"),
   ),
 );
@@ -94,7 +94,7 @@ bot.on("message:text", async (ctx) => {
     await ctx.reply(sources.length ? `${reply}\n\n${sources.map((s, i) => `[${i + 1}] ${s.url}`).join("\n")}` : reply);
   } catch (err) {
     log.error("telegram.chat.failed", err, { user: userId });
-    await ctx.reply("Something broke on my side — try again in a moment.");
+    await ctx.reply("Something broke on my side, try again in a moment.");
   }
 });
 
