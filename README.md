@@ -33,6 +33,8 @@ memories, even though both are written by the same delegate key.
 
 ## The web UI
 
+![Walrus Coach web UI](docs/screenshot-chat.png)
+
 [public/index.html](public/index.html) is a single-page chat served by [src/web.ts](src/web.ts).
 On first visit you type a name; the browser generates an opaque id (`web-<uuid>`) and keeps
 it in `localStorage`. That id becomes the user's memory namespace. Swapping it for a signed
