@@ -22,6 +22,20 @@ export function numericId(userId: string): number {
 
 const VALID_ID = /^web-[a-z0-9-]{8,64}$/i;
 
+// Per-user throttle so one visitor cannot burn the shared Walrus/Groq budget.
+// In-memory, so per function instance on serverless — a soft limit, good enough here.
+const WINDOW_MS = 60_000;
+const MAX_PER_WINDOW = 10;
+const hits = new Map<string, number[]>();
+function throttled(userId: string): boolean {
+  const now = Date.now();
+  const recent = (hits.get(userId) ?? []).filter((t) => now - t < WINDOW_MS);
+  if (recent.length >= MAX_PER_WINDOW) return true;
+  recent.push(now);
+  hits.set(userId, recent);
+  return false;
+}
+
 interface ChatBody { userId?: string; name?: string; text?: string; memory?: boolean; history?: Turn[] }
 
 function cleanHistory(h: unknown): Turn[] {
@@ -40,6 +54,7 @@ export function createApp(keepAlive: (p: Promise<unknown>) => void = () => {}) {
     const body = (await c.req.json().catch(() => ({}))) as ChatBody;
     const { userId, name, text } = body;
     if (!userId || !VALID_ID.test(userId) || !text?.trim()) return c.json({ error: "userId and text are required" }, 400);
+    if (throttled(userId)) return c.json({ error: "Slow down a little — 10 messages per minute." }, 429);
     const id = numericId(userId);
     const userName = (name || "friend").slice(0, 40);
     const useMemory = body.memory !== false;
