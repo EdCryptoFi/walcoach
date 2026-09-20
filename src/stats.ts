@@ -5,8 +5,10 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const FILE = new URL("../data/stats.json", import.meta.url).pathname;
+// fileURLToPath, not .pathname: a space in the project path must not become "%20" on disk.
+const FILE = fileURLToPath(new URL("../data/stats.json", import.meta.url));
 
 interface UserStats {
   name: string;
