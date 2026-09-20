@@ -47,7 +47,7 @@ function throttled(c: { req: { header: (n: string) => string | undefined } }, us
   return null;
 }
 
-interface ChatBody { userId?: string; name?: string; text?: string; memory?: boolean; history?: Turn[] }
+interface ChatBody { userId?: string; name?: string; text?: string; memory?: boolean; history?: Turn[]; context?: string }
 
 function cleanHistory(h: unknown): Turn[] {
   if (!Array.isArray(h)) return [];
@@ -159,7 +159,8 @@ export function createApp() {
     const useMemory = body.memory !== false;
     stats.recordMessage(id, userName);
     try {
-      const { reply, memories, memoryAvailable, facts, sources, learning } = await chat(id, userName, text.trim().slice(0, 2000), { useMemory, history: cleanHistory(body.history) });
+      const context = AREAS.find((a) => a.id === body.context)?.label;
+      const { reply, memories, memoryAvailable, facts, sources, learning } = await chat(id, userName, text.trim().slice(0, 2000), { useMemory, history: cleanHistory(body.history), context });
       keepAlive(learning);
       return c.json({ reply, memories, memory: useMemory, memoryAvailable, facts, sources });
     } catch (err) {

@@ -36,10 +36,12 @@ export interface ChatOptions {
   useMemory?: boolean;
   /** Short-term history supplied by the caller (stateless deployments); defaults to the in-RAM history. */
   history?: Turn[];
+  /** Life area the user picked on the landing page (label), if any. */
+  context?: string;
 }
 
 export async function chat(userId: number, userName: string, text: string, options: ChatOptions | boolean = {}): Promise<ChatResult> {
-  const { useMemory = true, history: given } = typeof options === "boolean" ? { useMemory: options } : options;
+  const { useMemory = true, history: given, context: area } = typeof options === "boolean" ? { useMemory: options } : options;
 
   // 1. Recall what we know that is relevant to this message.
   const recall = useMemory ? await recallForUser(userId, text) : { memories: [], available: true };
@@ -57,7 +59,7 @@ export async function chat(userId: number, userName: string, text: string, optio
   // gets the facts back with the reply and can retry the write if it fails later.
   const context = turns.slice(-3, -1).map((t) => `${t.role === "user" ? "User" : "Coach"}: ${t.content}`).join("\n");
   const [generated, facts] = await Promise.all([
-    generateReply(userName, memories, turns),
+    generateReply(userName, memories, turns, area),
     useMemory ? extractNewFacts(userName, text, context, memories).catch((err) => { console.error("[extract]", (err as Error).message); return [] as string[]; }) : Promise.resolve([] as string[]),
   ]);
   const reply = generated.text;

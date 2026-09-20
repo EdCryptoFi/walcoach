@@ -11,8 +11,8 @@ export interface Turn {
   content: string;
 }
 
-function systemPrompt(userName: string, memories: Memory[]): string {
-  const base = `You are ${config.botName}, a warm, direct personal coach chatting on Telegram with ${userName}.
+function systemPrompt(userName: string, memories: Memory[], context?: string): string {
+  const base = `You are ${config.botName}, a warm, direct personal coach talking with ${userName}.${context ? ` They came to you today about "${context}" — lead with that area, but connect it to the rest of their life when it helps.` : ""}
 Help them with habits, goals, routines, motivation and follow-through.
 Keep replies short (2-5 sentences), conversational, plain text (bold sparingly, no headings, no bullet lists unless asked). Reply in the same language the user writes in.
 Ask at most one question per reply. Never invent facts about the user.
@@ -37,8 +37,8 @@ export interface Reply { text: string; sources: Source[] }
 
 const MAX_SEARCHES = 2;
 
-export async function generateReply(userName: string, memories: Memory[], history: Turn[]): Promise<Reply> {
-  const messages: OpenAI.ChatCompletionMessageParam[] = [{ role: "system", content: systemPrompt(userName, memories) }, ...history];
+export async function generateReply(userName: string, memories: Memory[], history: Turn[], context?: string): Promise<Reply> {
+  const messages: OpenAI.ChatCompletionMessageParam[] = [{ role: "system", content: systemPrompt(userName, memories, context) }, ...history];
   const sources: Source[] = [];
   let searches = 0;
   const lastUser = [...history].reverse().find((t) => t.role === "user")?.content ?? "";

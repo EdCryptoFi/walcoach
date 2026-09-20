@@ -76,6 +76,26 @@
   .pick { padding-top: 24px; }
   .pick .sub { margin-bottom: 18px; }
   .tech { margin: 22px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 80ch; }
+
+  /* onboarding dialog */
+  dialog { border: 1px solid var(--border); border-radius: 18px; background: var(--panel); color: var(--text); padding: 26px; max-width: 480px; width: calc(100% - 32px); box-shadow: var(--shadow); }
+  dialog::backdrop { background: rgba(6, 18, 22, .55); }
+  dialog h3 { margin: 0 0 6px; font-size: 22px; letter-spacing: -.01em; }
+  dialog p { margin: 0 0 16px; color: var(--muted); font-size: 15px; }
+  dialog label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
+  dialog input[type=text] { width: 100%; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font: inherit; color: inherit; }
+  .keyrow { display: flex; gap: 8px; align-items: center; }
+  .keyrow code { flex: 1; font-size: 16px; letter-spacing: .04em; padding: 11px 12px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--border); user-select: all; overflow-wrap: anywhere; }
+  .keyrow button { height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-2); font: inherit; color: inherit; cursor: pointer; }
+  dialog ul { margin: 10px 0 14px; padding-left: 18px; color: var(--muted); font-size: 14px; }
+  dialog li { margin: 3px 0; }
+  .agree { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; margin: 6px 0 16px; cursor: pointer; }
+  .agree input { margin-top: 3px; width: 18px; height: 18px; }
+  .primary { width: 100%; height: 46px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 650; cursor: pointer; }
+  .primary:disabled { opacity: .5; cursor: default; }
+  .linkbtn { background: none; border: 0; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; margin-top: 10px; width: 100%; }
+  .picked { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+  .picked img { width: 36px; height: 36px; object-fit: contain; }
   .logo img { width: 34px; height: 34px; object-fit: contain; border-radius: 10px; }
   .logo.art { background: transparent; }
   .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
@@ -135,12 +155,71 @@
     <span>Open source · MIT · No cookies</span>
   </footer>
 </div>
+<dialog id="onb">
+  <form id="onbForm">
+    <div class="picked" id="picked"></div>
+    <h3>Create your memory key</h3>
+    <p>No account, no password. This key is how the coach recognises you on any device — lose it and your memories are gone.</p>
+    <label for="onbName">First name</label>
+    <input type="text" id="onbName" required maxlength="40" autocomplete="given-name" placeholder="Ana">
+    <label>Your memory key</label>
+    <div class="keyrow"><code id="onbKey"></code><button type="button" id="onbCopy">Copy</button></div>
+    <ul>
+      <li>Paste it in your notes app, or write it on paper.</li>
+      <li>Web3 user? Keep it in <a href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a> — encrypted notes on Walrus.</li>
+    </ul>
+    <label class="agree"><input type="checkbox" id="onbAgree"> I saved my key somewhere safe.</label>
+    <button class="primary" id="onbStart" type="submit" disabled>Start</button>
+    <button class="linkbtn" type="button" id="onbHave">I already have a memory key</button>
+  </form>
+</dialog>
+
 <script>
+  const KEY_RE = /^web-[a-z0-9-]{8,64}$/i;
+  const newKey = () => {
+    const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+    const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
+    const chars = Array.from(bytes, (b) => alphabet[b % alphabet.length]);
+    return "web-" + [0, 4, 8, 12].map((i) => chars.slice(i, i + 4).join("")).join("-");
+  };
+  function currentUser() { try { return JSON.parse(localStorage.getItem("walrus-coach-user") || "null"); } catch { return null; } }
+  let pendingContext = null, pendingKey = null;
+  const onb = document.getElementById("onb");
+  function openOnboarding(area, src) {
+    pendingContext = area.id; pendingKey = newKey();
+    document.getElementById("onbKey").textContent = pendingKey;
+    document.getElementById("picked").innerHTML = (src ? `<img src="${src}" alt="">` : "") + `<span>Starting with <b>${area.label}</b></span>`;
+    document.getElementById("onbAgree").checked = false; document.getElementById("onbStart").disabled = true;
+    onb.showModal(); document.getElementById("onbName").focus();
+  }
+  document.getElementById("onbAgree").addEventListener("change", (e) => { document.getElementById("onbStart").disabled = !e.target.checked; });
+  document.getElementById("onbCopy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(pendingKey); document.getElementById("onbCopy").textContent = "Copied"; } catch { prompt("Your memory key:", pendingKey); }
+  });
+  document.getElementById("onbForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = document.getElementById("onbName").value.trim() || "friend";
+    try { localStorage.setItem("walrus-coach-user", JSON.stringify({ id: pendingKey, name })); localStorage.setItem("walrus-coach-key-saved", "1"); } catch {}
+    location.href = "/chat?context=" + encodeURIComponent(pendingContext);
+  });
+  document.getElementById("onbHave").addEventListener("click", () => {
+    const key = (prompt("Paste your memory key (web-…):") || "").trim();
+    if (!KEY_RE.test(key)) { if (key) alert("That doesn't look like a memory key."); return; }
+    const name = document.getElementById("onbName").value.trim() || prompt("Your first name:") || "friend";
+    try { localStorage.setItem("walrus-coach-user", JSON.stringify({ id: key, name })); localStorage.setItem("walrus-coach-key-saved", "1"); } catch {}
+    location.href = "/chat?context=" + encodeURIComponent(pendingContext);
+  });
+
   Promise.all([fetch("/api/areas").then((r) => r.json()), fetch("/api/characters").then((r) => r.json())]).then(([{ areas }, { characters }]) => {
     const box = document.getElementById("areas");
     for (const a of areas) {
       const c = document.createElement("a"); c.className = "chip"; c.href = "/chat?context=" + encodeURIComponent(a.id);
       const src = characters[a.id] || characters.mascot;
+      c.addEventListener("click", (e) => {
+        const u = currentUser();
+        if (u && u.id && u.name) return;          // returning user: straight to the chat
+        e.preventDefault(); openOnboarding(a, src);
+      });
       if (src) { const img = document.createElement("img"); img.src = src; img.alt = ""; img.loading = "lazy"; c.append(img); }
       c.append(document.createTextNode(a.label));
       const hint = document.createElement("small"); hint.textContent = a.hint; c.append(hint);

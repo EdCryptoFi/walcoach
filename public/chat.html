@@ -33,7 +33,22 @@
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .app { display: grid; grid-template-columns: minmax(0, 1fr) 340px; height: 100dvh; }
+  @media (min-width: 1140px) { .app.with-agent { grid-template-columns: 240px minmax(0, 1fr) 340px; } }
   @media (max-width: 860px) { .app { grid-template-columns: 1fr; grid-template-rows: 1fr auto; } }
+
+  /* ---- agent column ---- */
+  .agent { display: none; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 28px 18px; border-right: 1px solid var(--border); background: var(--panel); }
+  @media (min-width: 1140px) { .app.with-agent .agent { display: flex; } }
+  .agent img { width: 150px; height: 150px; object-fit: contain; }
+  .agent h2 { margin: 6px 0 0; font-size: 18px; letter-spacing: -.01em; text-transform: none; color: var(--text); font-weight: 650; display: block; }
+  .agent .hint { margin: 0; }
+  .agent .focus { margin-top: 8px; font-size: 13px; color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+  .agent .change { margin-top: auto; font-size: 13px; color: var(--muted); }
+  .agent .change a { color: var(--accent); text-decoration: none; }
+  .agent-mini { display: none; width: 34px; height: 34px; object-fit: contain; }
+  .app.with-agent .agent-mini { display: block; }
+  .app.with-agent .logo { display: none; }
+  @media (min-width: 1140px) { .app.with-agent .agent-mini { display: none; } .app.with-agent .logo { display: grid; } }
 
   /* ---- chat column ---- */
   .chat { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--border); }
@@ -183,15 +198,23 @@
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="app">
+  <aside class="agent" id="agent">
+    <img id="agentImg" alt="">
+    <h2 id="agentName">Coach</h2>
+    <p class="hint" id="agentHint"></p>
+    <div class="focus" id="agentFocus">Ask anything — I'll remember what matters.</div>
+    <div class="change"><a href="/">Change context</a></div>
+  </aside>
   <main class="chat">
     <header>
+      <img class="agent-mini" id="agentMini" alt="">
       <div class="logo" aria-hidden="true">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.9A4 4 0 0 0 7 19h1a4 4 0 0 0 8 0h1a4 4 0 0 0 2-7.1A4 4 0 0 0 16 8V7a4 4 0 0 0-4-4z"/><path d="M12 3v16"/></svg>
       </div>
       <div>
-        <h1><a href="/" style="text-decoration:none;color:inherit">Walrus Coach</a></h1>
-        <div class="sub">Remembers you between sessions</div>
+        <h1><a href="/" style="text-decoration:none;color:inherit" id="title">Walrus Coach</a></h1>
+        <div class="sub" id="subtitle">Remembers you between sessions</div>
       </div>
       <div class="spacer"></div>
       <button class="iconbtn" id="memBtn" aria-controls="panel" aria-expanded="false">
@@ -457,15 +480,33 @@
     const m = /^\[([a-z]+)\]\s*(.*)$/i.exec(text || "");
     return m && AREAS.some((a) => a.id === m[1].toLowerCase()) ? { area: m[1].toLowerCase(), text: m[2] } : { area: "life", text };
   }
+  let contextId = null;
+  try { contextId = localStorage.getItem("walrus-coach-context"); } catch {}
+  function renderAgent() {
+    const a = AREAS.find((x) => x.id === contextId);
+    const app = $("app");
+    if (!a) { app.classList.remove("with-agent"); return; }
+    const src = CHARACTERS[a.id] || CHARACTERS.mascot;
+    app.classList.add("with-agent");
+    $("agentName").textContent = a.label + " coach";
+    $("agentHint").textContent = a.hint;
+    if (src) { $("agentImg").src = src; $("agentMini").src = src; }
+    $("subtitle").textContent = a.label + " · remembers you between sessions";
+  }
   function applyContext() {
     const ctx = new URLSearchParams(location.search).get("context");
-    if (!ctx || !STARTERS[ctx]) return;
-    input.value = STARTERS[ctx]; autosize(); input.focus();
-    input.setSelectionRange(input.value.length, input.value.length);
-    history.replaceState(null, "", "/chat");
+    if (ctx && STARTERS[ctx]) {
+      contextId = ctx; try { localStorage.setItem("walrus-coach-context", ctx); } catch {}
+      input.value = STARTERS[ctx]; autosize(); input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+      window.history.replaceState(null, "", "/chat");
+      messages.querySelector(".starters")?.closest(".msg")?.remove(); // they picked a context already
+    }
+    renderAgent();
   }
   function renderStarters() {
     if (!AREAS.length || messages.querySelector(".starters")) return;
+    if (new URLSearchParams(location.search).get("context")) return;
     const box = el("div", "msg bot nomem");
     box.append(el("div", "starters-title", "Not sure where to start? Pick one, or just type."));
     const list = el("div", "starters");
@@ -634,7 +675,7 @@
     addUser(text);
     const t = typing();
     try {
-      const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history });
+      const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history, context: contextId || undefined });
       t.remove();
       remember("user", text);
       remember("assistant", data.reply);

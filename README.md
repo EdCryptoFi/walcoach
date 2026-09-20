@@ -33,7 +33,11 @@ memories, even though both are written by the same delegate key.
 
 ## The web UI
 
-`/` is a landing page that explains the product; `/chat` is the coach.
+`/` is a landing page: title, then a "pick your context" grid of 11 life-area characters,
+then how it works. Clicking a character on a first visit opens the onboarding dialog (name +
+generated memory key + "I saved my key" checkbox), then lands in `/chat?context=<area>` with
+that area's opening line prefilled. On desktop the chat has three columns: the chosen agent
+(character, area, "change context"), the conversation, and the memory panel.
 
 ![Walrus Coach web UI](docs/screenshot-chat.png)
 
