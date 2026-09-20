@@ -20,9 +20,9 @@
     vec2 w = vec2(fbm(q * 1.4 + vec2(s, -s * 0.7)), fbm(q * 1.4 + vec2(-s * 0.6, s)));
     float f = fbm(q * 1.2 + 2.2 * w + vec2(s * 0.3));
     float g = fbm(q * 2.6 - 1.5 * w - vec2(s * 0.2));
-    vec3 white = vec3(0.973, 0.976, 1.0), cyan = vec3(0.0, 0.706, 0.847), azure = vec3(0.404, 0.729, 0.992), ice = vec3(0.827, 0.894, 0.996);
+    vec3 white = vec3(0.93, 0.96, 1.0), cyan = vec3(0.0, 0.706, 0.847), azure = vec3(0.404, 0.729, 0.992), ice = vec3(0.76, 0.86, 0.99);
     vec3 navy = vec3(0.039, 0.075, 0.125), deep = vec3(0.0, 0.29, 0.40), glow = vec3(0.30, 0.84, 0.98);
-    vec3 light = mix(white, ice, smoothstep(0.35, 0.75, f)); light = mix(light, mix(azure, cyan, g), smoothstep(0.62, 0.92, f) * 0.35);
+    vec3 light = mix(white, ice, smoothstep(0.3, 0.75, f)); light = mix(light, mix(azure, cyan, g), smoothstep(0.58, 0.92, f) * 0.45);
     vec3 dk = mix(navy, deep, smoothstep(0.35, 0.8, f)); dk = mix(dk, glow, smoothstep(0.7, 0.98, f) * 0.35 * g);
     vec3 c = mix(light, dk, dark);
     gl_FragColor = vec4(c, 1.0);

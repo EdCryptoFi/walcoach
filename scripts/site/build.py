@@ -28,7 +28,7 @@ for m in MENTORS:
             <p class="text-sm text-on-surface-variant mt-1 leading-relaxed">{m['blurb']}</p>
           </div>
         </div>
-        <a class="btn-ghost mt-4 self-start !px-3" href="/chat?context={m['id']}" data-mentor="{m['id']}" data-label="{m['label']}">Train with this coach {icon('arrow_forward','text-[18px]')}</a>
+        <a class="btn-aqua mt-4 self-start" href="/chat?context={m['id']}" data-mentor="{m['id']}" data-label="{m['label']}">Train with this coach {icon('arrow_forward','text-[18px]')}</a>
       </article>'''
 home = f'''
 <main class="relative z-10 pt-28 max-w-[1440px] mx-auto px-4 lg:px-8">
