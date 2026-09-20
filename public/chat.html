@@ -27,6 +27,9 @@
   .mod:hover { background:#fff; }
   .mod.on { background:linear-gradient(135deg,#00b4d8,#0077b6); color:#fff; border-color:transparent; box-shadow:var(--shadow-cta); }
   .mod .n { font-size:10px; opacity:.8; }
+  .mod.lit { border-color: rgba(0,180,216,.55); box-shadow: inset 0 0 0 1px rgba(0,180,216,.25), 0 0 14px rgba(0,180,216,.15); color: var(--color-primary); }
+  .mod.lit .material-symbols-outlined { font-variation-settings: 'FILL' 1; }
+  .mod.lit.on { color: #fff; }
   .fact { border-radius:16px; padding:12px 14px; background:rgba(255,255,255,.7); border:1px solid rgba(255,255,255,.8); font-size:13px; line-height:1.45; }
   .fact .row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; }
   .fact a { color:var(--color-on-surface-variant); display:inline-grid; place-items:center; width:24px; height:24px; border-radius:8px; }
@@ -108,6 +111,7 @@
           </div>
           <div class="text-[11px] font-bold tracking-wider text-on-surface-variant mt-5">ACTIVE MODALITY</div>
           <div class="grid grid-cols-4 gap-2 mt-2" id="mods"></div>
+          <div class="text-xs text-on-surface-variant mt-2" id="coverage">Areas light up as the coach learns about them.</div>
           <div class="glass-hi rounded-2xl p-3 mt-4 flex items-start gap-3 text-xs">
             <span class="material-symbols-outlined text-primary">hub</span>
             <div class="min-w-0"><b>Walrus Memory namespace</b><div class="text-on-surface-variant truncate" id="nsLine">connecting…</div></div>
@@ -300,12 +304,14 @@
   function renderMods(counts = {}) {
     const box = $("mods"); box.innerHTML = "";
     for (const a of AREAS) {
-      const b = el("button", "mod" + (a.id === contextId ? " on" : "")); b.type = "button"; b.title = a.hint;
       const n = counts[a.id] || 0;
+      const b = el("button", "mod" + (a.id === contextId ? " on" : "") + (n ? " lit" : "")); b.type = "button"; b.title = a.hint + (n ? ` · ${n} ${n === 1 ? "fact" : "facts"} remembered` : "");
       b.innerHTML = `<span class="material-symbols-outlined">${a.icon}</span><span>${a.short}</span>${n ? `<span class="n">${n} ${n === 1 ? "fact" : "facts"}</span>` : ""}`;
       b.addEventListener("click", () => setContext(a.id, true));
       box.append(b);
     }
+    const mentors = AREAS.filter((a) => a.id !== "life"); const lit = mentors.filter((a) => counts[a.id]).length;
+    $("coverage").textContent = lit === 0 ? "Areas light up as the coach learns about them." : lit < 3 ? `${lit} of ${mentors.length} areas covered. The coach gets sharper when it knows how your life overlaps.` : `${lit} of ${mentors.length} areas covered. It can connect the dots now.`;
   }
   let handoverBusy = false;
   async function doHandover(fromId, toId) {
