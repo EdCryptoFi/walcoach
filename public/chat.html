@@ -162,7 +162,11 @@
   .badge.on img { filter: none; opacity: 1; }
   .logo img { width: 34px; height: 34px; object-fit: contain; border-radius: 10px; }
   .logo.art { background: transparent; }
-  ul.mem li .a { flex: none; margin-left: auto; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); border: 1px solid var(--border); border-radius: 6px; padding: 2px 5px; margin-top: 3px; }
+  ul.mem li .x { flex: none; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; color: var(--muted); text-decoration: none; margin-top: 1px; }
+  ul.mem li .x:hover { color: var(--accent); background: var(--panel); }
+  ul.mem li .x svg { width: 13px; height: 13px; }
+  ul.mem li .tail { flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
+  ul.mem li .a { flex: none; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); border: 1px solid var(--border); border-radius: 6px; padding: 2px 5px; margin-top: 3px; }
 
   /* ---- "you" popover ---- */
   .you { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -300,6 +304,10 @@
       <span class="hint" id="nudgeText" style="margin:0; flex:1">One short check-in a day, written from what it remembers about you.</span>
       <button class="btn" id="nudgeBtn">Turn on</button>
     </div>
+  </section>
+  <section>
+    <h4>Where your memories live</h4>
+    <div class="hint" id="aboutLine" style="margin:0">Encrypted blobs on Walrus.</div>
   </section>
   <section>
     <h4>Session</h4>
@@ -445,6 +453,14 @@
   // ---- life areas: chips to start with, badges once memories exist ----
   let AREAS = [];
   let CHARACTERS = {};
+  let ABOUT = {};
+  fetch("/api/about").then((r) => r.json()).then((d) => {
+    ABOUT = d || {};
+    const line = $("aboutLine");
+    if (line && ABOUT.accountId) {
+      line.innerHTML = `Memories are encrypted blobs on <b>Walrus ${ABOUT.network}</b>, owned by account <a href="${ABOUT.accountUrl}" target="_blank" rel="noopener noreferrer"><code>${ABOUT.accountId.slice(0, 8)}…${ABOUT.accountId.slice(-4)}</code></a> on Sui. Each memory in the panel links to its blob in the explorer.`;
+    }
+  }).catch(() => {});
   const STARTERS = {
     training: "I want to start running but I've never managed to stick with it.",
     sleep: "I keep going to bed way too late and waking up tired.",
@@ -647,7 +663,14 @@
       d.title = "cosine distance — lower is more relevant";
       const { area, text } = parseTag(m.text);
       const a = el("span", "a", (AREAS.find((x) => x.id === area) || { label: area }).label);
-      li.append(d, el("span", null, text), a);
+      const tail = el("span", "tail"); tail.append(a);
+      if (ABOUT.blobUrl && m.blobId) {
+        const x = el("a", "x"); x.href = ABOUT.blobUrl + m.blobId; x.target = "_blank"; x.rel = "noopener noreferrer";
+        x.title = "This memory is a blob on Walrus " + ABOUT.network + " — open in the explorer";
+        x.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
+        tail.append(x);
+      }
+      li.append(d, el("span", null, text), tail);
       target.append(li);
     }
   }
@@ -658,7 +681,7 @@
       renderList(allEl, (data.memories || []).sort((a, b) => a.distance - b.distance), "No memories stored yet.");
       renderBadges(data.memories || []);
       const n = (data.memories || []).length;
-      statusEl.innerHTML = `<span class="ok">${n} ${n === 1 ? "memory" : "memories"} on Walrus</span> · <code>${data.namespace}</code>`;
+      statusEl.innerHTML = `<span class="ok">${n} ${n === 1 ? "memory" : "memories"} on Walrus${ABOUT.network ? " " + ABOUT.network : ""}</span> · <code>${data.namespace}</code>`;
       $("memCount").textContent = n ? `Memory · ${n}` : "Memory";
       await outboxReconcile(data.memories || []);
     } catch (e) { statusEl.innerHTML = `<span class="warn">could not load memories: ${e.message}</span>`; }

@@ -64,6 +64,13 @@ The "Memory" switch in the header turns recall + learning off so you can see the
 API (all JSON): `POST /api/chat {userId, name, text}` → `{reply, memories}`,
 `GET /api/memories?userId=`, `POST /api/remember`, `POST /api/memory {enabled}`, `POST /api/reset`.
 
+## Proof it's on Walrus
+
+Every memory in the panel has an ↗ link to its blob on the Walrus explorer
+(`walruscan.com/mainnet/blob/<blob_id>`), and the "You" dialog links the Walrus Memory
+account object on Sui (`/api/about` exposes network, account id and explorer URLs — nothing
+secret). Judges can click any memory and see the encrypted blob on mainnet.
+
 ## Web search (optional)
 
 Set `TAVILY_API_KEY` and the model gets one tool, `web_search` ([src/search.ts](src/search.ts)).

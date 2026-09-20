@@ -203,6 +203,19 @@ export function createApp() {
     return c.json({ relayer: health.status, model: config.groqModel });
   });
 
+  // Public, non-secret facts that let anyone verify memories on-chain / on Walrus.
+  app.get("/api/about", (c) => {
+    const mainnet = !/staging/.test(config.memwalServerUrl);
+    return c.json({
+      network: mainnet ? "mainnet" : "testnet",
+      accountId: config.memwalAccountId,
+      accountUrl: `https://suiscan.xyz/${mainnet ? "mainnet" : "testnet"}/object/${config.memwalAccountId}`,
+      blobUrl: `https://walruscan.com/${mainnet ? "mainnet" : "testnet"}/blob/`,
+      relayer: config.memwalServerUrl,
+      model: config.groqModel,
+    });
+  });
+
   return app;
 }
 
