@@ -1,6 +1,6 @@
 /**
  * Structured logging. Every line is one JSON object on stdout (info) or
- * stderr (warn/error) — that is what Vercel and `vercel logs` collect. When
+ * stderr (warn/error), that is what Vercel and `vercel logs` collect. When
  * the filesystem is writable (local dev) the same lines are also appended to
  * logs/app.log and logs/error.log so `npm run logs` can show them.
  */

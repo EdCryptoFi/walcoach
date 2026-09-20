@@ -24,7 +24,7 @@ export const numericId = hashUserId;
 const VALID_ID = /^web-[a-z0-9-]{8,64}$/i;
 
 // Throttles so one visitor (or one script minting many userIds) cannot burn the
-// shared Walrus/Groq budget. In-memory, so per function instance on serverless —
+// shared Walrus/Groq budget. In-memory, so per function instance on serverless -
 // a soft limit; the relayer's own rate limit is the hard one and we degrade gracefully.
 const WINDOW_MS = 60_000;
 const LIMITS = { user: 10, ip: 30, global: 200 };
@@ -42,9 +42,9 @@ function clientIp(c: { req: { header: (n: string) => string | undefined } }): st
 }
 /** Returns an error message when the caller should back off, else null. */
 function throttled(c: { req: { header: (n: string) => string | undefined } }, userId: string): string | null {
-  if (!take("global", LIMITS.global)) return "The coach is busy right now — try again in a minute.";
-  if (!take(`ip:${clientIp(c)}`, LIMITS.ip)) return "Too many requests from your network — try again in a minute.";
-  if (!take(`user:${userId}`, LIMITS.user)) return "Slow down a little — 10 messages per minute.";
+  if (!take("global", LIMITS.global)) return "The coach is busy right now, try again in a minute.";
+  if (!take(`ip:${clientIp(c)}`, LIMITS.ip)) return "Too many requests from your network, try again in a minute.";
+  if (!take(`user:${userId}`, LIMITS.user)) return "Slow down a little, 10 messages per minute.";
   return null;
 }
 
@@ -149,7 +149,7 @@ export function createApp() {
       return c.json({ ok: true });
     } catch (err) {
       log.error("push.subscribe.failed", err);
-      return c.json({ error: "Could not save the subscription right now — try again later.", detail: (err as Error).message.slice(0, 200) }, 503);
+      return c.json({ error: "Could not save the subscription right now, try again later.", detail: (err as Error).message.slice(0, 200) }, 503);
     }
   });
 
@@ -181,9 +181,9 @@ export function createApp() {
     } catch (err) {
       log.error("chat.failed", err, { user: id });
       const msg = (err as Error).message || "";
-      const friendly = /429|rate limit/i.test(msg) ? "The model or memory service is rate-limited right now — try again in a minute."
-        : /timed? ?out|ETIMEDOUT|AbortError/i.test(msg) ? "The reply took too long. Try again — it usually works on the second attempt."
-        : "Something broke on my side — try again in a moment.";
+      const friendly = /429|rate limit/i.test(msg) ? "The model or memory service is rate-limited right now, try again in a minute."
+        : /timed? ?out|ETIMEDOUT|AbortError/i.test(msg) ? "The reply took too long. Try again, it usually works on the second attempt."
+        : "Something broke on my side, try again in a moment.";
       return c.json({ error: friendly, detail: msg.slice(0, 200) }, 500);
     }
   });
@@ -199,7 +199,7 @@ export function createApp() {
       return c.json({ memories, namespace: namespaceFor(numericId(userId)) });
     } catch (err) {
       log.error("memories.failed", err, { user: numericId(userId) });
-      return c.json({ error: "Walrus Memory is temporarily unavailable — your memories are safe, just not readable right now.", detail: (err as Error).message.slice(0, 200) }, 503);
+      return c.json({ error: "Walrus Memory is temporarily unavailable, your memories are safe, just not readable right now.", detail: (err as Error).message.slice(0, 200) }, 503);
     }
   });
 

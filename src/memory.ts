@@ -2,7 +2,7 @@
  * Thin wrapper around the Walrus Memory SDK.
  *
  * Every Telegram user gets their own namespace (`<prefix>-<telegramUserId>`),
- * so recall for one user can never surface another user's memories — the
+ * so recall for one user can never surface another user's memories, the
  * relayer enforces owner+namespace isolation at the query level.
  *
  * Request budget matters: the relayer rate-limits per delegate key
@@ -35,7 +35,7 @@ export interface Memory {
 
 export interface Recall {
   memories: Memory[];
-  /** false when the relayer could not be reached — the caller is answering blind. */
+  /** false when the relayer could not be reached, the caller is answering blind. */
   available: boolean;
 }
 
@@ -140,7 +140,7 @@ export async function recallForUser(userId: number, query: string, limit = 8, at
   return { memories, available: true };
 }
 
-/** Broad recall used by /memories — no relevance cutoff. */
+/** Broad recall used by /memories, no relevance cutoff. */
 export async function listMemories(userId: number, limit = 25): Promise<Memory[]> {
   for (let attempt = 1; attempt <= 2; attempt++) {
     const result = await withRetry("recall", () =>
