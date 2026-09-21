@@ -58,9 +58,9 @@ home = f'''
       </div>
     </div>
 
-    <div class="relative flex flex-col items-center hero-figure justify-self-center lg:justify-self-end lg:-mt-24 lg:-mb-16 lg:-mr-16 xl:-mr-24">
+    <div class="relative flex flex-col items-center hero-figure justify-self-center lg:justify-self-end lg:-mt-10 lg:-mb-6">
       <div class="hero-backdrop" aria-hidden="true"></div>
-      <div class="relative w-[min(92vw,900px)] lg:w-[min(52vw,900px)] hero-media">
+      <div class="relative w-[min(84vw,600px)] lg:w-[min(36vw,600px)] hero-media">
         <img src="/characters/hero.webp" alt="WalCoach, the coach that remembers you" class="w-full h-auto" fetchpriority="high" id="heroImg">
       </div>
     </div>
