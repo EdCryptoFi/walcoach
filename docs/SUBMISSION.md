@@ -28,7 +28,7 @@ Fill in the `→` lines once the build is final. Nothing here is submitted yet.
 | Public projects page | → yes |
 | Team | → Ed CryptoFi (@edcriptofi) |
 | **Project Repo\*** (GitHub) | → https://github.com/<user>/walrus-coach — **must be created and pushed** (public, MIT, README has setup) |
-| Website | → https://walcoach.vercel.app (after `vercel deploy --prod`) |
+| Website | ✓ https://walcoach.vercel.app |
 | **Demo Video\*** (YouTube) | → 1–2 min screen recording: day-1 conversation, close tab, "new session" / another device with the memory key, coach picks up where it left off; show the "Recalled for the last reply" panel and Memory OFF vs ON. Optionally the daily nudge notification. |
 | Extra links | → Article (Medium/Inkray), X post, GitHub issues filed |
 | Media (jpg/png/gif) | → `docs/screenshot-landing.png`, `docs/screenshot-chat.png`, a mobile screenshot, a GIF of the before/after |
@@ -71,8 +71,8 @@ From `FRICTION.md`, each with steps to reproduce, expected vs actual, environmen
 
 ## 6. Before submitting — run through
 
-- [ ] `vercel deploy --prod` → https://walcoach.vercel.app live, cron active
-- [ ] GitHub repo public, README setup verified on a clean clone (`npm install && npm run check`)
+- [x] `vercel deploy --prod` → https://walcoach.vercel.app live, cron active
+- [x] GitHub repo public: https://github.com/EdCryptoFi/walcoach
 - [ ] 3+ real users × 10+ memories, for at least a few days
 - [ ] Demo video uploaded (unlisted is fine)
 - [ ] Article published, X post up, promo post up

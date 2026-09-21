@@ -1,4 +1,6 @@
-# Walrus Coach Bot
+# WalCoach
+
+**Live:** https://walcoach.vercel.app · **Repo:** https://github.com/EdCryptoFi/walcoach
 
 A coaching companion that actually remembers you between conversations. Runs as a
 website (primary) and optionally as a Telegram bot — both share the same pipeline.
@@ -179,8 +181,8 @@ and run `npm run telegram`.
 Requirements: Node.js ≥ 18.
 
 ```bash
-git clone <this repo>
-cd walrus-coach-bot
+git clone https://github.com/EdCryptoFi/walcoach.git
+cd walcoach
 npm install
 cp .env.example .env
 ```
