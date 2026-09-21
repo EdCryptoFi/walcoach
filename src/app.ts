@@ -100,13 +100,15 @@ export function createApp() {
   });
 
   // Pages. Local dev also serves ./public statically (src/web.ts).
-  app.get("/", (c) => c.html(page("index.html")));
-  app.get("/chat", (c) => c.html(page("chat.html")));
-  app.get("/how", (c) => c.html(page("how.html")));
-  app.get("/security", (c) => c.html(page("security.html")));
-  app.get("/privacy", (c) => c.html(page("privacy.html")));
-  app.get("/app.css", (c) => c.body(page("app.css"), 200, { "content-type": "text/css; charset=utf-8", "cache-control": "public, max-age=3600" }));
-  app.get("/liquid.js", (c) => c.body(page("liquid.js"), 200, { "content-type": "application/javascript; charset=utf-8", "cache-control": "public, max-age=3600" }));
+  // HTML is always revalidated so a deploy shows up on the next load; CSS/JS/images are cached.
+  const NO_CACHE = { "cache-control": "no-cache, must-revalidate" };
+  app.get("/", (c) => c.html(page("index.html"), 200, NO_CACHE));
+  app.get("/chat", (c) => c.html(page("chat.html"), 200, NO_CACHE));
+  app.get("/how", (c) => c.html(page("how.html"), 200, NO_CACHE));
+  app.get("/security", (c) => c.html(page("security.html"), 200, NO_CACHE));
+  app.get("/privacy", (c) => c.html(page("privacy.html"), 200, NO_CACHE));
+  app.get("/app.css", (c) => c.body(page("app.css"), 200, { "content-type": "text/css; charset=utf-8", "cache-control": "public, max-age=600, must-revalidate" }));
+  app.get("/liquid.js", (c) => c.body(page("liquid.js"), 200, { "content-type": "application/javascript; charset=utf-8", "cache-control": "public, max-age=600, must-revalidate" }));
   app.get("/sw.js", (c) => c.body(page("sw.js"), 200, { "content-type": "application/javascript; charset=utf-8", "service-worker-allowed": "/" }));
   app.get("/icon.svg", (c) => c.body(page("icon.svg"), 200, { "content-type": "image/svg+xml" }));
   app.get("/icon.png", (c) => {
@@ -133,7 +135,7 @@ export function createApp() {
     return c.json({ characters: have });
   });
 
-  app.get("/api/areas", (c) => c.json({ areas: AREAS.map((a) => ({ ...a, starters: STARTERS[a.id] ?? [] })) }));
+  app.get("/api/areas", (c) => { c.header("cache-control", "no-cache"); return c.json({ areas: AREAS.map((a) => ({ ...a, starters: STARTERS[a.id] ?? [] })) }); });
 
   // ---- proactive nudges (Web Push) ----
   app.get("/api/push/config", (c) => c.json({ enabled: pushEnabled, publicKey: config.vapidPublicKey }));
