@@ -52,11 +52,14 @@ home = f'''
         <div class="glass rounded-2xl p-4"><div class="font-display text-2xl font-bold text-primary">100%</div><div class="text-xs text-on-surface-variant mt-1">of memories are yours to inspect</div></div>
       </div>
     </div>
-    <div class="glass-hi rounded-[2rem] p-3 relative overflow-hidden">
-      <div class="relative rounded-[1.6rem] overflow-hidden aspect-[1369/1149]">
-        <img src="/characters/hero.webp" alt="WalCoach, the coach that remembers you" class="w-full h-full object-cover" fetchpriority="high">
-        <div class="absolute top-3 left-3 flex flex-wrap gap-2"><span class="chip !bg-white/85"><span class="pulse"></span> Walrus agent · on-chain memory</span><span class="chip !bg-white/85">Qwen 27B</span></div>
-        <div class="absolute bottom-3 left-3 right-3 flex flex-wrap justify-between gap-2 text-[11px]"><span class="chip !bg-white/85">{icon('psychology','text-[14px]')} Recall before every reply</span><span class="chip !bg-white/85">{icon('verified_user','text-[14px]')} Facts stored on Walrus after each</span></div>
+    <div class="relative flex flex-col items-center hero-figure">
+      <div class="absolute top-6 left-1/2 -translate-x-1/2 w-[70%] aspect-square rounded-full bg-primary-container/25 blur-3xl" aria-hidden="true"></div>
+      <img src="/characters/hero.webp" alt="WalCoach, the coach that remembers you" class="relative w-full max-w-[460px] h-auto drop-shadow-[0_24px_40px_rgba(0,119,182,0.25)]" fetchpriority="high">
+      <div class="relative -mt-3 w-[60%] h-5 rounded-[50%] bg-secondary/25 blur-md" aria-hidden="true"></div>
+      <div class="relative flex flex-wrap justify-center gap-2 mt-3">
+        <span class="chip"><span class="pulse"></span> Walrus agent · on-chain memory</span>
+        <span class="chip">{icon('psychology','text-[14px]')} Recall before every reply</span>
+        <span class="chip">{icon('verified_user','text-[14px]')} Facts stored on Walrus after each</span>
       </div>
     </div>
   </section>

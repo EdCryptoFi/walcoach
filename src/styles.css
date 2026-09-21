@@ -182,3 +182,7 @@
 /* Light mode: a touch more blue in the canvas */
 :root { --color-background: #eef5ff; --color-surface: #eef5ff; }
 [data-theme="dark"] { --color-background: #0a1320; --color-surface: #0a1320; }
+
+/* Hero figure: gentle idle float */
+@keyframes hero-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.hero-figure img { animation: hero-float 6s ease-in-out infinite; }
