@@ -33,18 +33,18 @@ for m in MENTORS:
 home = f'''
 <main class="relative z-10 pt-28 max-w-[1440px] mx-auto px-4 lg:px-8">
   <!-- hero -->
-  <section class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] items-center lg:-mt-4">
+  <section class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center lg:-mt-2">
     <div>
       <div class="flex flex-wrap gap-2 mb-5">
         <span class="chip"><span class="pulse"></span> Your memory, your key</span>
         <span class="chip">{icon('lock','text-[14px]')} Encrypted on Walrus Memory</span>
         <span class="chip">{icon('memory','text-[14px]')} Qwen 3.8 27B</span>
       </div>
-      <h1 class="font-display text-[44px] leading-[52px] xl:text-[56px] xl:leading-[64px] font-bold tracking-[-0.02em]">A coach that <span class="bg-gradient-to-r from-primary-container to-secondary bg-clip-text text-transparent">actually remembers</span> you.</h1>
-      <p class="text-lg text-on-surface-variant mt-5 max-w-[56ch] leading-relaxed">Tell it what you're building or training for. Next week it still knows, your goal, your routine, the thing that trips you up. No account, no wallet, and your memories live encrypted on the Walrus network, not in a database of ours.</p>
-      <div class="flex flex-wrap gap-3 mt-7">
-        <a class="btn-primary" href="/chat">{icon('smart_toy','text-[20px]')} Start talking to the coach {icon('arrow_forward','text-[20px]')}</a>
-        <a class="btn-glass" href="#key">{icon('vpn_key','text-[20px]')} Create my memory key</a>
+      <h1 class="font-display text-[40px] leading-[46px] xl:text-[50px] xl:leading-[56px] font-bold tracking-[-0.02em]">A coach that <span class="bg-gradient-to-r from-primary-container to-secondary bg-clip-text text-transparent">actually remembers</span> you.</h1>
+      <p class="text-[17px] text-on-surface-variant mt-5 max-w-[56ch] leading-relaxed">Tell it what you're building or training for. Next week it still knows, your goal, your routine, the thing that trips you up. No account, no wallet, and your memories live encrypted on the Walrus network, not in a database of ours.</p>
+      <div class="flex flex-nowrap gap-3 mt-7 overflow-x-auto">
+        <a class="btn-primary whitespace-nowrap flex-none !px-5 text-[15px]" href="/chat">{icon('smart_toy','text-[18px]')} Start talking to the coach {icon('arrow_forward','text-[18px]')}</a>
+        <a class="btn-glass whitespace-nowrap flex-none !px-5 text-[15px]" href="#key">{icon('vpn_key','text-[18px]')} Create my memory key</a>
       </div>
       <div class="grid grid-cols-3 gap-3 mt-8 max-w-xl">
         <div class="glass rounded-2xl p-4"><div class="font-display text-2xl font-bold text-primary">0</div><div class="text-xs text-on-surface-variant mt-1">databases holding your data</div></div>
@@ -58,9 +58,9 @@ home = f'''
       </div>
     </div>
 
-    <div class="relative flex flex-col items-center hero-figure justify-self-center lg:justify-self-end lg:-mt-6 lg:-mb-10">
+    <div class="relative flex flex-col items-center hero-figure justify-self-center lg:justify-self-end lg:-mt-24 lg:-mb-16 lg:-mr-16 xl:-mr-24">
       <div class="hero-backdrop" aria-hidden="true"></div>
-      <div class="relative w-[min(92vw,790px)] hero-media">
+      <div class="relative w-[min(92vw,900px)] lg:w-[min(52vw,900px)] hero-media">
         <img src="/characters/hero.webp" alt="WalCoach, the coach that remembers you" class="w-full h-auto" fetchpriority="high" id="heroImg">
         <video class="absolute inset-0 w-full h-full object-contain opacity-0 transition-opacity duration-500" id="heroVideo" muted playsinline preload="auto" aria-hidden="true">
           <source src="/media/hero.mov" type='video/quicktime; codecs="hvc1"'>
