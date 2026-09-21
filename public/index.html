@@ -41,7 +41,7 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
 
 <main class="relative z-10 pt-28 max-w-[1440px] mx-auto px-4 lg:px-8">
   <!-- hero -->
-  <section class="grid gap-10 lg:grid-cols-[1fr_auto] items-center">
+  <section class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] items-center">
     <div>
       <div class="flex flex-wrap gap-2 mb-5">
         <span class="chip"><span class="pulse"></span> Your memory, your key</span>
@@ -68,7 +68,7 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
 
     <div class="relative flex flex-col items-center hero-figure justify-self-center lg:justify-self-end">
       <div class="hero-backdrop" aria-hidden="true"></div>
-      <div class="relative w-[min(88vw,660px)] hero-media">
+      <div class="relative w-[min(92vw,790px)] hero-media">
         <img src="/characters/hero.webp" alt="WalCoach, the coach that remembers you" class="w-full h-auto" fetchpriority="high" id="heroImg">
         <video class="absolute inset-0 w-full h-full object-contain opacity-0 transition-opacity duration-500" id="heroVideo" muted playsinline preload="auto" aria-hidden="true">
           <source src="/media/hero.mov" type='video/quicktime; codecs="hvc1"'>
