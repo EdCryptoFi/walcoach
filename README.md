@@ -87,12 +87,9 @@ API (all JSON): `POST /api/chat {userId, name, text}` → `{reply, memories}`,
 - **Liquid background**: a ~2 KB WebGL fragment shader ([public/liquid.js](public/liquid.js)) —
   soft white/blue in light, navy/cyan in dark; 30 fps at half resolution, pauses on hidden tabs,
   static under `prefers-reduced-motion`. No Three.js needed, so the CSP stays `script-src 'self'`.
-- **Animated hero**: a 4 s transparent clip of the coach (`public/media/hero.webm` VP9 alpha for
-  Chrome/Firefox, `hero.mov` HEVC alpha for Safari, cropped below the clipboard; the black background is removed by
-  [scripts/hero-key.py](scripts/hero-key.py), which flood-fills only the black connected to the frame
-  border, so black details inside the character such as the glasses stay opaque, then softens the
-  edge and un-premultiplies it; frames are re-encoded with ffmpeg). It plays once, rests on its last frame for 20 s, plays again;
-  the still image is the placeholder and the reduced-motion fallback.
+- **Hero**: the first frame of the coach clip, background removed by
+  [scripts/hero-key.py](scripts/hero-key.py) (flood-fills only the black connected to the frame border,
+  so dark details like the glasses stay opaque).
 - Mentor cards animate in and float; after each reply the mentor image reacts (nod / bounce / tilt)
   or swaps to a pose file if present — see [public/characters/README.md](public/characters/README.md).
 - Three conversation starters per mentor (`STARTERS`), shown as chips in the chat.
