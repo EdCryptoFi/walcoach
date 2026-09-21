@@ -33,7 +33,7 @@ for m in MENTORS:
 home = f'''
 <main class="relative z-10 pt-28 max-w-[1440px] mx-auto px-4 lg:px-8">
   <!-- hero -->
-  <section class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] items-center">
+  <section class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] items-center lg:-mt-4">
     <div>
       <div class="flex flex-wrap gap-2 mb-5">
         <span class="chip"><span class="pulse"></span> Your memory, your key</span>
@@ -58,7 +58,7 @@ home = f'''
       </div>
     </div>
 
-    <div class="relative flex flex-col items-center hero-figure justify-self-center lg:justify-self-end">
+    <div class="relative flex flex-col items-center hero-figure justify-self-center lg:justify-self-end lg:-mt-6 lg:-mb-10">
       <div class="hero-backdrop" aria-hidden="true"></div>
       <div class="relative w-[min(92vw,790px)] hero-media">
         <img src="/characters/hero.webp" alt="WalCoach, the coach that remembers you" class="w-full h-auto" fetchpriority="high" id="heroImg">
