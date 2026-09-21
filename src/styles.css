@@ -186,3 +186,8 @@
 /* Hero figure: gentle idle float */
 @keyframes hero-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 .hero-figure .hero-media { animation: none; }
+
+/* Hero backdrop: a soft dark-blue plate behind the coach so the video cut-out never shows */
+.hero-backdrop { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); width: 135%; aspect-ratio: 1 / 1.05; border-radius: 9999px; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(0, 60, 95, .34) 0%, rgba(0, 60, 95, .26) 50%, rgba(0, 60, 95, .10) 68%, rgba(0, 60, 95, 0) 78%); }
+[data-theme="dark"] .hero-backdrop { background: radial-gradient(closest-side, rgba(0, 120, 160, .28) 0%, rgba(0, 90, 130, .16) 45%, rgba(0, 90, 130, 0) 72%); }
