@@ -54,7 +54,13 @@ home = f'''
     </div>
     <div class="relative flex flex-col items-center hero-figure">
       <div class="absolute top-6 left-1/2 -translate-x-1/2 w-[70%] aspect-square rounded-full bg-primary-container/25 blur-3xl" aria-hidden="true"></div>
-      <img src="/characters/hero.webp" alt="WalCoach, the coach that remembers you" class="relative w-full max-w-[460px] h-auto drop-shadow-[0_24px_40px_rgba(0,119,182,0.25)]" fetchpriority="high">
+      <div class="relative w-full max-w-[460px] hero-media">
+        <img src="/characters/hero.webp" alt="WalCoach, the coach that remembers you" class="w-full h-auto drop-shadow-[0_24px_40px_rgba(0,119,182,0.25)]" fetchpriority="high" id="heroImg">
+        <video class="absolute inset-0 w-full h-full object-contain drop-shadow-[0_24px_40px_rgba(0,119,182,0.25)] opacity-0 transition-opacity duration-500" id="heroVideo" muted playsinline preload="auto" aria-hidden="true">
+          <source src="/media/hero.mov" type='video/quicktime; codecs="hvc1"'>
+          <source src="/media/hero.webm" type="video/webm">
+        </video>
+      </div>
       <div class="relative -mt-3 w-[60%] h-5 rounded-[50%] bg-secondary/25 blur-md" aria-hidden="true"></div>
       <div class="relative flex flex-wrap justify-center gap-2 mt-3">
         <span class="chip"><span class="pulse"></span> Walrus agent · on-chain memory</span>
@@ -116,6 +122,20 @@ home = f'''
   </section>
 </main>
 <script>
+// Animated hero: plays the clip once, rests on the still for 20 s, plays again. Falls back to the image
+// when the browser cannot play transparent video or the user prefers reduced motion.
+(() => {{
+  const v = document.getElementById("heroVideo"), img = document.getElementById("heroImg");
+  if (!v || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const REST_MS = 20000;
+  let timer = 0;
+  // Once the video is playing the still is hidden for good; the clip rests on its own last frame.
+  const play = () => {{ v.currentTime = 0; v.play().then(() => {{ v.style.opacity = "1"; img.style.opacity = "0"; }}).catch(() => {{}}); }};
+  v.addEventListener("ended", () => {{ timer = setTimeout(play, REST_MS); }});
+  v.addEventListener("canplaythrough", () => {{ if (!timer && v.paused) play(); }}, {{ once: true }});
+  v.addEventListener("error", () => {{ v.remove(); }}, {{ once: true }});
+  document.addEventListener("visibilitychange", () => {{ if (document.hidden) {{ clearTimeout(timer); v.pause(); }} else if (v.ended || v.paused) {{ timer = setTimeout(play, 1500); }} }});
+}})();
 (() => {{
   const $ = (id) => document.getElementById(id);
   const KEY_RE = /^web-[a-z0-9-]{{8,64}}$/i;

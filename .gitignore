@@ -7,3 +7,6 @@ site sketch/
 logs/
 .DS_Store
 __pycache__/
+Video.mov
+*.mov
+!public/media/*.mov

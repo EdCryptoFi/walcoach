@@ -116,6 +116,25 @@ export function createApp() {
     return existsSync(url) ? c.body(readFileSync(url), 200, { "content-type": "image/webp", "cache-control": "public, max-age=86400" }) : c.redirect("/icon.svg");
   });
 
+  // Hero video (transparent): WebM/VP9 alpha for Chrome/Firefox, HEVC alpha .mov for Safari. Supports range requests.
+  app.get("/media/:file", (c) => {
+    const file = c.req.param("file");
+    const m = /^([a-z0-9-]+)\.(webm|mov|mp4)$/i.exec(file);
+    if (!m) return c.notFound();
+    const url = new URL(`../public/media/${file}`, import.meta.url);
+    if (!existsSync(url)) return c.notFound();
+    const types: Record<string, string> = { webm: "video/webm", mov: "video/quicktime", mp4: "video/mp4" };
+    const buf = readFileSync(url);
+    const range = c.req.header("range");
+    const headers = { "content-type": types[m[2].toLowerCase()], "cache-control": "public, max-age=86400", "accept-ranges": "bytes" };
+    if (range) {
+      const [a, b] = range.replace("bytes=", "").split("-");
+      const start = Number(a) || 0, end = b ? Math.min(Number(b), buf.length - 1) : buf.length - 1;
+      return c.body(buf.subarray(start, end + 1), 206, { ...headers, "content-range": `bytes ${start}-${end}/${buf.length}`, "content-length": String(end - start + 1) });
+    }
+    return c.body(buf, 200, { ...headers, "content-length": String(buf.length) });
+  });
+
   // Character art (see public/characters/README.md). Cached by the browser; 404 when a file is missing.
   const IMG_TYPES: Record<string, string> = { png: "image/png", svg: "image/svg+xml", webp: "image/webp", jpg: "image/jpeg", jpeg: "image/jpeg" };
   app.get("/characters/:file", (c) => {
