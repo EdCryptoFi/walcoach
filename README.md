@@ -88,8 +88,9 @@ API (all JSON): `POST /api/chat {userId, name, text}` → `{reply, memories}`,
   soft white/blue in light, navy/cyan in dark; 30 fps at half resolution, pauses on hidden tabs,
   static under `prefers-reduced-motion`. No Three.js needed, so the CSP stays `script-src 'self'`.
 - **Animated hero**: a 4 s transparent clip of the coach (`public/media/hero.webm` VP9 alpha for
-  Chrome/Firefox, `hero.mov` HEVC alpha for Safari, keyed from the original with ffmpeg
-  `colorkey=0x000000:0.03`). It plays once, rests on its last frame for 20 s, plays again;
+  Chrome/Firefox, `hero.mov` HEVC alpha for Safari, cropped below the clipboard and keyed from the
+  original with ffmpeg: `colorkey=0x000000:0.03:0.02`, alpha erosion + blur, `unpremultiply` to remove
+  the dark fringe). It plays once, rests on its last frame for 20 s, plays again;
   the still image is the placeholder and the reduced-motion fallback.
 - Mentor cards animate in and float; after each reply the mentor image reacts (nod / bounce / tilt)
   or swaps to a pose file if present — see [public/characters/README.md](public/characters/README.md).

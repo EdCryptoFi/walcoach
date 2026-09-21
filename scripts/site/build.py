@@ -54,15 +54,14 @@ home = f'''
     </div>
     <div class="relative flex flex-col items-center hero-figure">
       <div class="absolute top-6 left-1/2 -translate-x-1/2 w-[70%] aspect-square rounded-full bg-primary-container/25 blur-3xl" aria-hidden="true"></div>
-      <div class="relative w-full max-w-[460px] hero-media">
+      <div class="relative w-full max-w-[560px] hero-media">
         <img src="/characters/hero.webp" alt="WalCoach, the coach that remembers you" class="w-full h-auto drop-shadow-[0_24px_40px_rgba(0,119,182,0.25)]" fetchpriority="high" id="heroImg">
         <video class="absolute inset-0 w-full h-full object-contain drop-shadow-[0_24px_40px_rgba(0,119,182,0.25)] opacity-0 transition-opacity duration-500" id="heroVideo" muted playsinline preload="auto" aria-hidden="true">
           <source src="/media/hero.mov" type='video/quicktime; codecs="hvc1"'>
           <source src="/media/hero.webm" type="video/webm">
         </video>
       </div>
-      <div class="relative -mt-3 w-[60%] h-5 rounded-[50%] bg-secondary/25 blur-md" aria-hidden="true"></div>
-      <div class="relative flex flex-wrap justify-center gap-2 mt-3">
+      <div class="relative flex flex-wrap justify-center gap-2 mt-2">
         <span class="chip"><span class="pulse"></span> Walrus agent · on-chain memory</span>
         <span class="chip">{icon('psychology','text-[14px]')} Recall before every reply</span>
         <span class="chip">{icon('verified_user','text-[14px]')} Facts stored on Walrus after each</span>

@@ -185,4 +185,4 @@
 
 /* Hero figure: gentle idle float */
 @keyframes hero-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-.hero-figure .hero-media { animation: hero-float 6s ease-in-out infinite; }
+.hero-figure .hero-media { animation: none; }
