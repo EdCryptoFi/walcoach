@@ -49,7 +49,7 @@ function throttled(c: { req: { header: (n: string) => string | undefined } }, us
   return null;
 }
 
-interface ChatBody { userId?: string; name?: string; text?: string; memory?: boolean; history?: Turn[]; context?: string; voice?: string }
+interface ChatBody { userId?: string; name?: string; text?: string; memory?: boolean; history?: Turn[]; context?: string; voice?: string; pending?: string[] }
 
 function cleanHistory(h: unknown): Turn[] {
   if (!Array.isArray(h)) return [];
@@ -178,7 +178,8 @@ export function createApp() {
     try {
       const context = AREAS.find((a) => a.id === body.context)?.label;
       const voice = body.voice === "character" ? "character" : "neutral";
-      const { reply, memories, memoryAvailable, facts, sources, learning } = await chat(id, userName, text.trim().slice(0, 2000), { useMemory, history: cleanHistory(body.history), context, voice });
+      const pending = Array.isArray(body.pending) ? body.pending.filter((f): f is string => typeof f === "string").map((f) => f.slice(0, 400)).slice(0, 12) : [];
+      const { reply, memories, memoryAvailable, facts, sources, learning } = await chat(id, userName, text.trim().slice(0, 2000), { useMemory, history: cleanHistory(body.history), context, voice, pending });
       keepAlive(learning);
       return c.json({ reply, memories, memory: useMemory, memoryAvailable, facts, sources });
     } catch (err) {

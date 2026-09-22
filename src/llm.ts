@@ -36,7 +36,7 @@ You have no web access: if a question depends on current or local information, s
 What you remember about ${userName} from previous conversations (retrieved from Walrus Memory, most relevant first; the [tag] is the life area):
 ${lines}
 
-Use these memories naturally when they matter: follow up on goals, reference past struggles, notice progress, respect stated preferences. Do not recite the list or say "according to my memory", just act like someone who remembers.`;
+Use these memories naturally when they matter: follow up on goals, reference past struggles, notice progress, respect stated preferences. Memories that start with "Coach suggested" are things YOU told this person before: own them ("last time I suggested..."), and if asked what you recommended, answer from them. Do not recite the list or say "according to my memory", just act like someone who remembers.`;
 }
 
 export interface Reply { text: string; sources: Source[] }

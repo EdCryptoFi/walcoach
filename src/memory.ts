@@ -159,10 +159,10 @@ const normalize = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " "
 export type FactList = string[];
 
 /** Extract facts only (no storage). `known` keeps the extractor from re-stating what we have. */
-export async function extractNewFacts(userName: string, userMessage: string, context: string, known: Memory[] = []): Promise<FactList> {
+export async function extractNewFacts(userName: string, userMessage: string, context: string, known: Memory[] = [], coachReply = ""): Promise<FactList> {
   const knownTexts = known.map((m) => m.text);
   const knownSet = new Set(knownTexts.map(normalize));
-  return (await extractFacts(userName, userMessage, context, knownTexts)).filter((f) => !knownSet.has(normalize(f)));
+  return (await extractFacts(userName, userMessage, context, knownTexts, coachReply)).filter((f) => !knownSet.has(normalize(f)));
 }
 
 /**
@@ -189,7 +189,7 @@ export async function learnFromExchange(userId: number, userName: string, userMe
       return;
     }
 
-    const toStore = facts ?? (await extractNewFacts(userName, userMessage, `Coach: ${assistantReply}`, known));
+    const toStore = facts ?? (await extractNewFacts(userName, userMessage, "", known, assistantReply));
     if (toStore.length === 0) {
       console.log(`[learn]  user=${userId} no new facts`);
       return;

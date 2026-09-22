@@ -41,14 +41,18 @@ export interface ChatOptions {
   context?: string;
   /** "character" = the mentor's own style; "neutral" = plain coach voice (default). */
   voice?: Voice;
+  /** Facts extracted in recent turns that may not be indexed on Walrus yet (bridges the write lag). */
+  pending?: string[];
 }
 
 export async function chat(userId: number, userName: string, text: string, options: ChatOptions | boolean = {}): Promise<ChatResult> {
-  const { useMemory = true, history: given, context: area, voice = "neutral" } = typeof options === "boolean" ? { useMemory: options } : options;
+  const { useMemory = true, history: given, context: area, voice = "neutral", pending = [] } = typeof options === "boolean" ? { useMemory: options } : options;
 
   // 1. Recall what we know that is relevant to this message.
   const recall = useMemory ? await recallForUser(userId, text) : { memories: [], available: true };
-  const memories = recall.memories;
+  const memories = recall.memories.slice();
+  // Facts still being written to Walrus count as memory for this turn (blobId empty until indexed).
+  if (useMemory) for (const f of pending) if (!memories.some((m) => m.text === f)) memories.push({ text: f, distance: 0.3, blobId: "" });
 
   // 2. Generate with memories in the system prompt + short-term history.
   let turns: Turn[];
@@ -58,14 +62,13 @@ export async function chat(userId: number, userName: string, text: string, optio
     pushTurn(userId, { role: "user", content: text });
     turns = history.get(userId) ?? [];
   }
-  // Extraction runs alongside generation (both are one model call) so the caller
-  // gets the facts back with the reply and can retry the write if it fails later.
+  // Generate first, then extract from the exchange (the coach's concrete suggestions
+  // are memories too), so the caller gets the facts back with the reply and can retry
+  // the write if it fails later.
   const context = turns.slice(-3, -1).map((t) => `${t.role === "user" ? "User" : "Coach"}: ${t.content}`).join("\n");
-  const [generated, facts] = await Promise.all([
-    generateReply(userName, memories, turns, area, voice),
-    useMemory ? extractNewFacts(userName, text, context, memories).catch((err) => { log.error("extract.failed", err, { user: userId }); return [] as string[]; }) : Promise.resolve([] as string[]),
-  ]);
+  const generated = await generateReply(userName, memories, turns, area, voice);
   const reply = generated.text;
+  const facts = useMemory ? await extractNewFacts(userName, text, context, memories, reply).catch((err) => { log.error("extract.failed", err, { user: userId }); return [] as string[]; }) : [];
   if (!given) pushTurn(userId, { role: "assistant", content: reply });
 
   // 3. Store the facts (caller decides whether to await).

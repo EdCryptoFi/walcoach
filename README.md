@@ -103,6 +103,18 @@ API (all JSON): `POST /api/chat {userId, name, text}` → `{reply, memories}`,
 - **Saved on Walrus** footer: each reply shows "saving N facts…" and, once the blobs exist,
   "N facts saved on Walrus mainnet · blob 1, blob 2" with explorer links.
 
+## What gets remembered (and the write-lag bridge)
+
+Facts about the user **and** the coach's concrete suggestions (a recipe, a plan, a routine;
+stored as "Coach suggested … to <name>") so "what did you tell me to cook?" works next session.
+Two more pieces keep this reliable in practice:
+
+- The last 12 turns are kept in `localStorage` per memory key (24 h), so a refresh restores the
+  conversation on screen and in the model's short-term context.
+- Writing to Walrus takes 5 to 30 s. Facts extracted in the last 30 minutes are sent back as
+  `pending` with each message and count as memory until they show up in recall, so a question
+  asked seconds after the answer is still remembered.
+
 ## Proof it's on Walrus
 
 Every memory in the panel has an ↗ link to its blob on the Walrus explorer

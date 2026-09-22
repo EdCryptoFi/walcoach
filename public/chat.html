@@ -246,7 +246,10 @@
   // ---------- short-term history (browser side; API is stateless) ----------
   let history = [];
   const MAX_TURNS = 12;
-  function remember(role, content) { history.push({ role, content }); history = history.slice(-MAX_TURNS); }
+  const HIST_KEY = () => "walrus-coach-history:" + (user && user.id);
+  function histSave() { try { localStorage.setItem(HIST_KEY(), JSON.stringify({ at: Date.now(), turns: history })); } catch {} }
+  function histLoad() { try { const h = JSON.parse(localStorage.getItem(HIST_KEY()) || "null"); if (h && Date.now() - h.at < 24 * 3600_000 && Array.isArray(h.turns)) history = h.turns.slice(-MAX_TURNS); else history = []; } catch { history = []; } }
+  function remember(role, content) { history.push({ role, content }); history = history.slice(-MAX_TURNS); histSave(); }
 
   // ---------- panels / dialogs ----------
   $("youBtn").addEventListener("click", () => $("youDialog").showModal());
@@ -255,7 +258,7 @@
   $("closeLeft").addEventListener("click", () => $("leftCol").classList.remove("open"));
   $("copyKey").addEventListener("click", async () => { try { await navigator.clipboard.writeText(user.id); $("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Copied'; setTimeout(() => ($("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">content_copy</span> Copy'), 1500); } catch { prompt("Your memory key:", user.id); } });
   $("switchBtn").addEventListener("click", () => { $("youDialog").close(); try { localStorage.removeItem("walrus-coach-key-saved"); localStorage.removeItem("walrus-coach-context"); } catch {} user = { id: null, name: "" }; history = []; messages.innerHTML = ""; contextId = null; askName(); });
-  $("resetBtn").addEventListener("click", () => { $("youDialog").close(); history = []; addBot("Short-term context cleared. I still remember the long-term stuff, say hi to see it in action.", { system: true }); renderStarters(); });
+  $("resetBtn").addEventListener("click", () => { $("youDialog").close(); history = []; histSave(); addBot("Short-term context cleared. I still remember the long-term stuff, say hi to see it in action.", { system: true }); renderStarters(); });
 
   // ---------- theme ----------
   (() => { const b = $("themeBtn"), i = $("themeIcon"); const paint = () => { i.textContent = document.documentElement.dataset.theme === "dark" ? "light_mode" : "dark_mode"; }; b.addEventListener("click", () => { const d = document.documentElement.dataset.theme === "dark"; if (d) delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = "dark"; try { localStorage.setItem("walcoach-theme", d ? "light" : "dark"); } catch {} paint(); }); paint(); })();
@@ -366,6 +369,11 @@
   const OUTBOX_KEY = "walrus-coach-outbox", GRACE_MS = 90_000;
   function outboxLoad() { try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || "{}"); } catch { return {}; } }
   function outboxSave(o) { try { localStorage.setItem(OUTBOX_KEY, JSON.stringify(o)); } catch {} }
+  // Recently extracted facts are sent with the next messages until they appear on Walrus (write lag bridge).
+  const PENDING_KEY = () => "walrus-coach-pending:" + (user && user.id);
+  function pendingLoad() { try { const p = JSON.parse(localStorage.getItem(PENDING_KEY()) || "[]"); return p.filter((x) => Date.now() - x.at < 30 * 60_000); } catch { return []; } }
+  function pendingAdd(facts) { if (!facts || !facts.length) return; const p = pendingLoad(); for (const f of facts) if (!p.some((x) => x.text === f)) p.push({ text: f, at: Date.now() }); try { localStorage.setItem(PENDING_KEY(), JSON.stringify(p.slice(-12))); } catch {} }
+  function pendingPrune(memories) { const stored = new Set((memories || []).map((m) => norm(m.text))); const p = pendingLoad().filter((x) => !stored.has(norm(x.text))); try { localStorage.setItem(PENDING_KEY(), JSON.stringify(p)); } catch {} }
   function outboxAdd(facts) { if (!facts || !facts.length) return; const o = outboxLoad(); const mine = o[user.id] || []; for (const f of facts) if (!mine.some((x) => x.text === f)) mine.push({ text: f, at: Date.now(), tries: 0 }); o[user.id] = mine; outboxSave(o); }
   const norm = (t) => (t || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   async function outboxReconcile(memories) {
@@ -403,7 +411,7 @@
     m.innerHTML = `<div class="text-[11px] text-on-surface-variant">You${user?.name ? " (" + user.name + ")" : ""} · ${stamp()}</div>`;
     m.append(el("div", "bubble", text)); messages.append(m); scroll();
   }
-  function addBot(text, { system = false, error = false, memories = [], sources = [], memoryOn = true, handover = false, facts = [] } = {}) {
+  function addBot(text, { system = false, error = false, memories = [], sources = [], memoryOn = true, handover = false, facts = [], restored = false } = {}) {
     const m = el("div", "msg bot self-start flex gap-3" + (system ? " sys" : "") + (error ? " err" : ""));
     const av = el("div", "w-9 h-9 rounded-full overflow-hidden flex-none bg-white shadow"); av.innerHTML = `<img class="w-full h-full object-cover object-top" src="${$("agentImg").src}" alt="">`;
     const col = el("div", "min-w-0 flex flex-col gap-1");
@@ -414,6 +422,7 @@
       const meta = el("div", "text-[11px] text-on-surface-variant flex flex-wrap items-center gap-1.5");
       if (!memoryOn) meta.innerHTML = `<span class="material-symbols-outlined text-[14px]">visibility_off</span> memory off`;
       else if (handover) meta.innerHTML = `<span class="material-symbols-outlined text-[14px] text-primary">swap_horiz</span> mentor handover, using your shared memory`;
+      else if (restored) meta.innerHTML = `<span class="material-symbols-outlined text-[14px]">history</span> earlier in this conversation`;
       else if (memories.length) {
         meta.innerHTML = `<span class="material-symbols-outlined text-[14px] text-primary">lightbulb</span> Memories used in this reply:`;
         memories.slice(0, 3).forEach((mm) => { const { text: t } = parseTag(mm.text); const c = el("span", "memchip"); c.innerHTML = `<span class="t">${t.replace(/</g, "&lt;")}</span>`; c.title = `${t} (distance ${mm.distance.toFixed(2)})`; meta.append(c); });
@@ -489,7 +498,7 @@
       $("nsLine").textContent = `${data.namespace} · ${lastMemories.length} encrypted blobs`; $("nsMini").innerHTML = `<span class="material-symbols-outlined text-[16px]">database</span> ${data.namespace}`;
       $("sessionSub").textContent = `Long-term memory loaded · ${lastMemories.length} facts on Walrus ${ABOUT.network || ""}`;
       await outboxReconcile(lastMemories);
-      resolvePending(lastMemories);
+      resolvePending(lastMemories); pendingPrune(lastMemories);
     } catch (e) { $("nsLine").textContent = "⚠ " + e.message; $("sessionSub").textContent = "Memory panel unavailable: " + e.message; setBanner(e.message); }
   }
 
@@ -500,13 +509,13 @@
     busy = true; send.disabled = true; input.value = ""; autosize();
     addUser(text); const t = typing();
     try {
-      const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history, context: contextId && contextId !== "life" ? contextId : undefined, voice });
+      const data = await api("/api/chat", { userId: user.id, name: user.name, text, memory: memToggle.checked, history, context: contextId && contextId !== "life" ? contextId : undefined, voice, pending: pendingLoad().map((x) => x.text) });
       t.remove(); remember("user", text); remember("assistant", data.reply);
       addBot(data.reply, { memories: data.memories || [], sources: data.sources || [], memoryOn: data.memory, facts: data.facts || [] });
       react(data.reply); renderStarters();
       if ((data.facts || []).length) setTimeout(() => weekLoad(true), 8000);
       if (data.memory && data.memoryAvailable === false) setBanner("Walrus Memory is unreachable right now, this reply was made without your memories. New facts are queued and will be saved when it's back."); else if (data.memory) setBanner("");
-      outboxAdd(data.facts);
+      outboxAdd(data.facts); pendingAdd(data.facts);
       setTimeout(loadAll, 5000); setTimeout(loadAll, GRACE_MS + 5000);
     } catch (e) { t.remove(); addBot("⚠ " + e.message, { system: true, error: true }); setBanner(e.message); }
     finally { busy = false; send.disabled = false; input.focus(); }
@@ -521,7 +530,13 @@
   // ---------- boot ----------
   function boot() {
     $("whoName").textContent = user.name; $("keyText").textContent = user.id;
-    if (!messages.children.length) addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on, a habit, a goal, something you keep putting off.`, { system: true });
+    histLoad();
+    if (!messages.children.length) {
+      if (history.length) {
+        addBot(`Welcome back, ${user.name}. Here is where we left off.`, { system: true });
+        for (const t of history) t.role === "user" ? addUser(t.content) : addBot(t.content, { memories: [], memoryOn: true, restored: true });
+      } else addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on, a habit, a goal, something you keep putting off.`, { system: true });
+    }
     loadAll(); pushInit(); renderStarters(); input.focus();
     setTimeout(() => weekLoad(false), 3000);
   }
