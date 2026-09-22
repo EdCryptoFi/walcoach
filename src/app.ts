@@ -127,7 +127,7 @@ export function createApp() {
     return c.body(readFileSync(url), 200, { "content-type": IMG_TYPES[m[2].toLowerCase()], "cache-control": "public, max-age=86400" });
   });
   app.get("/api/characters", (c) => {
-    const names = ["mascot", ...AREAS.map((a) => a.id)];
+    const names = ["mascot", ...AREAS.flatMap((a) => [a.id, `${a.id}-talk`, `${a.id}-happy`, `${a.id}-think`])];
     const have: Record<string, string> = {};
     for (const n of names) for (const ext of ["webp", "png", "svg"]) {
       if (existsSync(new URL(`../public/characters/${n}.${ext}`, import.meta.url))) { have[n] = `/characters/${n}.${ext}`; break; }
@@ -233,11 +233,12 @@ export function createApp() {
 
   // Mentor handover: one opening line from the new mentor that proves the shared memory.
   app.post("/api/handover", async (c) => {
-    const { userId, name, from, to, voice } = (await c.req.json().catch(() => ({}))) as { userId?: string; name?: string; from?: string; to?: string; voice?: string };
+    const { userId, name, from, to, voice, pending } = (await c.req.json().catch(() => ({}))) as { userId?: string; name?: string; from?: string; to?: string; voice?: string; pending?: string[] };
     if (!userId || !VALID_ID.test(userId) || !to) return c.json({ error: "userId and to are required" }, 400);
     const wait = throttled(c, userId);
     if (wait) return c.json({ error: wait }, 429);
-    try { return c.json({ text: await handover(numericId(userId), (name || "friend").slice(0, 40), from, to, voice === "character" ? "character" : "neutral") }); }
+    const extra = Array.isArray(pending) ? pending.filter((f): f is string => typeof f === "string").map((f) => f.slice(0, 400)).slice(0, 12) : [];
+    try { return c.json({ text: await handover(numericId(userId), (name || "friend").slice(0, 40), from, to, voice === "character" ? "character" : "neutral", extra) }); }
     catch (err) { log.error("handover.failed", err, { user: numericId(userId) }); return c.json({ text: null }); }
   });
 

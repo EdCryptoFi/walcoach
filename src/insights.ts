@@ -35,11 +35,14 @@ export async function weekSummary(userId: number, userName: string): Promise<Wee
   }
 }
 
-export async function handover(userId: number, userName: string, fromId: string | undefined, toId: string, voice: "character" | "neutral"): Promise<string | null> {
+export async function handover(userId: number, userName: string, fromId: string | undefined, toId: string, voice: "character" | "neutral", pending: string[] = []): Promise<string | null> {
   const to = AREAS.find((a) => a.id === toId);
   if (!to) return null;
   const from = AREAS.find((a) => a.id === fromId);
-  const memories = await listMemories(userId, 20);
+  const stored = await listMemories(userId, 20);
+  // Facts still being indexed on Walrus count here too, so switching mentors right
+  // after a message still produces a grounded greeting.
+  const memories = [...stored, ...pending.filter((t) => !stored.some((m) => m.text === t)).map((text) => ({ text, distance: 0.3, blobId: "" }))];
   if (memories.length === 0) return null;
   const persona = voice === "character" && VOICES[to.id] ? ` Voice: ${VOICES[to.id]}` : "";
   const completion = await groq.chat.completions.create({
