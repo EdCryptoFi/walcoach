@@ -1,6 +1,10 @@
-# I gave my chatbot a memory it doesn't own: what changed, and what broke
+# WalCoach: how I built a chatbot that actually remembers you, and what broke along the way
 
-*How I added long-term memory to an AI coach with Walrus Memory, an open-weight model, and no database.*
+*Seven mentors, one memory of you, stored encrypted on Walrus. Built with an open-weight model and no database.*
+
+> **Cover image overlay:** WalCoach / A chatbot that remembers you / Walrus Memory · Qwen 3.8 27B · no database
+> **Caption:** WalCoach remembers your goals, your routine and the thing that trips you up. Every memory is an encrypted blob on Walrus.
+> **Alt text:** The WalCoach walrus mascot in a navy tracksuit beside the words "a chatbot that remembers you", with glowing cyan cubes representing encrypted memories stored on Walrus.
 
 Most chatbots forget you the moment you close the tab. You explain your knee injury, your night shift, the exam in three weeks, and next session you explain it all again. I wanted to know how much of a coach's usefulness is actually locked in that forgetting. So I built **WalCoach**: a coaching companion with seven mentors (work, fitness, study, pets, cooking, zen, music) that share one memory of you, stored encrypted on Walrus.
 
