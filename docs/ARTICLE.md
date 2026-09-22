@@ -28,9 +28,7 @@ You do not talk to a generic assistant. You pick a mentor, and each one leads wi
 | **Mindfulness & Zen** | stress, sleep hygiene, one small practice at a time |
 | **Music & Creativity** | practice, unfinished songs, creative momentum |
 
-The point is the shared memory. Switch from Cooking to Fitness and the new mentor opens with something the other one learned: *"I remember you were working on shakshuka with toast, that sounds like a great pre-workout meal. How is your training going?"* Each stored fact is tagged with its area, so the chat panel lights up the areas the coach already knows about and nudges you to bring more of your life in, because sleep is what wrecks training and stress is what wrecks sleep.
-
-A toggle switches between each mentor's own voice and a plain neutral one, for people who want the coaching without the persona.
+The point is the shared memory. Switch from Cooking to Fitness and the new mentor opens with what the other one learned: *"I remember you were working on shakshuka with toast, that sounds like a great pre-workout meal. How is your training going?"* Every fact is tagged with its area, so the panel lights up what the coach already knows and nudges you to bring more of your life in, because sleep is what wrecks training and stress is what wrecks sleep. A toggle turns each mentor's persona off for people who just want the coaching.
 
 ## How Walrus Memory is wired in
 
@@ -65,11 +63,11 @@ The first version scored 1/9. The jump came from two fixes: recalling with a sec
 
 **Rate limits are per delegate key**, not per user: 60 weighted requests/min, 1000/hour. One backend serving many users hits that fast, and it surfaces as `seal encrypt failed: RpcError: Too Many Requests`, which reads like a crypto bug and is really a quota. All eight friction points are in [FRICTION.md](https://github.com/EdCryptoFi/walcoach/blob/main/FRICTION.md).
 
-When the relayer is unreachable the coach still answers, says so in a banner, and queues unsaved facts in a browser outbox that retries. Degrading is part of the design, not an afterthought.
+When the relayer is unreachable the coach still answers, says so in a banner, and queues the unsaved facts for retry. Degrading well is part of the design.
 
 ## Would I do it again
 
-Yes, with one expectation set: Walrus Memory gives you portable, verifiable, user-owned memory, and in exchange you handle latency, quotas and occasional empty reads yourself. For a coach, that trade is worth it. The moment it pays off is small and specific: it's Thursday, the user says "no motivation today", and the bot answers *"it's run day, how's the knee since Tuesday?"* Nobody re-explains anything.
+Yes, with one expectation set: Walrus Memory gives you portable, verifiable, user-owned memory, and in exchange you handle latency, quotas and the occasional empty read. For a coach that trade is worth it, and the payoff is small and specific: it's Thursday, the user says "no motivation today", and the bot answers *"it's run day, how's the knee since Tuesday?"* Nobody re-explains anything.
 
 ---
 
