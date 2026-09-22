@@ -315,15 +315,15 @@
     if (handoverBusy || !user?.id || toId === "life") return;
     if (!lastMemories.length && !pendingLoad().length) return;   // genuinely nothing to hand over yet
     handoverBusy = true; const t = typing();
-    try { const r = await api("/api/handover", { userId: user.id, name: user.name, from: fromId || undefined, to: toId, voice }); t.remove(); if (r.text) { addBot(r.text, { memories: [], memoryOn: true, handover: true }); remember("assistant", r.text); } }
-    catch { t.remove(); }
+    try { const r = await api("/api/handover", { userId: user.id, name: user.name, from: fromId || undefined, to: toId, voice, pending: pendingLoad().map((x) => x.text) }); t.remove(); if (r.text) { addBot(r.text, { memories: [], memoryOn: true, handover: true }); remember("assistant", r.text); } }
+    catch (e) { t.remove(); console.warn("[handover]", e.message); }
     finally { handoverBusy = false; }
   }
   function setContext(id, prefill) {
     const previous = contextId;
     contextId = id; try { localStorage.setItem("walrus-coach-context", id); } catch {}
     const a = AREAS.find((x) => x.id === id);
-    for (const b of $("mods").children) b.classList.toggle("on", b.textContent.includes(a?.short || " "));
+    for (const b of $("mods").children) b.classList.toggle("on", b.textContent.includes(a?.short || " "));
     if (a) { $("agentName").textContent = a.id === "life" ? "WalCoach AI" : a.label; $("agentSub").textContent = a.id === "life" ? "Personal coach · one memory of you" : a.hint; $("modeChip").textContent = "Mode: " + a.short; if (CHARACTERS[a.id]) $("agentImg").src = CHARACTERS[a.id]; }
     renderStarters(); if (prefill) input.focus();
     $("leftCol").classList.remove("open");
@@ -354,6 +354,7 @@
       // The relayer occasionally returns an empty recall for a namespace that has memories; retry once.
       if (data.facts === 0 && lastMemories.length > 0) { await new Promise((r) => setTimeout(r, 2500)); data = await api("/api/summary", { userId: user.id, name: user.name }); }
       weekRender(data); if (data.facts > 0) { try { localStorage.setItem(WEEK_KEY, JSON.stringify({ userId: user.id, at: Date.now(), data })); } catch {} }
+      else if (lastMemories.length || pendingLoad().length) setTimeout(() => weekLoad(true), 25000);
     }
     catch (e) { $("weekHeadline").textContent = "⚠ " + e.message; }
     finally { $("weekBtn").disabled = false; }
