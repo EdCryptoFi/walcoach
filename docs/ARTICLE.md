@@ -12,7 +12,25 @@ Live: **walcoach.vercel.app** · Code: **github.com/EdCryptoFi/walcoach** (MIT)
 
 ## Who it's for and what it does
 
-Anyone with a goal they keep dropping. You pick a mentor, type in any language, and the coach answers short and direct. No account, no password, no wallet: on your first visit the browser generates a **memory key** (`web-xxxx-xxxx-xxxx-xxxx`) and that key is your identity. Paste it on another device and your memories follow you. Lose it and they are gone, which is the honest trade for having no user database.
+Anyone with a goal they keep dropping. Type in any language and the coach answers short and direct. No account, no password, no wallet: on your first visit the browser generates a **memory key** and that key is your identity. Paste it on another device and your memories follow you. Lose it and they are gone, the honest trade for having no user database.
+
+## Seven mentors, one memory
+
+You do not talk to a generic assistant. You pick a mentor, and each one leads with its own area and its own way of talking:
+
+| Mentor | What it follows |
+|---|---|
+| **Work & Career** | deadlines, meeting prep, the task you keep avoiding |
+| **Fitness & Performance** | sessions, progressive load, old injuries |
+| **Study & Academics** | exams, spaced revision, where you got stuck |
+| **Pets & Companionship** | routines, vaccines, training your dog or cat |
+| **Cooking & Nutrition** | meal prep, swaps, what is in your fridge |
+| **Mindfulness & Zen** | stress, sleep hygiene, one small practice at a time |
+| **Music & Creativity** | practice, unfinished songs, creative momentum |
+
+The point is the shared memory. Switch from Cooking to Fitness and the new mentor opens with something the other one learned: *"I remember you were working on shakshuka with toast, that sounds like a great pre-workout meal. How is your training going?"* Each stored fact is tagged with its area, so the chat panel lights up the areas the coach already knows about and nudges you to bring more of your life in, because sleep is what wrecks training and stress is what wrecks sleep.
+
+A toggle switches between each mentor's own voice and a plain neutral one, for people who want the coaching without the persona.
 
 ## How Walrus Memory is wired in
 
@@ -24,7 +42,7 @@ Three steps per message, all in [`src/memory.ts`](https://github.com/EdCryptoFi/
 
 Model: **Qwen 3.8 27B via Groq**, open-weight, nothing from Anthropic or OpenAI. It does four jobs: reply, extract facts, write the weekly summary, and compose the daily push nudge.
 
-Once memory exists, it does work beyond the chat: switching mentors triggers a **handover** ("I saw you cut series at 22h to sleep better, that's essential for your Couch-to-5K consistency"), a **Your week** card summarises wins and blockers from stored facts alone, and a daily cron writes one push line grounded in your memories. Push subscriptions live in a Walrus namespace too, because there is still no database.
+Memory also works outside the chat: a **Your week** card summarises wins and blockers from stored facts alone, and a daily cron pushes one line grounded in them. Even the push subscriptions live in a Walrus namespace, because there is still no database.
 
 ## Before and after
 
@@ -45,7 +63,7 @@ The first version scored 1/9. The jump came from two fixes: recalling with a sec
 
 **Recall sometimes returns an empty set with HTTP 200** for a namespace that has memories; the same call seconds later returns six hits. The fix is a retry when a user known to have facts gets zero.
 
-**Rate limits are per delegate key**, not per user: 60 weighted requests/min, 1000/hour. One backend serving many users hits this fast, and it surfaces as `seal encrypt failed: RpcError: Too Many Requests`, which reads like a crypto bug and is really a quota. All eight friction points are in [FRICTION.md](https://github.com/EdCryptoFi/walcoach/blob/main/FRICTION.md).
+**Rate limits are per delegate key**, not per user: 60 weighted requests/min, 1000/hour. One backend serving many users hits that fast, and it surfaces as `seal encrypt failed: RpcError: Too Many Requests`, which reads like a crypto bug and is really a quota. All eight friction points are in [FRICTION.md](https://github.com/EdCryptoFi/walcoach/blob/main/FRICTION.md).
 
 When the relayer is unreachable the coach still answers, says so in a banner, and queues unsaved facts in a browser outbox that retries. Degrading is part of the design, not an afterthought.
 
