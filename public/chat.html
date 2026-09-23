@@ -246,10 +246,11 @@
   // ---------- short-term history (browser side; API is stateless) ----------
   let history = [];
   const MAX_TURNS = 12;
+  const RESTORE_SHOWN = 6;   // keep the restored transcript short on screen
   const HIST_KEY = () => "walrus-coach-history:" + (user && user.id);
   function histSave() { try { localStorage.setItem(HIST_KEY(), JSON.stringify({ at: Date.now(), turns: history })); } catch {} }
   function histLoad() { try { const h = JSON.parse(localStorage.getItem(HIST_KEY()) || "null"); if (h && Date.now() - h.at < 24 * 3600_000 && Array.isArray(h.turns)) history = h.turns.slice(-MAX_TURNS); else history = []; } catch { history = []; } }
-  function remember(role, content) { history.push({ role, content }); history = history.slice(-MAX_TURNS); histSave(); }
+  function remember(role, content, extra = {}) { history.push({ role, content, ...(role === "assistant" ? { m: contextId || "life", at: Date.now(), ...extra } : {}) }); history = history.slice(-MAX_TURNS); histSave(); }
 
   // ---------- panels / dialogs ----------
   $("youBtn").addEventListener("click", () => $("youDialog").showModal());
@@ -315,7 +316,7 @@
     if (handoverBusy || !user?.id || toId === "life") return;
     if (!lastMemories.length && !pendingLoad().length) return;   // genuinely nothing to hand over yet
     handoverBusy = true; const t = typing();
-    try { const r = await api("/api/handover", { userId: user.id, name: user.name, from: fromId || undefined, to: toId, voice, pending: pendingLoad().map((x) => x.text) }); t.remove(); if (r.text) { addBot(r.text, { memories: [], memoryOn: true, handover: true }); remember("assistant", r.text); } }
+    try { const r = await api("/api/handover", { userId: user.id, name: user.name, from: fromId || undefined, to: toId, voice, pending: pendingLoad().map((x) => x.text) }); t.remove(); if (r.text) { addBot(r.text, { memories: [], memoryOn: true, handover: true, as: toId }); remember("assistant", r.text, { m: toId, h: 1 }); } }
     catch (e) { t.remove(); console.warn("[handover]", e.message); }
     finally { handoverBusy = false; }
   }
@@ -408,11 +409,14 @@
     m.innerHTML = `<div class="text-[11px] text-on-surface-variant">You${user?.name ? " (" + user.name + ")" : ""} · ${stamp()}</div>`;
     m.append(el("div", "bubble", text)); messages.append(m); scroll();
   }
-  function addBot(text, { system = false, error = false, memories = [], sources = [], memoryOn = true, handover = false, facts = [], restored = false } = {}) {
+  function addBot(text, { system = false, error = false, memories = [], sources = [], memoryOn = true, handover = false, facts = [], restored = false, as = null, when = null } = {}) {
     const m = el("div", "msg bot self-start flex gap-3" + (system ? " sys" : "") + (error ? " err" : ""));
-    const av = el("div", "w-9 h-9 rounded-full overflow-hidden flex-none bg-white shadow"); av.innerHTML = `<img class="w-full h-full object-cover object-top" src="${$("agentImg").src}" alt="">`;
+    const who = as ? (AREAS.find((a) => a.id === as) || {}) : null;
+    const avatarSrc = who && CHARACTERS[as] ? CHARACTERS[as] : $("agentImg").src;
+    const name = who ? (as === "life" ? "WalCoach AI" : who.label) : $("agentName").textContent;
+    const av = el("div", "w-9 h-9 rounded-full overflow-hidden flex-none bg-white shadow"); av.innerHTML = `<img class="w-full h-full object-cover object-top" src="${avatarSrc}" alt="">`;
     const col = el("div", "min-w-0 flex flex-col gap-1");
-    col.innerHTML = `<div class="text-[11px] text-on-surface-variant">${$("agentName").textContent} · ${stamp()}</div>`;
+    col.innerHTML = `<div class="text-[11px] text-on-surface-variant">${name} · ${when || stamp()}</div>`;
     const bubble = el("div", "bubble"); bubble.innerHTML = fmt(text); col.append(bubble);
     if (sources.length) { const s = el("div", "srcs flex flex-wrap gap-1.5"); sources.forEach((src, i) => { const a = el("a"); a.href = src.url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.title = src.url; a.innerHTML = `<span class="material-symbols-outlined text-[14px]">link</span><span>[${i + 1}] ${(src.title || src.url).replace(/</g, "&lt;")}</span>`; s.append(a); }); col.append(s); }
     if (!system) {
@@ -420,6 +424,7 @@
       if (!memoryOn) meta.innerHTML = `<span class="material-symbols-outlined text-[14px]">visibility_off</span> memory off`;
       else if (handover) meta.innerHTML = `<span class="material-symbols-outlined text-[14px] text-primary">swap_horiz</span> mentor handover, using your shared memory`;
       else if (restored) meta.innerHTML = `<span class="material-symbols-outlined text-[14px]">history</span> earlier in this conversation`;
+      else if (handover) meta.innerHTML = `<span class="material-symbols-outlined text-[14px] text-primary">swap_horiz</span> mentor handover, using your shared memory`;
       else if (memories.length) {
         meta.innerHTML = `<span class="material-symbols-outlined text-[14px] text-primary">lightbulb</span> Memories used in this reply:`;
         memories.slice(0, 3).forEach((mm) => { const { text: t } = parseTag(mm.text); const c = el("span", "memchip"); c.innerHTML = `<span class="t">${t.replace(/</g, "&lt;")}</span>`; c.title = `${t} (distance ${mm.distance.toFixed(2)})`; meta.append(c); });
@@ -530,8 +535,10 @@
     histLoad();
     if (!messages.children.length) {
       if (history.length) {
-        addBot(`Welcome back, ${user.name}. Here is where we left off.`, { system: true });
-        for (const t of history) t.role === "user" ? addUser(t.content) : addBot(t.content, { memories: [], memoryOn: true, restored: true });
+        const shown = history.slice(-RESTORE_SHOWN);
+        addBot(`Welcome back, ${user.name}. Here is where we left off${history.length > shown.length ? `, showing the last ${shown.length} messages` : ""}.`, { system: true });
+        const clock = (ms) => ms ? new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : null;
+        for (const t of shown) t.role === "user" ? addUser(t.content) : addBot(t.content, { memories: [], memoryOn: true, restored: !t.h, handover: Boolean(t.h), as: t.m || null, when: clock(t.at) });
       } else addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on, a habit, a goal, something you keep putting off.`, { system: true });
     }
     loadAll(); pushInit(); renderStarters(); input.focus();
