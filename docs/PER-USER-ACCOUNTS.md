@@ -61,14 +61,32 @@ A Sui signature is `flag(0x00) || signature(64) || publicKey(32)`, base64, over
 - New env vars: `SUI_SPONSOR_KEY` (treasury private key), `MEMWAL_REGISTRY_ID`, `MEMWAL_PACKAGE_ID`
 - `MemWal` client becomes per request: same delegate key, the caller's account id
 
-## Two unknowns to settle before this becomes the default
+## Prototype result: both unknowns cleared
 
-1. **Does the relayer accept an account created outside the dashboard?** Nothing in the docs says it
-   does not, but it has to be tried.
-2. **Can the same delegate public key be authorised on many accounts?** The contract derives an
-   address per key and stores it on the account object, so it should be fine, but it has to be tried.
+`scripts/proto-account.ts`, run against mainnet on 2026-09-23:
 
-The prototype answers both with one test user and about 0.01 SUI.
+```
+create_account:    ok  BDN8t1KxW5YFpvYPXBNSXFRoorZXwpszNjxW9sGayzrU
+accountId:             0x93a30077df54250d3f13a75c256b4e7c679b92e684437c263e950669014617d2
+add_delegate_key:  ok  CLHwKN9ZCwD9vExnK8PriNdMx24wdasGLXqMpYguMQRZ
+relayer health:    ok
+wrote blob:            c6TJQVrGwxvh229mAbgGRlex9jl7qg3ktepN9E5N3TY
+recall:                0.395  "Prototype user owns this account and trains on Tuesdays."
+```
+
+On chain, that account reads:
+
+| | |
+|---|---|
+| owner | `0x694769051ee7c35a7136a9d35b956740ef8fb6328042a210ba837308dbbd6f40` (the user's key, not the sponsor) |
+| delegate keys | one, labelled `WalCoach` |
+| explorer | https://suiscan.xyz/mainnet/object/0x93a30077df54250d3f13a75c256b4e7c679b92e684437c263e950669014617d2 |
+
+So: a sponsored transaction creates an account **owned by the user**, the user never holds SUI and
+never sees a wallet, the existing WalCoach delegate key works on a brand new account, and the relayer
+accepts an account created outside the dashboard. Measured cost for the pair of transactions,
+including the failed attempts while getting the SDK call right: 0.0168 SUI for four runs, about
+**0.005 SUI per user** in steady state.
 
 ## Rollout plan
 
