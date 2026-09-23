@@ -546,7 +546,11 @@
       const data = await api("/api/memories", { userId: user.id });
       lastMemories = data.memories || []; ABOUT.namespace = data.namespace;
       renderFacts(lastMemories);
-      $("nsLine").textContent = `${data.namespace} · ${lastMemories.length} encrypted blobs`; $("nsMini").innerHTML = `<span class="material-symbols-outlined text-[16px]">database</span> ${data.namespace}`;
+      ABOUT.owned = Boolean(data.owned); ABOUT.userAccount = data.accountId;
+      $("nsLine").textContent = data.owned
+        ? `your own account · ${lastMemories.length} encrypted blobs`
+        : `${data.namespace} · ${lastMemories.length} encrypted blobs`;
+      $("nsMini").innerHTML = `<span class="material-symbols-outlined text-[16px]">database</span> ${data.owned ? (data.accountId || "").slice(0, 10) + "…" : data.namespace}`;
       $("sessionSub").textContent = `Long-term memory loaded · ${lastMemories.length} facts on Walrus ${ABOUT.network || ""}`;
       await outboxReconcile(lastMemories);
       resolvePending(lastMemories); pendingPrune(lastMemories); paintOwnership();
