@@ -45,9 +45,9 @@ Rules: https://thewalrussessions.wal.app/chatbots/index.html · Deadline **Oct 9
 | X account | https://x.com/EdCriptoFi |
 | SUI address (reward) | ✏️ **create a dedicated wallet for Sessions** at https://slush.app/get-started and send a WAL test transaction |
 | GitHub | https://github.com/EdCryptoFi and https://github.com/EdCryptoFi/walcoach |
-| Link to Article | ✏️ after publishing on Medium (mirror on Inkray optional) |
+| Link to Article | ✓ https://medium.com/@cryptolairbr/walcoach-remebers-you-b2f3b5596868 |
 | Link to article tweet | ✏️ reply under the @WalrusProtocol Session 8 announcement, tagging @WalrusProtocol, #WalrusMemory |
-| Link to promo post | ✏️ **not X**: a subreddit (not r/sui or r/walrus), dev forum, Discord server, newsletter or publishing platform |
+| Link to promo post | ⚠️ https://www.reddit.com/user/CryptoLairBR/comments/1wofdud/walcoach_remembers_you/ is a **profile post, not a community**. The prize asks for a post *in* a community and is judged on reach. Cross-post it to a real subreddit before submitting. |
 
 ### One bug or friction point you hit with Walrus Memory *(pick one, the rest go in the GitHub tickets field)*
 > `recall()` intermittently returns an empty result set with HTTP 200 for a namespace that has indexed memories. The same query seconds later returns the expected hits. For a chatbot this is the worst possible failure mode, because the bot answers as if it had never met the user instead of surfacing an error. I had to work around it by retrying a recall when a user I know has stored facts comes back with zero results. Environment: `@mysten-incubation/memwal` 0.1.7, Node 22 on Vercel functions, relayer.memory.walrus.xyz (mainnet).

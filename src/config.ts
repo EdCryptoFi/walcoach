@@ -23,5 +23,9 @@ export const config = {
   vapidSubject: process.env.VAPID_SUBJECT ?? "mailto:hello@example.com",
   tavilyKey: process.env.TAVILY_API_KEY ?? "",
   cronSecret: process.env.CRON_SECRET ?? "",
+  sponsorKey: process.env.SUI_SPONSOR_KEY ?? "",
+  memwalPackageId: process.env.MEMWAL_PACKAGE_ID ?? "0xe7c16fbea0560e7057e2bf7422feaa4fb313749fc69c9e9092fac7a33b81d7f5",
+  memwalRegistryId: process.env.MEMWAL_REGISTRY_ID ?? "0x8bf82c9e09e36b8d1c38298f68b7cb68e7b8762887e7592add9986d5e9cf199f",
+  memwalAgentPublicKey: process.env.MEMWAL_AGENT_PUBLIC_KEY ?? "",
   extractor: (process.env.MEMORY_EXTRACTOR === "relayer" ? "relayer" : "llm") as "llm" | "relayer",
 };

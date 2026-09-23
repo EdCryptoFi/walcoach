@@ -47,10 +47,12 @@ the Best Chatbot placement. Satisfy the stricter version.
 4. **Walrus Memory feedback form**: one bug + one improvement idea (separate from GitHub issues).
 5. **GitHub issues** at MystenLabs/MemWal from `FRICTION.md` (bug bounty, 5 x $100, judged separately).
 6. **Join the Walrus Discord.**
-7. **Publish the article** (Medium or Inkray) and share on X tagging @WalrusProtocol with
-   #WalrusMemory, under the session announcement.
-8. **Promo post in a third-party community.** Not X. A subreddit (not r/sui, not r/walrus), a dev
-   forum, a Discord server, a newsletter or a publishing platform. Must stay publicly visible.
+7. ✓ **Article published**: https://medium.com/@cryptolairbr/walcoach-remebers-you-b2f3b5596868
+   Still to do: share it on X tagging @WalrusProtocol with #WalrusMemory, under the session announcement.
+8. **Promo post in a third-party community.** A Reddit **profile** post exists
+   (https://www.reddit.com/user/CryptoLairBR/comments/1wofdud/walcoach_remembers_you/) but a profile
+   is not a community and the prize is judged on reach, so cross-post it into an actual subreddit
+   (r/SideProject, r/selfhosted, r/LocalLLaMA, r/artificial), a dev forum or a newsletter.
 9. **Demo video** (DeepSurge project form marks it required).
 
 ## Judging criteria, and our honest read
