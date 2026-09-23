@@ -25,7 +25,7 @@ Fill in the `→` lines once the build is final. Nothing here is submitted yet.
 |---|---|
 | Cover image (jpg/png) | → `docs/screenshot-landing.png` or a cropped hero |
 | Project Name | → Walrus Coach |
-| Description (rich text) | → 2–3 paragraphs: what it is, who it's for, how Walrus Memory is used (recall → generate → learn, per-user namespaces, tagged facts, daily nudges, outbox when the relayer is down), which model (Qwen 3.8 27B via Groq — not Anthropic/OpenAI). Link to the article. |
+| Description (rich text) | → 2–3 paragraphs: what it is, who it's for, how Walrus Memory is used (recall → generate → learn, one Walrus Memory account per user created by a sponsored transaction, tagged facts, daily nudges, outbox when the relayer is down), which model (Qwen 3.8 27B via Groq — not Anthropic/OpenAI). Link to the article. |
 | Track | → `[Bugbounty 5x$100], [Best article 3x$100], [Beyond the Big Two 2x$150], [Promo Prize 5x$100]` (the only track listed; main prize is judged on all submissions) |
 | Deployment network (`0x...`) | ✓ `0xf059b5c5b2429903359263c84c78190f6ac70063182d3b44eccb91e31bff7f3d` (Walrus Memory account / agent id, Sui mainnet) |
 | Agent ID + blob count (proof, ≥10 blobs required) | ✓ agent id above; count with `npm run blobs` |

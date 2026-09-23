@@ -28,6 +28,9 @@ the Best Chatbot placement. Satisfy the stricter version.
 - Working chatbot integrating Walrus Memory to store and recall between conversations ✓
 - Deployed and reachable by real users through a channel: https://walcoach.vercel.app ✓
 - All memory on Walrus **mainnet** (relayer `relayer.memory.walrus.xyz`) ✓
+- **One Walrus Memory account per user**, created by a sponsored transaction and owned by the
+  user's browser key, with WalCoach as a revocable delegate ✓ (answers the Walrus team's review;
+  live example `0xd91cdff1…cb8734`, owner `0x713a0025…48a4`, see `docs/WALRUS-REPLY.md`)
 - Public GitHub repo with setup instructions: https://github.com/EdCryptoFi/walcoach ✓ (MIT)
 - LLM stated everywhere: Qwen 3.8 27B via Groq (qualifies for Beyond the Big Two) ✓
 - Integration friction documented (`FRICTION.md`, 8 items) ✓, required for Beyond the Big Two
@@ -57,7 +60,9 @@ the Best Chatbot placement. Satisfy the stricter version.
 
 ## Judging criteria, and our honest read
 1. **Does it actually remember?** Strong: recall before every reply, memories shown per answer,
-   mentor handover, weekly summary, every fact linking to its blob on Walruscan.
+   mentor handover, weekly summary, every fact linking to its blob on Walruscan
+   Since 2026-09-23 each user owns the account their memories live in, which is the strongest
+   version of the "user-owned memory" claim we can make without client-side SEAL.
 2. **Real-world use.** Weakest point. Simulated eval only, so far.
 3. **Build quality.** Strong: clean repo, README, eval harness, audit doc, MIT.
 4. **Best article.** Draft is honest and specific, needs the real screenshots to land.

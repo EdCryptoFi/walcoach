@@ -25,14 +25,14 @@ Upload unlisted to YouTube, 1080p, 16:9. Title: *WalCoach, a chatbot that rememb
 
 | Time | On screen | Voiceover / caption |
 |---|---|---|
-| 0:00–0:10 | Home page, slow scroll across the seven mentors | "WalCoach is a coaching companion with seven mentors that share one memory of you. No account, no wallet, and that memory is not in a database of mine. It is on Walrus." |
+| 0:00–0:10 | Home page, slow scroll across the seven mentors | "WalCoach is a coaching companion with seven mentors that share one memory of you. No sign-up, no wallet, and that memory is not in a database of mine. It is in a Walrus Memory account that belongs to you." |
 | 0:10–0:17 | Click **Music**. Chat opens with an empty conversation, but the left panel already lists 9 facts | "New conversation, nothing on screen. The memory lives on Walrus." |
 | 0:17–0:32 | Type **"qual a próxima coisa que eu devia treinar?"** and send | "I do not say what I am learning, or at what level." |
 | 0:32–0:44 | Reply names the guitar, the G to C transition, the open strings. Hover the **"Memories used in this reply"** chips | "It answers from what it learned days ago, and shows exactly which memories it used." |
 | 0:44–0:54 | Type **"me mostra o acorde de Ré"**. The reply comes back **in tab format**, unprompted | "It also remembered how I like to receive chords: always in tab." |
 | 0:54–1:06 | Left panel, click the **↗** on *"ED prefers that guitar chords are always displayed in tab format"* → Walruscan opens on that blob | "That preference is not a row in my database. It is an encrypted blob on Walrus mainnet, and anyone can check it." |
 | 1:06–1:18 | Private window, paste **ED's memory key**, the same 9 facts load | "Same key, different browser. The memory follows the person, not the device." |
-| 1:18–1:26 | Switch to the **second memory key**: a completely different panel and namespace | "Another person, another namespace. Neither can see the other's memories." |
+| 1:18–1:26 | Switch to the **second memory key**: a different panel, and a different account id in the "You" dialog | "Another person, another account on Sui. Neither can see the other's memories." |
 | 1:26–1:36 | Back to ED, turn the **Memory** switch off, send the same question again | "Same question, memory off." → generic answer, no guitar, no tab |
 | 1:36–1:46 | Memory back on, click the **Study** mentor: the handover line appears with its badge, then scroll to **Your week** | "Switch mentor and the new one already knows, connecting the guitar practice to the English routine." |
 | 1:46–1:50 | End card | Open-weight Qwen 3.8 27B · memory on Walrus mainnet · `walcoach.vercel.app` · `github.com/EdCryptoFi/walcoach` |
@@ -46,12 +46,22 @@ Upload unlisted to YouTube, 1080p, 16:9. Title: *WalCoach, a chatbot that rememb
 | 0:44–0:54 | The strongest proof: a preference honoured without being reminded |
 | 0:54 | Memory stored on **Walrus mainnet**, verifiable on chain |
 | 1:06 | Across **devices**, portable memory |
-| 1:18 | Across **users**, namespace isolation |
+| 1:18 | Across **users**, isolation is a separate on-chain account, not just a string |
 | 1:26 | The **before/after** the rules require, live, in one click |
 | 1:46 | The model, for Beyond the Big Two |
 
 If it has to be shorter, cut the handover and Your week: they appear in the article screenshots.
 Never cut the tab-format moment, the explorer click, the cross-device shot or memory off.
+
+## One thing to check before recording
+
+ED's key is a **legacy** `web-…` key, created before per-user accounts existed, so ED still sits on
+the shared project account and the panel will say "Walrus Memory namespace", not "Your Walrus Memory
+account". The ownership line and the account link only appear for keys created after 2026-09-23.
+
+So either record the isolation shot at 1:18 with **two fresh keys** (each gets its own account on
+Sui, which is the stronger story), or keep ED for the memory shots and use a fresh key only for the
+ownership moment, saying plainly that ED predates the change.
 
 ## Practical notes
 
@@ -67,14 +77,14 @@ Never cut the tab-format moment, the explorer click, the cross-device shot or me
 ## Captions, if you record without voice
 
 1. WalCoach: seven mentors, one memory of you.
-2. No account, no wallet. The memory lives on Walrus, not in my database.
+2. No sign-up, no wallet. The memory lives in your own Walrus account, not in my database.
 3. New conversation. Nothing on screen.
 4. I never say what I am learning.
 5. It answers from memories stored days ago, and shows which ones it used.
 6. It even remembered I want chords in tab format.
 7. That memory is an encrypted blob on Walrus mainnet. Here it is in the explorer.
 8. Same key, different browser. Memory follows the person.
-9. Another person, another namespace. Neither sees the other.
+9. Another person, another account on Sui. Neither sees the other.
 10. Same question, memory off.
 11. Different mentor, same memory: guitar practice meets the English routine.
 12. Open-weight Qwen 3.8 27B. Memory on Walrus mainnet. No database.

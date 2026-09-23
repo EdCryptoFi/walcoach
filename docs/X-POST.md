@@ -10,7 +10,7 @@ this reply" chips, 2) the memory panel with the explorer link, 3) the eval table
 
 Most chatbots forget you the second you close the tab.
 
-I built WalCoach: an AI coach with 7 mentors that share one memory of you, stored as encrypted blobs on Walrus. No account, no wallet, no database of mine.
+I built WalCoach: an AI coach with 7 mentors that share one memory of you, stored as encrypted blobs on Walrus. No sign-up, no wallet, no database of mine.
 
 Without memory it answered 0/9 recall probes. With @WalrusProtocol memory: 6/9.
 
@@ -19,11 +19,11 @@ walcoach.vercel.app
 
 ---
 
-## Thread (optional, 4 replies)
+## Thread (optional, 5 replies)
 
 **1/**
 How it works, per message:
-· recall your namespace (message query + profile query)
+· recall your own Walrus Memory account (message query + profile query)
 · generate with those facts in the prompt
 · extract new facts, tag them by life area, write one SEAL-encrypted blob each to Walrus mainnet
 
@@ -41,6 +41,9 @@ What broke, honestly:
 All 8 friction points are in the repo.
 
 **4/**
+The Walrus team pointed out every memory sat under one account, mine. So now each user gets their **own** Walrus Memory account, created by a sponsored transaction their browser signs. They still never see a wallet, I pay the 0.005 SUI, and they can revoke my access.
+
+**5/**
 Biggest bug was mine: the coach stored facts about you but ignored its own advice, so "what did you tell me to cook?" came back blank. Now it stores its suggestions too.
 
 Code (MIT): github.com/EdCryptoFi/walcoach

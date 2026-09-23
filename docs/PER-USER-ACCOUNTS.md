@@ -92,10 +92,10 @@ including the failed attempts while getting the SDK call right: 0.0168 SUI for f
 
 | Step | What | Needs |
 |---|---|---|
-| 1 | Prototype with one test user, end to end | treasury key + ~0.05 SUI |
-| 2 | If both unknowns clear: new users get their own account; existing users keep working | code |
+| 1 | ✓ Prototype with one test user, end to end | treasury key + ~0.05 SUI |
+| 2 | ✓ **Done, live.** New users get their own account; existing users keep working | code |
 | 3 | Optional migration for existing users: new account, re-write their facts into it | gas per user |
-| 4 | Article and reply to the Walrus team, with the on-chain evidence | writing |
+| 4 | ✓ Article section and reply drafted, see `docs/WALRUS-REPLY.md` | writing |
 
 If step 1 fails on either unknown, the fallback is the dedicated app account plus "bring your own
 account", and this document becomes the honest account of what was tried.
@@ -105,3 +105,20 @@ account", and this document becomes the honest account of what was tried.
 A **sponsor wallet**, separate from the prize wallet, with about 1 SUI in it, and its private key
 (bech32, `suiprivkey1…`) in `.env` as `SUI_SPONSOR_KEY`. That key signs only gas payments for
 account creation. It never touches memories.
+
+## Shipped, 2026-09-23
+
+Live on https://walcoach.vercel.app. First account created by a real browser, not a script:
+
+| | |
+|---|---|
+| account | `0xd91cdff1d79e258a92df9ae9a7b57a20e5c6fac683f033d6db48a85746cb8734` |
+| owner | `0x713a002522062fba672ab978386a9a5a19150d28ede30bcd503245f837b848a4` |
+| delegate keys | 1, labelled `WalCoach`, public key `813aa47d…b7fe` |
+| blobs | 2 facts written and recalled, explorer links live in the panel |
+
+Sponsor wallet after the prototypes and the first real account: **1.3704 SUI** of 1.4, so about
+0.0296 SUI spent and roughly 280 users of headroom. Below 0.05 SUI the app pauses creation and falls
+back to the shared account instead of failing.
+
+Still open: migration for the users created before this change, who remain on the shared account.

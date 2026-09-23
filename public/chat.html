@@ -114,7 +114,7 @@
           <div class="text-xs text-on-surface-variant mt-2" id="coverage">Areas light up as the coach learns about them.</div>
           <div class="glass-hi rounded-2xl p-3 mt-4 flex items-start gap-3 text-xs">
             <span class="material-symbols-outlined text-primary">hub</span>
-            <div class="min-w-0"><b>Walrus Memory namespace</b><div class="text-on-surface-variant truncate" id="nsLine">connecting…</div></div>
+            <div class="min-w-0"><b id="nsLabel">Walrus Memory</b><div class="text-on-surface-variant truncate" id="nsLine">connecting…</div></div>
             <span class="material-symbols-outlined text-primary ml-auto">enhanced_encryption</span>
           </div>
         </div>
@@ -133,7 +133,7 @@
             <h2 class="font-display font-semibold inline-flex items-center gap-2"><span class="material-symbols-outlined text-primary">psychology</span> Durable facts in memory</h2>
             <span class="chip" id="factCount">0 facts</span>
           </div>
-          <p class="text-xs text-on-surface-variant mt-1">These facts live only in your encrypted namespace on Walrus and feed every reply.</p>
+          <p class="text-xs text-on-surface-variant mt-1">Each fact is an encrypted blob on Walrus, and every one of them feeds your replies.</p>
           <div class="flex flex-col gap-2 mt-3 overflow-y-auto max-h-[40vh]" id="all"><div class="text-sm text-on-surface-variant">Loads after your first message.</div></div>
           <div class="grid grid-cols-2 gap-2 mt-3 text-xs">
             <button class="btn-glass !py-2 !px-3 text-xs" id="exportBtn" type="button"><span class="material-symbols-outlined text-[16px]">download</span> Export .json</button>
@@ -190,7 +190,7 @@
     </div>
     <div class="rounded-2xl p-4 mt-5 bg-primary-fixed/50 border border-primary-container/30 flex gap-3">
       <span class="material-symbols-outlined text-primary">verified_user</span>
-      <div class="text-sm"><b>Your memory key is active in this browser.</b><div class="text-on-surface-variant text-xs mt-1">It is the only thing that points to your namespace. Anyone with it is you, keep it private. Talking as <b class="text-on-surface" id="whoName">…</b>.</div></div>
+      <div class="text-sm"><b>Your memory key is active in this browser.</b><div class="text-on-surface-variant text-xs mt-1">It is the only thing that points to your memories. Anyone with it is you, keep it private. Talking as <b class="text-on-surface" id="whoName">…</b>.</div></div>
     </div>
     <div class="text-[11px] font-bold tracking-wider text-on-surface-variant mt-5">YOUR MEMORY KEY</div>
     <div class="flex items-center gap-2 mt-2 glass rounded-2xl p-3"><code class="flex-1 font-mono text-sm break-all" id="keyText">…</code><button class="btn-glass !py-2 !px-3 text-xs flex-none" id="copyKey" type="button"><span class="material-symbols-outlined text-[16px]">content_copy</span> Copy</button></div>
@@ -547,8 +547,9 @@
       lastMemories = data.memories || []; ABOUT.namespace = data.namespace;
       renderFacts(lastMemories);
       ABOUT.owned = Boolean(data.owned); ABOUT.userAccount = data.accountId;
+      $("nsLabel").textContent = data.owned ? "Your Walrus Memory account" : "Walrus Memory namespace";
       $("nsLine").textContent = data.owned
-        ? `your own account · ${lastMemories.length} encrypted blobs`
+        ? `owned by your memory key · ${lastMemories.length} encrypted blobs`
         : `${data.namespace} · ${lastMemories.length} encrypted blobs`;
       $("nsMini").innerHTML = `<span class="material-symbols-outlined text-[16px]">database</span> ${data.owned ? (data.accountId || "").slice(0, 10) + "…" : data.namespace}`;
       $("sessionSub").textContent = `Long-term memory loaded · ${lastMemories.length} facts on Walrus ${ABOUT.network || ""}`;

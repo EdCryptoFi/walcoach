@@ -30,8 +30,11 @@ Every message goes through three steps ([src/chat.ts](src/chat.ts)):
 Short-term context (last 12 turns) lives in RAM. Everything long-term lives on Walrus,
 so restarting the bot, switching devices, or coming back a week later changes nothing.
 
-Namespaces are the isolation boundary: user A's recall can never surface user B's
-memories, even though both are written by the same delegate key.
+Each user owns their own Walrus Memory account on Sui, created for them by a sponsored
+transaction, so isolation is an on-chain boundary and not just a namespace string. The
+server holds one delegate key, authorised separately on every account, which the user can
+revoke. Users created before this change stay on the shared project account and keep
+working, isolated by namespace ([src/memory.ts](src/memory.ts) `identityFor`).
 
 ## The web UI
 
@@ -65,12 +68,15 @@ it costs no database — the badges are computed from the user's own memories.
 
 [public/index.html](public/index.html) is a single-page chat served by [src/web.ts](src/web.ts).
 Identity is deliberately Web2-flavoured: no wallet, no account. On first visit you type a
-name; the browser generates a **memory key** (`web-xxxx-xxxx-xxxx-xxxx`), keeps it in `localStorage`, and
-that key becomes the user's memory namespace on Walrus. The key is shown in the side panel
+name; the browser generates a **memory key** (`wal_…`, an Ed25519 private key), keeps it in
+`localStorage`, and uses it to open a Walrus Memory account **owned by that key**, paid for
+by the project treasury through a sponsored transaction. The key never leaves the browser:
+requests carry the account id instead. The key is shown in the side panel
 with a Copy button; pasting it on another device ("I have a memory key") restores the same
 memories there. Right after the first start a one-time card asks the user to save the key
 (notes app, email to self, or Walnotes for Web3 users). Under the hood every memory is still
-an encrypted blob on Walrus with on-chain ownership — the user just never sees a wallet.
+an encrypted blob on Walrus, in an account the user owns on chain, and the user never sees
+a wallet.
 
 The side panel is the point of the UI: it shows **which memories were recalled for the last
 reply** (with their cosine distance) and **everything stored for this user on Walrus**.
@@ -170,11 +176,15 @@ Config: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (generate with
 
 ## Security notes
 
-- The only server secret is the Walrus Memory delegate key. It can read/write every user's
-  namespace, so it lives in env vars only, never in the repo. Rotate it at memory.walrus.xyz
-  if it leaks.
-- A user's memory key (`web-<uuid>`) *is* their identity — unguessable, but anyone holding
-  it is that user. It is sent in POST bodies only (never URLs) so it stays out of logs.
+- Two server secrets. The Walrus Memory **delegate key** can read/write in every account
+  that authorised it, and the **sponsor key** pays gas for account creation and nothing
+  else. Both live in env vars only, never in the repo.
+- A user's memory key (`wal_…`) is an Ed25519 private key that owns their account. It stays
+  in the browser, signs the setup transactions locally, and is never sent to the server;
+  requests carry the account id, which is public. Legacy `web-<uuid>` keys are still
+  accepted and are sent in POST bodies only (never URLs) so they stay out of logs.
+- Account creation is rate limited per IP and globally, and pauses automatically if the
+  sponsor wallet drops below 0.05 SUI, falling back to the shared account.
 - Throttles per user (10/min), per IP (30/min) and per instance (200/min); message length
   caps; strict CSP and standard security headers; memory texts are not logged in production.
 
@@ -209,6 +219,8 @@ Fill in `.env`:
 | `TELEGRAM_BOT_TOKEN` | optional — Telegram → [@BotFather](https://t.me/BotFather) → `/newbot` |
 | `GROQ_API_KEY` | https://console.groq.com (free tier) |
 | `MEMWAL_PRIVATE_KEY`, `MEMWAL_ACCOUNT_ID` | https://memory.walrus.xyz → create account → delegate key |
+| `SUI_SPONSOR_KEY` | a dedicated Sui wallet (bech32 `suiprivkey1…`) holding ~1 SUI, pays gas for user accounts, about 0.005 SUI each |
+| `MEMWAL_PACKAGE_ID`, `MEMWAL_REGISTRY_ID` | the Walrus Memory package and its shared `AccountRegistry` on mainnet |
 | `MEMWAL_SERVER_URL` | `https://relayer.memory.walrus.xyz` (mainnet) or `https://relayer-staging.memory.walrus.xyz` (testnet) |
 
 Verify credentials with a real write + recall round-trip:
