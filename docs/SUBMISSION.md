@@ -1,7 +1,10 @@
 # Submission checklist — Walrus Session 8: Chatbots That Remember
 
+Official rules (binding): https://thewalrussessions.wal.app/chatbots/index.html
 Hackathon page: https://www.deepsurge.xyz/hackathons/c0141a4a-21be-4009-bc63-7c168608c849
-Deadline: **October 9, 2026**
+Deadline: **October 9, 2026, 14:00 UTC** · Results: October 16 · Prizes paid in **WAL**
+
+See [RULES-GAP.md](RULES-GAP.md) for the official requirements and what is still missing.
 
 Fill in the `→` lines once the build is final. Nothing here is submitted yet.
 
@@ -24,7 +27,9 @@ Fill in the `→` lines once the build is final. Nothing here is submitted yet.
 | Project Name | → Walrus Coach |
 | Description (rich text) | → 2–3 paragraphs: what it is, who it's for, how Walrus Memory is used (recall → generate → learn, per-user namespaces, tagged facts, daily nudges, outbox when the relayer is down), which model (Qwen 3.8 27B via Groq — not Anthropic/OpenAI). Link to the article. |
 | Track | → `[Bugbounty 5x$100], [Best article 3x$100], [Beyond the Big Two 2x$150], [Promo Prize 5x$100]` (the only track listed; main prize is judged on all submissions) |
-| Deployment network (`0x...`) | → Walrus Memory account object id on **Sui mainnet**: `MEMWAL_ACCOUNT_ID` from `.env` (the MemWalAccount object). Explorer link: https://suiscan.xyz/mainnet/object/<MEMWAL_ACCOUNT_ID> |
+| Deployment network (`0x...`) | ✓ `0xf059b5c5b2429903359263c84c78190f6ac70063182d3b44eccb91e31bff7f3d` (Walrus Memory account / agent id, Sui mainnet) |
+| Agent ID + blob count (proof, ≥10 blobs required) | ✓ agent id above; count with `npm run blobs` |
+| Dedicated wallet address created for Sessions | → **create a fresh Sui wallet that can receive WAL** |
 | Public projects page | → yes |
 | Team | → Ed CryptoFi (@edcriptofi) |
 | **Project Repo\*** (GitHub) | → https://github.com/<user>/walrus-coach — **must be created and pushed** (public, MIT, README has setup) |
