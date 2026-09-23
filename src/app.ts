@@ -13,12 +13,12 @@ import { AREAS, STARTERS } from "./areas.js";
 import { chat } from "./chat.js";
 import { config } from "./config.js";
 import type { Turn } from "./llm.js";
-import { identityFor, listMemories, memwal, rememberExplicit } from "./memory.js";
+import { identityFor, listMemories, memwal, migrateMemories, rememberExplicit } from "./memory.js";
 import { stats } from "./stats.js";
 import { hashUserId, nudgeEveryone, pushEnabled, subscribe } from "./push.js";
 import { log } from "./log.js";
 import { handover, weekSummary } from "./insights.js";
-import { accountFromDigest, accountOfOwner, accountsEnabled, execute, guardSponsor, isAccountId, prepareCreate, prepareDelegate } from "./accounts.js";
+import { accountFromDigest, accountOfOwner, accountsEnabled, execute, guardSponsor, hasDelegate, isAccountId, prepareCreate, prepareDelegate } from "./accounts.js";
 
 // Web user ids are strings; the pipeline keys everything by number, so hash them.
 export const numericId = hashUserId;
@@ -227,6 +227,27 @@ export function createApp() {
     }
   });
 
+  // Moves a legacy user (shared account, isolated by namespace) into the account
+  // their browser just created. Rewrites the facts; the old blobs stay put.
+  app.post("/api/migrate", async (c) => {
+    if (!accountsEnabled) return c.json({ error: "per-user accounts are not configured" }, 503);
+    const { userId, accountId } = (await c.req.json().catch(() => ({}))) as { userId?: string; accountId?: string };
+    if (!userId || !VALID_ID.test(userId) || isAccountId(userId)) return c.json({ error: "invalid userId" }, 400);
+    if (!accountId || !isAccountId(accountId)) return c.json({ error: "invalid accountId" }, 400);
+    const wait = throttled(c, userId);
+    if (wait) return c.json({ error: wait }, 429);
+    if (!take(`migrate:${userId}`, 2)) return c.json({ error: "Migration already running, give it a minute." }, 429);
+    try {
+      const from = identityFor(userId, numericId(userId));
+      const to = identityFor(accountId, numericId(accountId));
+      const result = await migrateMemories(from, to);
+      return c.json(result);
+    } catch (err) {
+      log.error("migrate.failed", err, { user: numericId(userId) });
+      return c.json({ error: "Could not move your memories right now. Your old key still works, nothing was lost.", detail: (err as Error).message.slice(0, 200) }, 503);
+    }
+  });
+
   // ---- per-user Walrus Memory accounts ----
   // The browser owns an Ed25519 key and signs; the project pays gas. Two steps:
   // create the account (owned by the user), then authorise WalCoach as a delegate.
@@ -249,6 +270,16 @@ export function createApp() {
       log.error("account.prepare.failed", err, { step });
       return c.json({ error: (err as Error).message.slice(0, 160) }, 503);
     }
+  });
+
+  // Does this account already carry the delegate key we derive for it? Accounts
+  // made before per-account keys do not, and the browser fixes that on load.
+  app.post("/api/account/status", async (c) => {
+    if (!accountsEnabled) return c.json({ enabled: false, delegated: false });
+    const { accountId } = (await c.req.json().catch(() => ({}))) as { accountId?: string };
+    if (!accountId || !isAccountId(accountId)) return c.json({ error: "invalid accountId" }, 400);
+    try { return c.json({ enabled: true, delegated: await hasDelegate(accountId) }); }
+    catch (err) { log.error("account.status.failed", err); return c.json({ enabled: true, delegated: true }); }
   });
 
   app.post("/api/account/lookup", async (c) => {

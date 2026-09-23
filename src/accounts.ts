@@ -10,6 +10,7 @@
  * Flow: prepare(create) -> browser signs -> execute(create) -> prepare(delegate)
  *       -> browser signs -> execute(delegate).
  */
+import { createHmac } from "node:crypto";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { SuiGrpcClient } from "@mysten/sui/grpc";
@@ -21,7 +22,7 @@ const GRAPHQL = "https://graphql.mainnet.sui.io/graphql";
 /** Stop creating accounts if the sponsor drops below this, so we never strand a half-made user. */
 const MIN_SPONSOR_BALANCE = 0.05;
 
-export const accountsEnabled = Boolean(config.sponsorKey && config.memwalPackageId && config.memwalRegistryId);
+export const accountsEnabled = Boolean(config.sponsorKey && config.memwalPackageId && config.memwalRegistryId && config.delegateSeed);
 
 const client = new SuiGrpcClient({ network: "mainnet", baseUrl: "https://fullnode.mainnet.sui.io" });
 const sponsor = () => Ed25519Keypair.fromSecretKey(config.sponsorKey);
@@ -51,9 +52,27 @@ export function prepareCreate(address: string) {
   );
 }
 
+/**
+ * The delegate key WalCoach uses inside one user's account.
+ *
+ * It has to be unique per account: the relayer resolves which account a request
+ * belongs to from the delegate key alone and ignores the account id we send, so
+ * one key registered on many accounts puts all of them in a single pool. The key
+ * is derived from a server seed instead of stored, so there is still no database.
+ */
+export function delegateFor(accountId: string): Ed25519Keypair {
+  if (!config.delegateSeed) throw new Error("DELEGATE_KEY_SEED is not configured");
+  const seed = createHmac("sha256", config.delegateSeed).update(`memwal-delegate:${accountId.toLowerCase()}`).digest();
+  return Ed25519Keypair.fromSecretKey(Uint8Array.from(seed));
+}
+
+/** The same key as a string the MemWal SDK accepts. */
+export const delegateSecretFor = (accountId: string) => delegateFor(accountId).getSecretKey();
+export const delegatePublicKeyFor = (accountId: string) => Buffer.from(delegateFor(accountId).getPublicKey().toRawBytes()).toString("hex");
+
 export function prepareDelegate(address: string, accountId: string, label = "WalCoach") {
   if (!isAddress(address) || !isAccountId(accountId)) throw new Error("invalid address or account");
-  const pk = Array.from(Buffer.from(config.memwalAgentPublicKey, "hex"));
+  const pk = Array.from(delegateFor(accountId).getPublicKey().toRawBytes());
   return build(address, (tx) =>
     tx.moveCall({
       target: `${config.memwalPackageId}::account::add_delegate_key`,
@@ -110,4 +129,22 @@ export async function accountOfOwner(address: string): Promise<string | null> {
   }).then((x) => x.json() as Promise<{ data?: { address?: { objects: { nodes: Array<{ address: string; contents?: { type?: { repr?: string } } }> } } } }>);
   const found = (r.data?.address?.objects.nodes ?? []).find((n) => (n.contents?.type?.repr ?? "").includes("::account::MemWalAccount"));
   return found?.address ?? null;
+}
+
+/**
+ * Whether WalCoach's delegate key for this account is already registered on it.
+ * Accounts created before per-account keys carry the old shared key instead, so
+ * the browser repairs them with one more sponsored `add_delegate_key`.
+ */
+export async function hasDelegate(accountId: string): Promise<boolean> {
+  if (!isAccountId(accountId)) throw new Error("invalid account");
+  const want = Buffer.from(delegateFor(accountId).getPublicKey().toRawBytes()).toString("base64");
+  const r = await fetch(GRAPHQL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ query: `{ object(address: "${accountId}") { asMoveObject { contents { json } } } }` }),
+    signal: AbortSignal.timeout(15_000),
+  }).then((x) => x.json() as Promise<{ data?: { object?: { asMoveObject?: { contents?: { json?: { delegate_keys?: Array<{ public_key?: string }> } } } } } }>);
+  const keys = r.data?.object?.asMoveObject?.contents?.json?.delegate_keys ?? [];
+  return keys.some((k) => k.public_key === want);
 }

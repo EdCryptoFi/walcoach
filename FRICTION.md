@@ -76,3 +76,25 @@ candidate GitHub issue at https://github.com/MystenLabs/MemWal/issues.
   `seal encrypt failed … Too Many Requests` (#2) rather than as a 429 with `retry_after`.
 - Requests: document the weights, add `X-RateLimit-*` headers, and let integrators register
   a key with a higher tier for multi-user backends.
+
+## 9. `accountId` is accepted and signed, but the relayer routes by delegate key
+
+- `MemWal.create({ key, accountId })` takes an account id, signs it into every request
+  (`${timestamp}.${method}.${path}.${bodySha}.${nonce}.${accountId}`) and sends it as
+  `x-account-id`. The relayer nevertheless resolves the account from the **delegate key**,
+  by on-chain lookup in `MemWalAccount.delegate_keys`, and ignores the id.
+- Measured: one delegate key registered on four accounts, recalling the same namespace with
+  four different `accountId` values, returns the identical result set. **An account id that
+  does not exist at all returns the same data**, which is the clearest proof that the field is
+  neither routing nor authorising.
+- Impact: we shipped per-user accounts believing one server key could address many accounts.
+  Every account owner read and wrote one shared pool while the UI said the memories were in
+  their own account. Caught within hours, and only our own test accounts existed, but the
+  same mistake in a bigger deployment is a cross-user data leak.
+- Fix on our side: one delegate key per account, derived from a server seed with
+  `HMAC-SHA256(seed, accountId)` so nothing has to be stored, registered on that one account.
+  Isolation then holds, and as a bonus the per-delegate-key rate limit in #8 becomes per user.
+- Requests: return 400 when the signed `accountId` is not the account the key resolves to (or
+  when it does not exist), document in the SDK types that the delegate key selects the account,
+  and expose a way to list the accounts a key is registered on.
+- Full write-up with the measurements: `docs/RELAYER-ACCOUNT-SCOPING.md`.

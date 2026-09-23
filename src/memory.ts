@@ -11,7 +11,7 @@
  * ~1 recall per message, one bulk write per exchange, no extra dedupe calls.
  */
 import { MemWal } from "@mysten-incubation/memwal";
-import { isAccountId } from "./accounts.js";
+import { delegateSecretFor, isAccountId } from "./accounts.js";
 import { config } from "./config.js";
 import { extractFacts } from "./extract.js";
 import { stats } from "./stats.js";
@@ -40,7 +40,9 @@ function clientFor(identity: Identity): MemWal {
   if (identity.mode === "shared") return memwal;
   let c = clients.get(identity.accountId);
   if (!c) {
-    c = MemWal.create({ key: config.memwalKey, accountId: identity.accountId, serverUrl: config.memwalServerUrl, namespace: config.namespacePrefix });
+    // The key, not the account id, is what the relayer scopes by, so each account
+    // gets its own derived delegate key (see accounts.ts `delegateFor`).
+    c = MemWal.create({ key: delegateSecretFor(identity.accountId), accountId: identity.accountId, serverUrl: config.memwalServerUrl, namespace: identity.namespace });
     clients.set(identity.accountId, c);
   }
   return c;
@@ -48,9 +50,14 @@ function clientFor(identity: Identity): MemWal {
 
 /** Turns whatever the browser sent into an identity: an account id, or a legacy memory key. */
 export function identityFor(userKey: string, numericId: number): Identity {
+  // Every user gets their own namespace, including account owners. The relayer
+  // resolves the account from the *delegate key*, not from the accountId we
+  // send, so one server key cannot address many accounts: without a per-user
+  // namespace, every account owner would read the same pool. See docs/RELAYER-ACCOUNT-SCOPING.md.
+  const namespace = `${config.namespacePrefix}-${numericId}`;
   return isAccountId(userKey)
-    ? { mode: "own", accountId: userKey, namespace: config.namespacePrefix, id: numericId }
-    : { mode: "shared", accountId: config.memwalAccountId, namespace: `${config.namespacePrefix}-${numericId}`, id: numericId };
+    ? { mode: "own", accountId: userKey, namespace, id: numericId }
+    : { mode: "shared", accountId: config.memwalAccountId, namespace, id: numericId };
 }
 
 export function namespaceFor(userId: number | string): string {
@@ -258,4 +265,26 @@ export async function rememberExplicit(who: Identity, userName: string, fact: st
   console.log(`[remember] user=${who.id} blob=${result.blob_id}`);
   detail(`         + ${fact}`);
   return result;
+}
+
+/**
+ * Copies every fact a legacy user has in the shared project account into the
+ * account they now own. The blobs are rewritten, not moved: Walrus is
+ * append-only and the old ones stay where they are, unreadable without the old
+ * key. Writes are submitted without waiting, because indexing takes 5 to 30
+ * seconds per fact and the browser polls for them anyway.
+ */
+export async function migrateMemories(from: Identity, to: Identity, limit = 60) {
+  const facts = await listMemories(from, limit);
+  const texts = [...new Set(facts.map((m) => m.text.trim()).filter(Boolean))];
+  if (texts.length === 0) {
+    console.log(`[migrate] user=${from.id} nothing to move`);
+    return { found: 0, accepted: 0 };
+  }
+  const accepted = await withRetry("remember", () =>
+    clientFor(to).rememberBulk(texts.map((text) => ({ text, namespace: to.namespace }))),
+  );
+  profileCache.delete(cacheKey(to));
+  console.log(`[migrate] user=${from.id} -> ${to.accountId} submitted ${accepted.total}/${texts.length} facts`);
+  return { found: texts.length, accepted: accepted.total, facts: texts };
 }

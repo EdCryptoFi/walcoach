@@ -200,6 +200,11 @@
       <div class="flex items-center justify-between"><b>Key backup</b><span class="chip">Recommended</span></div>
       <p class="text-xs text-on-surface-variant mt-1">If you clear this browser or switch devices, you need this key to get your memories back. Keep it in your notes app, on paper, or in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a> (encrypted notes on Walrus).</p>
     </div>
+    <div class="glass rounded-2xl p-4 mt-3 text-sm" id="migrateSection" hidden>
+      <div class="flex items-center justify-between gap-3"><b>Claim your own account</b><span class="chip">New</span></div>
+      <p class="text-xs text-on-surface-variant mt-1" id="migrateText">Your key was created before per-user accounts existed, so your memories sit in the shared WalCoach account. Move them into a Walrus Memory account that belongs to you. We pay the network fee, you get a new memory key, and the old one keeps working until you throw it away.</p>
+      <button class="btn-glass !py-2 !px-3 text-xs mt-3" id="migrateBtn" type="button">Move my memories</button>
+    </div>
     <div class="glass rounded-2xl p-4 mt-3 text-sm" id="nudgeSection" hidden>
       <div class="flex items-center justify-between gap-3"><div><b>Daily nudge</b><div class="text-xs text-on-surface-variant" id="nudgeText">One short check-in a day, written from what it remembers about you.</div></div><button class="btn-glass !py-2 !px-3 text-xs flex-none" id="nudgeBtn" type="button">Turn on</button></div>
     </div>
@@ -224,6 +229,9 @@
   const KEY_RE = /^(web-[a-z0-9-]{8,64}|wal_[A-Za-z0-9_-]{80,100})$/i;
   const suikey = () => window.__suikey;
   const ready = new Promise((res) => (window.__suikey ? res() : window.addEventListener("suikey-ready", res, { once: true })));
+  // Whether the server can create accounts at all (sponsor configured and funded).
+  let ACCOUNTS_ON = true;
+  fetch("/api/account/config").then((r) => r.json()).then((d) => { ACCOUNTS_ON = Boolean(d.enabled); paintMigrate(); }).catch(() => {});
   // Legacy users keep their short key; new users get a real Sui key that owns their account.
   const newId = () => { const A = "abcdefghjkmnpqrstuvwxyz23456789"; const b = new Uint8Array(16); crypto.getRandomValues(b); const c = Array.from(b, (x) => A[x % A.length]); return "web-" + [0,4,8,12].map((i) => c.slice(i, i+4).join("")).join("-"); };
   /** What the user copies: the account id for legacy users, the wal_ key when they own an account. */
@@ -239,6 +247,7 @@
     const made = await api("/api/account/execute", { txBytes: create.txBytes, signature: await sign(create.txBytes), step: "create" });
     const del = await api("/api/account/prepare", { address, step: "delegate", accountId: made.accountId });
     await api("/api/account/execute", { txBytes: del.txBytes, signature: await sign(del.txBytes), step: "delegate" });
+    delegateDone(made.accountId);
     return made.accountId;
   }
 
@@ -299,7 +308,8 @@
   $("navKey").addEventListener("click", () => $("youDialog").showModal());
   $("panelBtn").addEventListener("click", () => $("leftCol").classList.add("open"));
   $("closeLeft").addEventListener("click", () => $("leftCol").classList.remove("open"));
-  $("copyKey").addEventListener("click", async () => { try { await navigator.clipboard.writeText(user.id); $("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Copied'; setTimeout(() => ($("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">content_copy</span> Copy'), 1500); } catch { prompt("Your memory key:", exportedKey(user)); } });
+  $("copyKey").addEventListener("click", async () => { try { await navigator.clipboard.writeText(exportedKey(user)); $("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Copied'; setTimeout(() => ($("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">content_copy</span> Copy'), 1500); } catch { prompt("Your memory key:", exportedKey(user)); } });
+  $("migrateBtn").addEventListener("click", () => void runMigration());
   $("switchBtn").addEventListener("click", () => { $("youDialog").close(); try { localStorage.removeItem("walrus-coach-key-saved"); localStorage.removeItem("walrus-coach-context"); } catch {} user = { id: null, name: "" }; history = []; messages.innerHTML = ""; contextId = null; askName(); });
   $("resetBtn").addEventListener("click", () => { $("youDialog").close(); history = []; histSave(); addBot("Short-term context cleared. I still remember the long-term stuff, say hi to see it in action.", { system: true }); renderStarters(); });
 
@@ -488,7 +498,7 @@
       <ul class="text-xs text-on-surface-variant mt-3 list-disc pl-5 space-y-1"><li>Paste it in your notes app, or write it on paper.</li><li>Web3 user? Keep it in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus.</li><li>You can always find it again under the <b>key icon</b> at the top right.</li></ul>
       <button class="btn-primary !py-2 !px-4 text-sm mt-3" id="cardDone" type="button">I've saved it</button></div>`;
     card.querySelector("#cardKey").textContent = exportedKey(user);
-    card.querySelector("#cardCopy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(user.id); card.querySelector("#cardCopy").textContent = "Copied"; } catch { prompt("Your memory key:", exportedKey(user)); } });
+    card.querySelector("#cardCopy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(exportedKey(user)); card.querySelector("#cardCopy").textContent = "Copied"; } catch { prompt("Your memory key:", exportedKey(user)); } });
     card.querySelector("#cardDone").addEventListener("click", () => { try { localStorage.setItem("walrus-coach-key-saved", "1"); } catch {} card.remove(); });
     const first = messages.querySelector(".msg"); if (first) first.after(card); else messages.append(card);
   }
@@ -512,6 +522,36 @@
   }
   let lastMemories = [];
   /** When the user owns the account, say so with a link to it. */
+  // Legacy users (a `web-` key on the shared account) are offered their own account.
+  function paintMigrate() {
+    const sec = $("migrateSection"); if (!sec) return;
+    sec.hidden = !(user && user.id && !user.sk && !ABOUT.owned && ACCOUNTS_ON);
+  }
+  async function runMigration() {
+    const btn = $("migrateBtn"), text = $("migrateText"), oldId = user.id, name = user.name;
+    btn.disabled = true; btn.textContent = "Creating your account…";
+    try {
+      await ready;
+      const secret = (await suikey().generateKey()).secret;
+      const accountId = await createOwnAccount(secret);
+      btn.textContent = "Moving your memories…";
+      const moved = await api("/api/migrate", { userId: oldId, accountId });
+      saveUser({ id: accountId, sk: secret, name });
+      histSave();
+      try { localStorage.removeItem("walrus-coach-key-saved"); } catch {}
+      text.innerHTML = `Done. ${moved.found} ${moved.found === 1 ? "memory is" : "memories are"} being written into <b>your own account</b>, which takes a minute to show up on the left. <b>Save the new memory key</b>, it is the only way back in.`;
+      btn.remove();
+      addBot(`Your memories are moving into an account that belongs to you. ${moved.found} ${moved.found === 1 ? "fact" : "facts"} are being rewritten, they will appear on the left shortly. Your memory key changed, so save the new one.`, { system: true });
+      showKeyCard();
+      setTimeout(loadAll, 20000);
+      loadAll();
+    } catch (e) {
+      console.warn("[migrate]", e.message);
+      btn.disabled = false; btn.textContent = "Try again";
+      text.textContent = "That did not work: " + e.message + " Nothing was lost, your current key still works.";
+    }
+  }
+
   function paintOwnership() {
     const line = $("aboutLine"); if (!line || !ABOUT.owned || !ABOUT.userAccount) return;
     line.innerHTML = `Your memories live in <b>your own Walrus Memory account</b>, <a class="text-secondary font-semibold underline" href="https://suiscan.xyz/mainnet/object/${ABOUT.userAccount}" target="_blank" rel="noopener noreferrer"><code>${ABOUT.userAccount.slice(0, 8)}…${ABOUT.userAccount.slice(-4)}</code></a> on Sui mainnet. Your memory key created it, and WalCoach is only a delegate on it, which you can revoke.`;
@@ -554,7 +594,7 @@
       $("nsMini").innerHTML = `<span class="material-symbols-outlined text-[16px]">database</span> ${data.owned ? (data.accountId || "").slice(0, 10) + "…" : data.namespace}`;
       $("sessionSub").textContent = `Long-term memory loaded · ${lastMemories.length} facts on Walrus ${ABOUT.network || ""}`;
       await outboxReconcile(lastMemories);
-      resolvePending(lastMemories); pendingPrune(lastMemories); paintOwnership();
+      resolvePending(lastMemories); pendingPrune(lastMemories); paintOwnership(); paintMigrate();
     } catch (e) { $("nsLine").textContent = "⚠ " + e.message; $("sessionSub").textContent = "Memory panel unavailable: " + e.message; setBanner(e.message); }
   }
 
@@ -598,6 +638,33 @@
     }
     loadAll(); pushInit(); renderStarters(); input.focus();
     setTimeout(() => weekLoad(false), 3000);
+    void ensureDelegate();
+  }
+
+  /**
+   * Accounts created before WalCoach used a key per account carry the old shared
+   * key, which would read the wrong pool. One more sponsored transaction fixes
+   * them, signed here, and the user sees nothing unless it fails.
+   */
+  const DELEGATE_OK = (id) => "walcoach-delegate-ok:" + id;
+  const delegateDone = (id) => { try { localStorage.setItem(DELEGATE_OK(id), "1"); } catch {} };
+  async function ensureDelegate() {
+    if (!user || !user.sk || !user.id || !/^0x/i.test(user.id)) return;
+    // Skip accounts this browser set up itself: the chain indexer lags a few
+    // seconds behind the transaction and we would pay for a duplicate key.
+    try { if (localStorage.getItem(DELEGATE_OK(user.id))) return; } catch {}
+    try {
+      const st = await api("/api/account/status", { accountId: user.id });
+      if (!st.enabled || st.delegated) { if (st.delegated) delegateDone(user.id); return; }
+      await ready;
+      const k = suikey();
+      const address = await k.addressOf(user.sk);
+      const del = await api("/api/account/prepare", { address, step: "delegate", accountId: user.id });
+      await api("/api/account/execute", { txBytes: del.txBytes, signature: await k.signTransaction(user.sk, del.txBytes), step: "delegate" });
+      delegateDone(user.id);
+      console.info("[account] delegate key repaired");
+      setTimeout(loadAll, 1500);
+    } catch (e) { console.warn("[account] delegate repair failed", e.message); }
   }
   Promise.all([
     fetch("/api/areas").then((r) => r.json()).catch(() => ({ areas: [] })),
