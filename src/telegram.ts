@@ -3,7 +3,7 @@ import { config } from "./config.js";
 import { log } from "./log.js";
 import { chat, resetHistory } from "./chat.js";
 import { generateReply } from "./llm.js";
-import { listMemories, memwal, recallForUser, rememberExplicit } from "./memory.js";
+import { identityFor, listMemories, memwal, recallForUser, rememberExplicit } from "./memory.js";
 import { stats } from "./stats.js";
 
 if (!config.telegramToken) {
@@ -22,7 +22,7 @@ function nameOf(ctx: { from?: { first_name?: string; username?: string } }): str
 bot.command("start", async (ctx) => {
   const userId = ctx.from!.id;
   const name = nameOf(ctx);
-  const known = memoryDisabled.has(userId) ? [] : (await recallForUser(userId, `who is ${name}, their goals and current focus`, 5)).memories;
+  const known = memoryDisabled.has(userId) ? [] : (await recallForUser(identityFor(String(userId), userId), `who is ${name}, their goals and current focus`, 5)).memories;
   if (known.length > 0) {
     const reply = await generateReply(name, known, [{ role: "user", content: "Hi, I'm back. Greet me briefly and pick up where we left off." }]);
     await ctx.reply(reply.text);
@@ -35,7 +35,7 @@ bot.command("start", async (ctx) => {
 
 bot.command("memories", async (ctx) => {
   const userId = ctx.from!.id;
-  const memories = await listMemories(userId);
+  const memories = await listMemories(identityFor(String(userId), userId));
   if (memories.length === 0) return ctx.reply("I don't have any memories about you yet. Let's talk!");
   const lines = memories.map((m, i) => `${i + 1}. ${m.text}`).join("\n");
   await ctx.reply(`🧠 What I remember about you (${memories.length}, stored on Walrus):\n\n${lines}`);
@@ -44,7 +44,7 @@ bot.command("memories", async (ctx) => {
 bot.command("remember", async (ctx) => {
   const fact = ctx.match?.trim();
   if (!fact) return ctx.reply("Usage: /remember I run every Tuesday and Thursday at 7am");
-  const result = await rememberExplicit(ctx.from!.id, nameOf(ctx), fact);
+  const result = await rememberExplicit(identityFor(String(ctx.from!.id), ctx.from!.id), nameOf(ctx), fact);
   await ctx.reply(`Got it, saved.\nblob: ${result.blob_id}`);
 });
 
@@ -90,7 +90,7 @@ bot.on("message:text", async (ctx) => {
 
   try {
     // recall → generate → learn (see src/chat.ts). Learning runs in the background.
-    const { reply, sources } = await chat(userId, name, text, useMemory);
+    const { reply, sources } = await chat(identityFor(String(userId), userId), name, text, useMemory);
     await ctx.reply(sources.length ? `${reply}\n\n${sources.map((s, i) => `[${i + 1}] ${s.url}`).join("\n")}` : reply);
   } catch (err) {
     log.error("telegram.chat.failed", err, { user: userId });

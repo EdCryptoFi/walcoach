@@ -11,17 +11,47 @@
  * ~1 recall per message, one bulk write per exchange, no extra dedupe calls.
  */
 import { MemWal } from "@mysten-incubation/memwal";
+import { isAccountId } from "./accounts.js";
 import { config } from "./config.js";
 import { extractFacts } from "./extract.js";
 import { stats } from "./stats.js";
 import { log } from "./log.js";
 
+/** The project account. Used for legacy users and for the push registry. */
 export const memwal = MemWal.create({
   key: config.memwalKey,
   accountId: config.memwalAccountId,
   serverUrl: config.memwalServerUrl,
   namespace: config.namespacePrefix,
 });
+
+/**
+ * Who we are writing for.
+ *
+ * `own`: the user has their own MemWalAccount (level 2). The blobs belong to them,
+ * WalCoach is only a delegate, and one namespace inside that account is enough.
+ * `shared`: legacy users created before per-user accounts. They live in the project
+ * account, isolated by namespace.
+ */
+export interface Identity { mode: "own" | "shared"; accountId: string; namespace: string; id: number }
+
+const clients = new Map<string, MemWal>();
+function clientFor(identity: Identity): MemWal {
+  if (identity.mode === "shared") return memwal;
+  let c = clients.get(identity.accountId);
+  if (!c) {
+    c = MemWal.create({ key: config.memwalKey, accountId: identity.accountId, serverUrl: config.memwalServerUrl, namespace: config.namespacePrefix });
+    clients.set(identity.accountId, c);
+  }
+  return c;
+}
+
+/** Turns whatever the browser sent into an identity: an account id, or a legacy memory key. */
+export function identityFor(userKey: string, numericId: number): Identity {
+  return isAccountId(userKey)
+    ? { mode: "own", accountId: userKey, namespace: config.namespacePrefix, id: numericId }
+    : { mode: "shared", accountId: config.memwalAccountId, namespace: `${config.namespacePrefix}-${numericId}`, id: numericId };
+}
 
 export function namespaceFor(userId: number | string): string {
   return `${config.namespacePrefix}-${userId}`;
@@ -89,14 +119,15 @@ function knownToHaveMemories(userId: number): boolean {
 
 // Per-user cache of the "core profile" recall so short messages like
 // "hi, I'm back" still surface goals/schedule without a second request each turn.
-const profileCache = new Map<number, { at: number; memories: Memory[] }>();
+const profileCache = new Map<string, { at: number; memories: Memory[] }>();
+const cacheKey = (who: Identity) => `${who.accountId}:${who.namespace}`;
 
-async function profileFor(userId: number): Promise<Memory[]> {
-  const cached = profileCache.get(userId);
+async function profileFor(who: Identity): Promise<Memory[]> {
+  const cached = profileCache.get(cacheKey(who));
   if (cached && Date.now() - cached.at < PROFILE_TTL_MS) return cached.memories;
-  const result = await withRetry("recall", () => memwal.recall({ query: PROFILE_QUERY, namespace: namespaceFor(userId), limit: 5 }), { tries: 2, maxWaitMs: 3000 });
+  const result = await withRetry("recall", () => clientFor(who).recall({ query: PROFILE_QUERY, namespace: who.namespace, limit: 5 }), { tries: 2, maxWaitMs: 3000 });
   const memories = result.results.map(toMemory);
-  profileCache.set(userId, { at: Date.now(), memories });
+  profileCache.set(cacheKey(who), { at: Date.now(), memories });
   return memories;
 }
 
@@ -105,18 +136,17 @@ async function profileFor(userId: number): Promise<Memory[]> {
  * the message, merged with the (cached) core profile. If the relayer is rate
  * limited we answer without memory rather than make the user wait.
  */
-export async function recallForUser(userId: number, query: string, limit = 8, attempt = 1): Promise<Recall> {
+export async function recallForUser(who: Identity, query: string, limit = 8, attempt = 1): Promise<Recall> {
   const started = Date.now();
-  const namespace = namespaceFor(userId);
   let byMessage: Memory[] = [];
   let profile: Memory[] = [];
   try {
     [byMessage, profile] = await Promise.all([
-      withRetry("recall", () => memwal.recall({ query, namespace, limit, maxDistance: RELEVANT }), { tries: 2, maxWaitMs: 3000 }).then((r) => r.results.map(toMemory)),
-      profileFor(userId),
+      withRetry("recall", () => clientFor(who).recall({ query, namespace: who.namespace, limit, maxDistance: RELEVANT }), { tries: 2, maxWaitMs: 3000 }).then((r) => r.results.map(toMemory)),
+      profileFor(who),
     ]);
   } catch (err) {
-    log.error("recall.unavailable", err, { user: userId });
+    log.error("recall.unavailable", err, { user: who.id });
     return { memories: [], available: false };
   }
 
@@ -125,29 +155,29 @@ export async function recallForUser(userId: number, query: string, limit = 8, at
   merged.sort((a, b) => a.distance - b.distance);
   const memories = merged.slice(0, limit);
 
-  if (memories.length === 0 && attempt < 2 && knownToHaveMemories(userId)) {
+  if (memories.length === 0 && attempt < 2 && knownToHaveMemories(who.id)) {
     // Observed: the relayer occasionally returns an empty result set (no error)
     // for a namespace that has memories. Retry once before answering blind.
-    log.warn("recall.empty_for_known_user", { user: userId, attempt });
-    profileCache.delete(userId);
+    log.warn("recall.empty_for_known_user", { user: who.id, attempt });
+    profileCache.delete(cacheKey(who));
     await sleep(1500);
-    return recallForUser(userId, query, limit, attempt + 1);
+    return recallForUser(who, query, limit, attempt + 1);
   }
 
-  console.log(`[recall] user=${userId} hits=${memories.length} (msg=${byMessage.length}, profile=${profile.length}) ${Date.now() - started}ms`);
+  console.log(`[recall] user=${who.id} mode=${who.mode} hits=${memories.length} (msg=${byMessage.length}, profile=${profile.length}) ${Date.now() - started}ms`);
   detail(`         q="${query.slice(0, 60)}"`);
   for (const m of memories) detail(`         ${m.distance.toFixed(3)}  ${m.text}`);
   return { memories, available: true };
 }
 
 /** Broad recall used by /memories, no relevance cutoff. */
-export async function listMemories(userId: number, limit = 25): Promise<Memory[]> {
+export async function listMemories(who: Identity, limit = 25): Promise<Memory[]> {
   for (let attempt = 1; attempt <= 2; attempt++) {
     const result = await withRetry("recall", () =>
-      memwal.recall({ query: "facts, preferences, goals, habits, struggles and personal details about the user", namespace: namespaceFor(userId), limit }),
+      clientFor(who).recall({ query: "facts, preferences, goals, habits, struggles and personal details about the user", namespace: who.namespace, limit }),
     );
-    if (result.results.length > 0 || !knownToHaveMemories(userId)) return result.results.map(toMemory);
-    log.warn("memories.empty_for_known_user", { user: userId, attempt });
+    if (result.results.length > 0 || !knownToHaveMemories(who.id)) return result.results.map(toMemory);
+    log.warn("memories.empty_for_known_user", { user: who.id, attempt });
     await sleep(1500);
   }
   return [];
@@ -176,35 +206,36 @@ export async function extractNewFacts(userName: string, userMessage: string, con
  * MEMORY_EXTRACTOR=llm (default): our model extracts, then `rememberBulkAndWait`.
  * MEMORY_EXTRACTOR=relayer: the relayer's `analyzeAndWait` does extraction + storage.
  */
-export async function learnFromExchange(userId: number, userName: string, userMessage: string, assistantReply: string, known: Memory[] = [], facts?: FactList) {
-  const namespace = namespaceFor(userId);
+export async function learnFromExchange(who: Identity, userName: string, userMessage: string, assistantReply: string, known: Memory[] = [], facts?: FactList) {
+  const namespace = who.namespace;
+  const client = clientFor(who);
   try {
     if (config.extractor === "relayer") {
       const text = `User (${userName}): ${userMessage}\nCoach: ${assistantReply}`;
-      const result = await withRetry("analyze", () => memwal.analyzeAndWait(text, namespace, { timeoutMs: 60_000, pollIntervalMs: 3000 }));
-      console.log(`[learn]  user=${userId} relayer stored ${result.succeeded}/${result.facts.length} facts`);
+      const result = await withRetry("analyze", () => client.analyzeAndWait(text, namespace, { timeoutMs: 60_000, pollIntervalMs: 3000 }));
+      console.log(`[learn]  user=${who.id} relayer stored ${result.succeeded}/${result.facts.length} facts`);
       for (const fact of result.facts) detail(`         + ${fact.text}`);
-      stats.recordFacts(userId, userName, result.facts.map((f) => f.text));
-      profileCache.delete(userId);
+      stats.recordFacts(who.id, userName, result.facts.map((f) => f.text));
+      profileCache.delete(cacheKey(who));
       return;
     }
 
     const toStore = facts ?? (await extractNewFacts(userName, userMessage, "", known, assistantReply));
     if (toStore.length === 0) {
-      console.log(`[learn]  user=${userId} no new facts`);
+      console.log(`[learn]  user=${who.id} no new facts`);
       return;
     }
 
     const result = await withRetry("remember", () =>
-      memwal.rememberBulkAndWait(toStore.map((text) => ({ text, namespace })), { timeoutMs: 90_000, pollIntervalMs: 3000 }),
+      client.rememberBulkAndWait(toStore.map((text) => ({ text, namespace })), { timeoutMs: 90_000, pollIntervalMs: 3000 }),
     );
     const stored = toStore.filter((_, i) => result.results[i]?.status === "done");
     result.results.forEach((r, i) => detail(`         ${r.status === "done" ? "+" : "!"} ${toStore[i]}  [${r.blob_id || r.error}]`));
-    console.log(`[learn]  user=${userId} stored ${stored.length}/${toStore.length} facts`);
-    stats.recordFacts(userId, userName, stored);
-    if (stored.length > 0) profileCache.delete(userId);
+    console.log(`[learn]  user=${who.id} mode=${who.mode} stored ${stored.length}/${toStore.length} facts`);
+    stats.recordFacts(who.id, userName, stored);
+    if (stored.length > 0) profileCache.delete(cacheKey(who));
   } catch (err) {
-    log.error("learn.failed", err, { user: userId });
+    log.error("learn.failed", err, { user: who.id });
   }
 }
 
@@ -213,17 +244,18 @@ export async function learnFromExchange(userId: number, userName: string, userMe
  * failed background write). Dedupes first, since a retried fact may have
  * landed after all.
  */
-export async function rememberExplicit(userId: number, userName: string, fact: string) {
-  const namespace = namespaceFor(userId);
-  const dup = await withRetry("recall", () => memwal.recall({ query: fact, namespace, limit: 1, maxDistance: 0.15 }), { tries: 2, maxWaitMs: 3000 });
+export async function rememberExplicit(who: Identity, userName: string, fact: string) {
+  const namespace = who.namespace;
+  const client = clientFor(who);
+  const dup = await withRetry("recall", () => client.recall({ query: fact, namespace, limit: 1, maxDistance: 0.15 }), { tries: 2, maxWaitMs: 3000 });
   if (dup.results[0]) {
-    console.log(`[remember] user=${userId} already stored (d=${dup.results[0].distance.toFixed(3)})`);
+    console.log(`[remember] user=${who.id} already stored (d=${dup.results[0].distance.toFixed(3)})`);
     return { blob_id: dup.results[0].blob_id, duplicate: true };
   }
-  const result = await withRetry("remember", () => memwal.rememberAndWait(fact, namespace, { timeoutMs: 60_000, pollIntervalMs: 3000 }));
-  stats.recordFacts(userId, userName, [fact]);
-  profileCache.delete(userId);
-  console.log(`[remember] user=${userId} blob=${result.blob_id}`);
+  const result = await withRetry("remember", () => client.rememberAndWait(fact, namespace, { timeoutMs: 60_000, pollIntervalMs: 3000 }));
+  stats.recordFacts(who.id, userName, [fact]);
+  profileCache.delete(cacheKey(who));
+  console.log(`[remember] user=${who.id} blob=${result.blob_id}`);
   detail(`         + ${fact}`);
   return result;
 }

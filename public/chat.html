@@ -211,6 +211,7 @@
 </dialog>
 
 <script src="/liquid.js" defer></script>
+<script type="module">import * as k from "/vendor/suikey.js"; window.__suikey = k; window.dispatchEvent(new Event("suikey-ready"));</script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -220,9 +221,26 @@
   // ---------- identity ----------
   let user = null;
   try { user = JSON.parse(localStorage.getItem("walrus-coach-user") || "null"); } catch {}
-  const KEY_RE = /^web-[a-z0-9-]{8,64}$/i;
+  const KEY_RE = /^(web-[a-z0-9-]{8,64}|wal_[A-Za-z0-9_-]{80,100})$/i;
+  const suikey = () => window.__suikey;
+  const ready = new Promise((res) => (window.__suikey ? res() : window.addEventListener("suikey-ready", res, { once: true })));
+  // Legacy users keep their short key; new users get a real Sui key that owns their account.
   const newId = () => { const A = "abcdefghjkmnpqrstuvwxyz23456789"; const b = new Uint8Array(16); crypto.getRandomValues(b); const c = Array.from(b, (x) => A[x % A.length]); return "web-" + [0,4,8,12].map((i) => c.slice(i, i+4).join("")).join("-"); };
-  function saveUser(u) { user = u; try { localStorage.setItem("walrus-coach-user", JSON.stringify(u)); } catch {} $("whoName").textContent = u.name; $("keyText").textContent = u.id; }
+  /** What the user copies: the account id for legacy users, the wal_ key when they own an account. */
+  const exportedKey = (u) => (u && u.sk && u.id ? suikey().encodeMemoryKey(u.sk, u.id) : (u ? u.id : ""));
+  function saveUser(u) { user = u; try { localStorage.setItem("walrus-coach-user", JSON.stringify(u)); } catch {} $("whoName").textContent = u.name; $("keyText").textContent = exportedKey(u) || "…"; }
+
+  /** Creates the user's own MemWalAccount: two sponsored transactions, signed here. */
+  async function createOwnAccount(secret) {
+    const k = suikey();
+    const address = await k.addressOf(secret);
+    const sign = (txBytes) => k.signTransaction(secret, txBytes);
+    const create = await api("/api/account/prepare", { address, step: "create" });
+    const made = await api("/api/account/execute", { txBytes: create.txBytes, signature: await sign(create.txBytes), step: "create" });
+    const del = await api("/api/account/prepare", { address, step: "delegate", accountId: made.accountId });
+    await api("/api/account/execute", { txBytes: del.txBytes, signature: await sign(del.txBytes), step: "delegate" });
+    return made.accountId;
+  }
 
   const dialog = $("nameDialog");
   let mode = "new";
@@ -232,15 +250,39 @@
     const name = $("nameInput").value.trim() || "friend";
     if (mode === "key") {
       const key = $("keyInput").value.trim();
-      if (!KEY_RE.test(key)) { ev.preventDefault(); $("formError").textContent = "That doesn't look like a memory key (it starts with web-)."; return; }
-      saveUser({ id: key, name }); try { localStorage.setItem("walrus-coach-key-saved", "1"); } catch {}
+      if (!KEY_RE.test(key)) { ev.preventDefault(); $("formError").textContent = "That doesn't look like a memory key."; return; }
+      if (/^wal_/i.test(key)) { const d = suikey().decodeMemoryKey(key); saveUser({ id: d.accountId, sk: d.secret, name }); }
+      else saveUser({ id: key, name });
+      try { localStorage.setItem("walrus-coach-key-saved", "1"); } catch {}
       messages.innerHTML = ""; addBot(`Welcome back, ${name}. Your memories are loading on the left, say hi and I'll pick up where we left off.`, { system: true });
     } else {
-      const fresh = !user?.id; saveUser({ id: user?.id || newId(), name });
-      if (fresh || !localStorage.getItem("walrus-coach-key-saved")) setTimeout(showKeyCard, 400);
+      void startNewUser(name);
+      return;
     }
     boot();
   });
+  async function startNewUser(name, existingSecret) {
+    saveUser({ id: null, sk: existingSecret || null, name });
+    boot();
+    const note = addBot("Setting up your own Walrus Memory account, a few seconds…", { system: true });
+    try {
+      await ready;
+      const secret = existingSecret || (await suikey().generateKey()).secret;
+      const accountId = await createOwnAccount(secret);
+      saveUser({ id: accountId, sk: secret, name });
+      note.remove();
+      addBot("Done. The account holding your memories belongs to you, and WalCoach is only a guest in it.", { system: true });
+    } catch (e) {
+      // Never block the product on account creation: fall back to the shared account.
+      console.warn("[account]", e.message);
+      note.remove();
+      saveUser({ id: newId(), sk: null, name });
+      addBot("I could not create your own account right now, so your memories go in the shared WalCoach account for the moment. Everything else works the same.", { system: true });
+    }
+    if (!localStorage.getItem("walrus-coach-key-saved")) setTimeout(showKeyCard, 400);
+    loadAll();
+  }
+
   function askName() { $("nameInput").value = ""; $("keyInput").value = ""; setMode("new"); dialog.showModal(); }
 
   // ---------- short-term history (browser side; API is stateless) ----------
@@ -257,7 +299,7 @@
   $("navKey").addEventListener("click", () => $("youDialog").showModal());
   $("panelBtn").addEventListener("click", () => $("leftCol").classList.add("open"));
   $("closeLeft").addEventListener("click", () => $("leftCol").classList.remove("open"));
-  $("copyKey").addEventListener("click", async () => { try { await navigator.clipboard.writeText(user.id); $("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Copied'; setTimeout(() => ($("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">content_copy</span> Copy'), 1500); } catch { prompt("Your memory key:", user.id); } });
+  $("copyKey").addEventListener("click", async () => { try { await navigator.clipboard.writeText(user.id); $("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">check</span> Copied'; setTimeout(() => ($("copyKey").innerHTML = '<span class="material-symbols-outlined text-[16px]">content_copy</span> Copy'), 1500); } catch { prompt("Your memory key:", exportedKey(user)); } });
   $("switchBtn").addEventListener("click", () => { $("youDialog").close(); try { localStorage.removeItem("walrus-coach-key-saved"); localStorage.removeItem("walrus-coach-context"); } catch {} user = { id: null, name: "" }; history = []; messages.innerHTML = ""; contextId = null; askName(); });
   $("resetBtn").addEventListener("click", () => { $("youDialog").close(); history = []; histSave(); addBot("Short-term context cleared. I still remember the long-term stuff, say hi to see it in action.", { system: true }); renderStarters(); });
 
@@ -347,6 +389,7 @@
     block("Next", "flag", w.next, "bg-white/70");
   }
   async function weekLoad(force) {
+    if (!user?.id) return;
     let cache = null; try { cache = JSON.parse(localStorage.getItem(WEEK_KEY) || "null"); } catch {}
     if (!force && cache && cache.userId === user.id && Date.now() - cache.at < 3600_000) { weekRender(cache.data); return; }
     $("weekBtn").disabled = true; $("weekHeadline").textContent = "Reading your memories…";
@@ -444,8 +487,8 @@
       <div class="flex items-center gap-2 mt-3 glass rounded-2xl p-2"><code class="flex-1 font-mono text-sm break-all px-2" id="cardKey"></code><button class="btn-glass !py-2 !px-3 text-xs" id="cardCopy" type="button">Copy</button></div>
       <ul class="text-xs text-on-surface-variant mt-3 list-disc pl-5 space-y-1"><li>Paste it in your notes app, or write it on paper.</li><li>Web3 user? Keep it in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus.</li><li>You can always find it again under the <b>key icon</b> at the top right.</li></ul>
       <button class="btn-primary !py-2 !px-4 text-sm mt-3" id="cardDone" type="button">I've saved it</button></div>`;
-    card.querySelector("#cardKey").textContent = user.id;
-    card.querySelector("#cardCopy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(user.id); card.querySelector("#cardCopy").textContent = "Copied"; } catch { prompt("Your memory key:", user.id); } });
+    card.querySelector("#cardKey").textContent = exportedKey(user);
+    card.querySelector("#cardCopy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(user.id); card.querySelector("#cardCopy").textContent = "Copied"; } catch { prompt("Your memory key:", exportedKey(user)); } });
     card.querySelector("#cardDone").addEventListener("click", () => { try { localStorage.setItem("walrus-coach-key-saved", "1"); } catch {} card.remove(); });
     const first = messages.querySelector(".msg"); if (first) first.after(card); else messages.append(card);
   }
@@ -493,6 +536,7 @@
     return data;
   }
   async function loadAll() {
+    if (!user?.id) return;
     try {
       const data = await api("/api/memories", { userId: user.id });
       lastMemories = data.memories || []; ABOUT.namespace = data.namespace;
@@ -508,6 +552,7 @@
   let busy = false;
   composer.addEventListener("submit", async (ev) => {
     ev.preventDefault(); const text = input.value.trim(); if (!text || busy) return;
+    if (!user?.id) { addBot("Still setting up your account, one moment…", { system: true }); return; }
     busy = true; send.disabled = true; input.value = ""; autosize();
     addUser(text); const t = typing();
     try {
@@ -531,7 +576,7 @@
 
   // ---------- boot ----------
   function boot() {
-    $("whoName").textContent = user.name; $("keyText").textContent = user.id;
+    $("whoName").textContent = user.name; $("keyText").textContent = exportedKey(user) || "creating…";
     histLoad();
     if (!messages.children.length) {
       if (history.length) {
@@ -553,7 +598,10 @@
     if (ABOUT.network) $("netLabel").textContent = ABOUT.network;
     if (ABOUT.accountUrl) { $("explorerLink").href = ABOUT.accountUrl; $("aboutLine").innerHTML = `Encrypted blobs on <b>Walrus ${ABOUT.network}</b>, owned by account <a class="text-secondary font-semibold underline" href="${ABOUT.accountUrl}" target="_blank" rel="noopener noreferrer"><code>${ABOUT.accountId.slice(0, 8)}…${ABOUT.accountId.slice(-4)}</code></a> on Sui. Each fact on the left links to its blob in the Walrus explorer.`; }
     renderMods(); applyContextFromUrl();
-    if (user && user.id && user.name) boot(); else { user = user || { id: null }; askName(); }
+    // Three states: ready to chat, mid-setup (key minted on the landing page, account still to create), or brand new.
+  if (user && user.id && user.name) boot();
+  else if (user && user.sk && user.name) void startNewUser(user.name, user.sk);
+  else { user = user || { id: null }; askName(); }
   });
 })();
 </script>

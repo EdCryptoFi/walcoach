@@ -5,7 +5,7 @@
 import { generateReply, type Turn, type Voice } from "./llm.js";
 import type { Source } from "./search.js";
 import { log } from "./log.js";
-import { extractNewFacts, learnFromExchange, recallForUser, type Memory } from "./memory.js";
+import { extractNewFacts, learnFromExchange, recallForUser, type Identity, type Memory } from "./memory.js";
 
 const history = new Map<number, Turn[]>();
 const MAX_TURNS = 12;
@@ -45,11 +45,11 @@ export interface ChatOptions {
   pending?: string[];
 }
 
-export async function chat(userId: number, userName: string, text: string, options: ChatOptions | boolean = {}): Promise<ChatResult> {
+export async function chat(who: Identity, userName: string, text: string, options: ChatOptions | boolean = {}): Promise<ChatResult> {
   const { useMemory = true, history: given, context: area, voice = "neutral", pending = [] } = typeof options === "boolean" ? { useMemory: options } : options;
 
   // 1. Recall what we know that is relevant to this message.
-  const recall = useMemory ? await recallForUser(userId, text) : { memories: [], available: true };
+  const recall = useMemory ? await recallForUser(who, text) : { memories: [], available: true };
   const memories = recall.memories.slice();
   // Facts still being written to Walrus count as memory for this turn (blobId empty until indexed).
   if (useMemory) for (const f of pending) if (!memories.some((m) => m.text === f)) memories.push({ text: f, distance: 0.3, blobId: "" });
@@ -59,8 +59,8 @@ export async function chat(userId: number, userName: string, text: string, optio
   if (given) {
     turns = [...given.slice(-MAX_TURNS), { role: "user", content: text }];
   } else {
-    pushTurn(userId, { role: "user", content: text });
-    turns = history.get(userId) ?? [];
+    pushTurn(who.id, { role: "user", content: text });
+    turns = history.get(who.id) ?? [];
   }
   // Generate first, then extract from the exchange (the coach's concrete suggestions
   // are memories too), so the caller gets the facts back with the reply and can retry
@@ -68,11 +68,11 @@ export async function chat(userId: number, userName: string, text: string, optio
   const context = turns.slice(-3, -1).map((t) => `${t.role === "user" ? "User" : "Coach"}: ${t.content}`).join("\n");
   const generated = await generateReply(userName, memories, turns, area, voice);
   const reply = generated.text;
-  const facts = useMemory ? await extractNewFacts(userName, text, context, memories, reply).catch((err) => { log.error("extract.failed", err, { user: userId }); return [] as string[]; }) : [];
-  if (!given) pushTurn(userId, { role: "assistant", content: reply });
+  const facts = useMemory ? await extractNewFacts(userName, text, context, memories, reply).catch((err) => { log.error("extract.failed", err, { user: who.id }); return [] as string[]; }) : [];
+  if (!given) pushTurn(who.id, { role: "assistant", content: reply });
 
   // 3. Store the facts (caller decides whether to await).
-  const learning = useMemory && facts.length > 0 ? learnFromExchange(userId, userName, text, reply, memories, facts) : Promise.resolve();
+  const learning = useMemory && facts.length > 0 ? learnFromExchange(who, userName, text, reply, memories, facts) : Promise.resolve();
 
   return { reply, memories, memoryAvailable: recall.available, facts, sources: generated.sources, learning };
 }

@@ -7,7 +7,7 @@
 import { OpenAI } from "openai";
 import { AREAS, VOICES } from "./areas.js";
 import { config } from "./config.js";
-import { listMemories, type Memory } from "./memory.js";
+import { listMemories, type Identity, type Memory } from "./memory.js";
 import { log } from "./log.js";
 
 const groq = new OpenAI({ apiKey: config.groqApiKey, baseURL: "https://api.groq.com/openai/v1" });
@@ -15,8 +15,8 @@ const lines = (m: Memory[]) => m.map((x) => `- ${x.text}`).join("\n");
 
 export interface WeekSummary { headline: string; wins: string[]; stuck: string[]; next: string[]; facts: number }
 
-export async function weekSummary(userId: number, userName: string): Promise<WeekSummary> {
-  const memories = await listMemories(userId, 30);
+export async function weekSummary(who: Identity, userName: string): Promise<WeekSummary> {
+  const memories = await listMemories(who, 30);
   if (memories.length === 0) return { headline: "Nothing here yet. Tell the coach what you're working on.", wins: [], stuck: [], next: [], facts: 0 };
   const completion = await groq.chat.completions.create({
     model: config.groqModel, temperature: 0.4, max_tokens: 400, response_format: { type: "json_object" },
@@ -30,16 +30,16 @@ export async function weekSummary(userId: number, userName: string): Promise<Wee
     const arr = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, 3) : []);
     return { headline: String(j.headline ?? "").slice(0, 140), wins: arr(j.wins), stuck: arr(j.stuck), next: arr(j.next), facts: memories.length };
   } catch (err) {
-    log.warn("summary.unparseable", { user: userId });
+    log.warn("summary.unparseable", { user: who.id });
     return { headline: "Could not build the summary right now.", wins: [], stuck: [], next: [], facts: memories.length };
   }
 }
 
-export async function handover(userId: number, userName: string, fromId: string | undefined, toId: string, voice: "character" | "neutral", pending: string[] = []): Promise<string | null> {
+export async function handover(who: Identity, userName: string, fromId: string | undefined, toId: string, voice: "character" | "neutral", pending: string[] = []): Promise<string | null> {
   const to = AREAS.find((a) => a.id === toId);
   if (!to) return null;
   const from = AREAS.find((a) => a.id === fromId);
-  const stored = await listMemories(userId, 20);
+  const stored = await listMemories(who, 20);
   // Facts still being indexed on Walrus count here too, so switching mentors right
   // after a message still produces a grounded greeting.
   const memories = [...stored, ...pending.filter((t) => !stored.some((m) => m.text === t)).map((text) => ({ text, distance: 0.3, blobId: "" }))];

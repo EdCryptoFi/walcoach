@@ -98,3 +98,16 @@ export async function guardSponsor() {
   }
   return balance;
 }
+
+/** Finds the MemWalAccount owned by an address, so a restored key can find its account. */
+export async function accountOfOwner(address: string): Promise<string | null> {
+  if (!isAddress(address)) throw new Error("invalid address");
+  const r = await fetch(GRAPHQL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ query: `{ address(address: "${address}") { objects(first: 10) { nodes { address contents { type { repr } } } } } }` }),
+    signal: AbortSignal.timeout(15_000),
+  }).then((x) => x.json() as Promise<{ data?: { address?: { objects: { nodes: Array<{ address: string; contents?: { type?: { repr?: string } } }> } } } }>);
+  const found = (r.data?.address?.objects.nodes ?? []).find((n) => (n.contents?.type?.repr ?? "").includes("::account::MemWalAccount"));
+  return found?.address ?? null;
+}

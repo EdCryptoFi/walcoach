@@ -13,16 +13,19 @@ import { AREAS, STARTERS } from "./areas.js";
 import { chat } from "./chat.js";
 import { config } from "./config.js";
 import type { Turn } from "./llm.js";
-import { listMemories, memwal, namespaceFor, rememberExplicit } from "./memory.js";
+import { identityFor, listMemories, memwal, rememberExplicit } from "./memory.js";
 import { stats } from "./stats.js";
 import { hashUserId, nudgeEveryone, pushEnabled, subscribe } from "./push.js";
 import { log } from "./log.js";
 import { handover, weekSummary } from "./insights.js";
+import { accountFromDigest, accountOfOwner, accountsEnabled, execute, guardSponsor, isAccountId, prepareCreate, prepareDelegate } from "./accounts.js";
 
 // Web user ids are strings; the pipeline keys everything by number, so hash them.
 export const numericId = hashUserId;
 
-const VALID_ID = /^web-[a-z0-9-]{8,64}$/i;
+// A user is either a legacy memory key (shared project account, isolated by namespace)
+// or their own MemWalAccount id (they own the blobs, WalCoach is just a delegate).
+const VALID_ID = /^(web-[a-z0-9-]{8,64}|0x[0-9a-f]{64})$/i;
 
 // Throttles so one visitor (or one script minting many userIds) cannot burn the
 // shared Walrus/Groq budget. In-memory, so per function instance on serverless -
@@ -108,6 +111,7 @@ export function createApp() {
   app.get("/security", (c) => c.html(page("security.html"), 200, NO_CACHE));
   app.get("/privacy", (c) => c.html(page("privacy.html"), 200, NO_CACHE));
   app.get("/app.css", (c) => c.body(page("app.css"), 200, { "content-type": "text/css; charset=utf-8", "cache-control": "public, max-age=600, must-revalidate" }));
+  app.get("/vendor/suikey.js", (c) => c.body(page("vendor/suikey.js"), 200, { "content-type": "application/javascript; charset=utf-8", "cache-control": "public, max-age=86400" }));
   app.get("/liquid.js", (c) => c.body(page("liquid.js"), 200, { "content-type": "application/javascript; charset=utf-8", "cache-control": "public, max-age=600, must-revalidate" }));
   app.get("/sw.js", (c) => c.body(page("sw.js"), 200, { "content-type": "application/javascript; charset=utf-8", "service-worker-allowed": "/" }));
   app.get("/icon.svg", (c) => c.body(page("icon.svg"), 200, { "content-type": "image/svg+xml" }));
@@ -179,7 +183,8 @@ export function createApp() {
       const context = AREAS.find((a) => a.id === body.context)?.label;
       const voice = body.voice === "character" ? "character" : "neutral";
       const pending = Array.isArray(body.pending) ? body.pending.filter((f): f is string => typeof f === "string").map((f) => f.slice(0, 400)).slice(0, 12) : [];
-      const { reply, memories, memoryAvailable, facts, sources, learning } = await chat(id, userName, text.trim().slice(0, 2000), { useMemory, history: cleanHistory(body.history), context, voice, pending });
+      const who = identityFor(userId, id);
+      const { reply, memories, memoryAvailable, facts, sources, learning } = await chat(who, userName, text.trim().slice(0, 2000), { useMemory, history: cleanHistory(body.history), context, voice, pending });
       keepAlive(learning);
       return c.json({ reply, memories, memory: useMemory, memoryAvailable, facts, sources });
     } catch (err) {
@@ -199,8 +204,9 @@ export function createApp() {
     const wait = throttled(c, userId);
     if (wait) return c.json({ error: wait }, 429);
     try {
-      const memories = await listMemories(numericId(userId));
-      return c.json({ memories, namespace: namespaceFor(numericId(userId)) });
+      const who = identityFor(userId, numericId(userId));
+      const memories = await listMemories(who);
+      return c.json({ memories, namespace: who.namespace, accountId: who.accountId, owned: who.mode === "own" });
     } catch (err) {
       log.error("memories.failed", err, { user: numericId(userId) });
       return c.json({ error: "Walrus Memory is temporarily unavailable, your memories are safe, just not readable right now.", detail: (err as Error).message.slice(0, 200) }, 503);
@@ -213,11 +219,58 @@ export function createApp() {
     const wait = throttled(c, userId);
     if (wait) return c.json({ error: wait }, 429);
     try {
-      const result = await rememberExplicit(numericId(userId), (name || "friend").slice(0, 40), fact.trim().slice(0, 500));
+      const result = await rememberExplicit(identityFor(userId, numericId(userId)), (name || "friend").slice(0, 40), fact.trim().slice(0, 500));
       return c.json({ blobId: result.blob_id });
     } catch (err) {
       log.error("remember.failed", err, { user: numericId(userId) });
       return c.json({ error: "Could not save that to Walrus right now. It stays queued in your browser and will be retried.", detail: (err as Error).message.slice(0, 200) }, 503);
+    }
+  });
+
+  // ---- per-user Walrus Memory accounts ----
+  // The browser owns an Ed25519 key and signs; the project pays gas. Two steps:
+  // create the account (owned by the user), then authorise WalCoach as a delegate.
+  const ACCOUNT_LIMITS = { ip: 3, global: 40 };   // creating an account costs real gas
+  app.get("/api/account/config", (c) => c.json({ enabled: accountsEnabled }));
+
+  app.post("/api/account/prepare", async (c) => {
+    if (!accountsEnabled) return c.json({ error: "per-user accounts are not configured" }, 503);
+    const { address, step, accountId } = (await c.req.json().catch(() => ({}))) as { address?: string; step?: string; accountId?: string };
+    if (!address || !isAccountId(address)) return c.json({ error: "invalid address" }, 400);
+    if (!take(`acct-ip:${clientIp(c)}`, ACCOUNT_LIMITS.ip) || !take("acct-global", ACCOUNT_LIMITS.global))
+      return c.json({ error: "Too many accounts created from here. Try again later." }, 429);
+    try {
+      await guardSponsor();
+      const txBytes = step === "delegate"
+        ? await prepareDelegate(address, String(accountId))
+        : await prepareCreate(address);
+      return c.json({ txBytes });
+    } catch (err) {
+      log.error("account.prepare.failed", err, { step });
+      return c.json({ error: (err as Error).message.slice(0, 160) }, 503);
+    }
+  });
+
+  app.post("/api/account/lookup", async (c) => {
+    const { address } = (await c.req.json().catch(() => ({}))) as { address?: string };
+    if (!address || !isAccountId(address)) return c.json({ error: "invalid address" }, 400);
+    try { return c.json({ accountId: await accountOfOwner(address) }); }
+    catch (err) { log.error("account.lookup.failed", err); return c.json({ accountId: null }); }
+  });
+
+  app.post("/api/account/execute", async (c) => {
+    if (!accountsEnabled) return c.json({ error: "per-user accounts are not configured" }, 503);
+    const { txBytes, signature, step } = (await c.req.json().catch(() => ({}))) as { txBytes?: string; signature?: string; step?: string };
+    if (!txBytes || !signature) return c.json({ error: "txBytes and signature are required" }, 400);
+    try {
+      const digest = await execute(txBytes, signature);
+      if (step === "delegate") { log.info("account.delegate", { digest }); return c.json({ digest }); }
+      const accountId = await accountFromDigest(digest);
+      log.info("account.created", { digest, accountId });
+      return c.json({ digest, accountId });
+    } catch (err) {
+      log.error("account.execute.failed", err, { step });
+      return c.json({ error: (err as Error).message.slice(0, 200) }, 502);
     }
   });
 
@@ -227,7 +280,7 @@ export function createApp() {
     if (!userId || !VALID_ID.test(userId)) return c.json({ error: "invalid userId" }, 400);
     const wait = throttled(c, userId);
     if (wait) return c.json({ error: wait }, 429);
-    try { return c.json(await weekSummary(numericId(userId), (name || "friend").slice(0, 40))); }
+    try { return c.json(await weekSummary(identityFor(userId, numericId(userId)), (name || "friend").slice(0, 40))); }
     catch (err) { log.error("summary.failed", err, { user: numericId(userId) }); return c.json({ error: "Could not build your summary right now. Try again in a minute." }, 503); }
   });
 
@@ -238,7 +291,7 @@ export function createApp() {
     const wait = throttled(c, userId);
     if (wait) return c.json({ error: wait }, 429);
     const extra = Array.isArray(pending) ? pending.filter((f): f is string => typeof f === "string").map((f) => f.slice(0, 400)).slice(0, 12) : [];
-    try { return c.json({ text: await handover(numericId(userId), (name || "friend").slice(0, 40), from, to, voice === "character" ? "character" : "neutral", extra) }); }
+    try { return c.json({ text: await handover(identityFor(userId, numericId(userId)), (name || "friend").slice(0, 40), from, to, voice === "character" ? "character" : "neutral", extra) }); }
     catch (err) { log.error("handover.failed", err, { user: numericId(userId) }); return c.json({ text: null }); }
   });
 

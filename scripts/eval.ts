@@ -13,7 +13,7 @@ process.env.MEMWAL_NAMESPACE_PREFIX = `eval-${Date.now().toString(36)}`;
 process.env.TELEGRAM_BOT_TOKEN ||= "unused";
 
 const { chat, resetHistory } = await import("../src/chat.js");
-const { listMemories } = await import("../src/memory.js");
+const { listMemories, identityFor } = await import("../src/memory.js");
 const { stats } = await import("../src/stats.js");
 const { writeFileSync, mkdirSync } = await import("node:fs");
 
@@ -82,20 +82,20 @@ let total = 0, withMemory = 0, withoutMemory = 0;
 for (const p of personas) {
   lines.push(`## ${p.name}`, "", "### Session 1 (sharing)", "");
   for (const text of p.session1) {
-    const { reply, learning } = await chat(p.id, p.name, text, true);
+    const { reply, learning } = await chat(identityFor(String(p.id), p.id), p.name, text, true);
     await learning; // make sure facts are indexed before session 2
     lines.push(`**${p.name}:** ${text}`, "", `**Coach:** ${reply}`, "");
   }
 
-  const memories = await listMemories(p.id);
+  const memories = await listMemories(identityFor(String(p.id), p.id));
   lines.push(`### Memories stored on Walrus (${memories.length})`, "", ...memories.map((m) => `- ${m.text}`), "");
 
   lines.push("### Session 2 (new day, short-term context wiped)", "", "| Probe | Memory OFF | Memory ON |", "|---|---|---|");
   for (const probe of p.session2) {
     resetHistory(p.id);
-    const off = await chat(p.id, p.name, probe.text, false);
+    const off = await chat(identityFor(String(p.id), p.id), p.name, probe.text, false);
     resetHistory(p.id);
-    const on = await chat(p.id, p.name, probe.text, true);
+    const on = await chat(identityFor(String(p.id), p.id), p.name, probe.text, true);
     await on.learning;
     const offOk = hit(off.reply, probe.expectAny);
     const onOk = hit(on.reply, probe.expectAny);

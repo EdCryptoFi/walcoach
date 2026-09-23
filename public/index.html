@@ -174,24 +174,21 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
       <div class="flex items-center justify-between text-xs text-on-surface-variant" id="pickedRow" hidden><span class="inline-flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">school</span> Starting with <b class="text-on-surface" id="pickedLabel"></b></span><button class="btn-ghost !py-1 !px-2 text-xs" type="button" id="clearPick">change</button></div>
       <label class="block text-sm font-semibold mt-2" for="keyName">What should the coach call you? <span class="text-on-surface-variant font-normal">(first name)</span></label>
       <div class="relative mt-2"><input class="field pr-12" id="keyName" maxlength="40" autocomplete="given-name" placeholder="Lucas"><span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary">badge</span></div>
-      <div class="flex items-center justify-between mt-6 text-xs font-semibold text-on-surface-variant"><span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">fingerprint</span> Your generated memory key</span><button class="btn-ghost !py-1 !px-2 text-xs" type="button" id="regen"><span class="material-symbols-outlined text-[16px]">refresh</span> Generate new</button></div>
-      <div class="glass rounded-2xl p-4 mt-2 flex items-center gap-3">
+      <div class="glass rounded-2xl p-4 mt-6 flex items-start gap-3">
         <span class="material-symbols-outlined text-primary">vpn_key</span>
-        <div class="flex-1 min-w-0"><div class="text-[11px] uppercase tracking-wider text-on-surface-variant">Unique key</div><code class="font-mono text-base break-all text-on-surface" id="keyValue">web-…</code></div>
-        <button class="btn-glass !py-2 !px-3 text-sm flex-none" type="button" id="copyKey"><span class="material-symbols-outlined text-[18px]">content_copy</span> Copy</button>
+        <div class="text-sm"><b>Your key is created in the next screen</b><div class="text-on-surface-variant mt-1">When you start, the browser generates your key and opens a Walrus Memory account <b>owned by that key</b>. WalCoach is added as a guest so it can read and write your memories, and you can revoke it. Gas is on us, so you need no wallet and no tokens.</div></div>
       </div>
       <div class="rounded-2xl p-4 mt-4 bg-primary-fixed/40 border border-primary-container/30 flex gap-3">
         <span class="material-symbols-outlined text-primary">tips_and_updates</span>
         <div class="text-sm"><b>Where to keep it?</b> Paste it in your notes app, write it on paper, or, if you're a Web3 user, keep it in <a class="text-secondary font-semibold underline" href="https://walnotes.xyz" target="_blank" rel="noopener noreferrer">Walnotes</a>, encrypted notes on Walrus. Without it, nobody (including us) can restore your history.</div>
       </div>
-      <label class="flex items-center gap-2 mt-5 text-sm cursor-pointer select-none"><input type="checkbox" id="agree" class="w-4 h-4 accent-primary-container"> I saved my key somewhere safe.</label>
-      <div class="flex flex-col sm:flex-row items-center justify-end gap-3 mt-4">
+      <div class="flex flex-col sm:flex-row items-center justify-end gap-3 mt-5">
         <button class="btn-glass text-sm" type="button" id="haveKey">I already have a memory key</button>
-        <button class="btn-primary" type="button" id="startBtn" disabled><span class="material-symbols-outlined text-[20px]">check_circle</span> I saved my key safely, start</button>
+        <button class="btn-primary" type="button" id="startBtn"><span class="material-symbols-outlined text-[20px]">arrow_forward</span> Start, and save my key next</button>
       </div>
       <div class="mt-4 hidden" id="restoreRow">
         <label class="block text-sm font-semibold" for="restoreKey">Paste your existing key</label>
-        <div class="flex gap-2 mt-2"><input class="field" id="restoreKey" placeholder="web-xxxx-xxxx-xxxx-xxxx" spellcheck="false"><button class="btn-primary flex-none" type="button" id="restoreBtn">Restore <span class="material-symbols-outlined text-[18px]">arrow_forward</span></button></div>
+        <div class="flex gap-2 mt-2"><input class="field" id="restoreKey" placeholder="wal_… or web-xxxx-xxxx-xxxx-xxxx" spellcheck="false"><button class="btn-primary flex-none" type="button" id="restoreBtn">Restore <span class="material-symbols-outlined text-[18px]">arrow_forward</span></button></div>
         <div class="text-xs text-error mt-2 min-h-[1em]" id="restoreErr"></div>
       </div>
     </div>
@@ -202,21 +199,35 @@ document.getElementById("menuBtn").addEventListener("click",()=>{const n=documen
     </div>
   </section>
 </main>
+<script type="module">import * as k from "/vendor/suikey.js"; window.__suikey = k; window.dispatchEvent(new Event("suikey-ready"));</script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const KEY_RE = /^web-[a-z0-9-]{8,64}$/i;
+  const KEY_RE = /^(web-[a-z0-9-]{8,64}|wal_[A-Za-z0-9_-]{80,100})$/i;
   const newKey = () => { const A = "abcdefghjkmnpqrstuvwxyz23456789"; const b = new Uint8Array(16); crypto.getRandomValues(b); const c = Array.from(b, (x) => A[x % A.length]); return "web-" + [0,4,8,12].map((i) => c.slice(i, i+4).join("")).join("-"); };
   const user = (() => { try { return JSON.parse(localStorage.getItem("walrus-coach-user") || "null"); } catch { return null; } })();
-  let key = newKey(), picked = null;
-  $("keyValue").textContent = key;
-  $("regen").addEventListener("click", () => { key = newKey(); $("keyValue").textContent = key; $("agree").checked = false; $("startBtn").disabled = true; });
-  $("copyKey").addEventListener("click", async () => { try { await navigator.clipboard.writeText(key); $("copyKey").innerHTML = '<span class="material-symbols-outlined text-[18px]">check</span> Copied'; } catch { prompt("Your memory key:", key); } });
-  $("agree").addEventListener("change", (e) => { $("startBtn").disabled = !e.target.checked; });
+  let picked = null;
+  const ready = new Promise((res) => (window.__suikey ? res() : window.addEventListener("suikey-ready", res, { once: true })));
   const go = () => location.href = "/chat" + (picked ? "?context=" + encodeURIComponent(picked) : "");
-  $("startBtn").addEventListener("click", () => { const name = $("keyName").value.trim() || "friend"; try { localStorage.setItem("walrus-coach-user", JSON.stringify({ id: key, name })); localStorage.setItem("walrus-coach-key-saved", "1"); } catch {} go(); });
+  $("startBtn").addEventListener("click", async () => {
+    const name = $("keyName").value.trim() || "friend";
+    // The chat page finishes setup: it opens the account and then shows the key to save.
+    try { await ready; const k = await window.__suikey.generateKey(); localStorage.setItem("walrus-coach-user", JSON.stringify({ id: null, sk: k.secret, name })); localStorage.removeItem("walrus-coach-key-saved"); }
+    catch { try { localStorage.setItem("walrus-coach-user", JSON.stringify({ id: newKey(), name })); } catch {} }
+    go();
+  });
   $("haveKey").addEventListener("click", () => { $("restoreRow").classList.toggle("hidden"); $("restoreKey").focus(); });
-  $("restoreBtn").addEventListener("click", () => { const k = $("restoreKey").value.trim(); if (!KEY_RE.test(k)) { $("restoreErr").textContent = "That doesn't look like a memory key (it starts with web-)."; return; } const name = $("keyName").value.trim() || "friend"; try { localStorage.setItem("walrus-coach-user", JSON.stringify({ id: k, name })); localStorage.setItem("walrus-coach-key-saved", "1"); } catch {} go(); });
+  $("restoreBtn").addEventListener("click", async () => {
+    const k = $("restoreKey").value.trim();
+    if (!KEY_RE.test(k)) { $("restoreErr").textContent = "That doesn't look like a memory key."; return; }
+    const name = $("keyName").value.trim() || "friend";
+    try {
+      let u = { id: k, name };
+      if (/^wal_/i.test(k)) { await ready; const d = window.__suikey.decodeMemoryKey(k); u = { id: d.accountId, sk: d.secret, name }; }
+      localStorage.setItem("walrus-coach-user", JSON.stringify(u)); localStorage.setItem("walrus-coach-key-saved", "1");
+    } catch { $("restoreErr").textContent = "Could not read that key."; return; }
+    go();
+  });
   $("clearPick").addEventListener("click", () => { picked = null; $("pickedRow").hidden = true; });
   // Mentor cards: returning users go straight to the chat; new users are taken to the key section first.
   for (const a of document.querySelectorAll("[data-mentor]")) a.addEventListener("click", (e) => {
