@@ -511,6 +511,11 @@
     if (contextId) for (const b of $("mods").children) b.classList.toggle("on", b.textContent.includes(areaLabel(contextId)));
   }
   let lastMemories = [];
+  /** When the user owns the account, say so with a link to it. */
+  function paintOwnership() {
+    const line = $("aboutLine"); if (!line || !ABOUT.owned || !ABOUT.userAccount) return;
+    line.innerHTML = `Your memories live in <b>your own Walrus Memory account</b>, <a class="text-secondary font-semibold underline" href="https://suiscan.xyz/mainnet/object/${ABOUT.userAccount}" target="_blank" rel="noopener noreferrer"><code>${ABOUT.userAccount.slice(0, 8)}…${ABOUT.userAccount.slice(-4)}</code></a> on Sui mainnet. Your memory key created it, and WalCoach is only a delegate on it, which you can revoke.`;
+  }
   // Turn "saving N facts…" footers into "N facts saved on Walrus ↗" once the blobs exist.
   function resolvePending(memories) {
     const byText = new Map(memories.map((m) => [norm(parseTag(m.text).text), m]));
@@ -544,7 +549,7 @@
       $("nsLine").textContent = `${data.namespace} · ${lastMemories.length} encrypted blobs`; $("nsMini").innerHTML = `<span class="material-symbols-outlined text-[16px]">database</span> ${data.namespace}`;
       $("sessionSub").textContent = `Long-term memory loaded · ${lastMemories.length} facts on Walrus ${ABOUT.network || ""}`;
       await outboxReconcile(lastMemories);
-      resolvePending(lastMemories); pendingPrune(lastMemories);
+      resolvePending(lastMemories); pendingPrune(lastMemories); paintOwnership();
     } catch (e) { $("nsLine").textContent = "⚠ " + e.message; $("sessionSub").textContent = "Memory panel unavailable: " + e.message; setBanner(e.message); }
   }
 
