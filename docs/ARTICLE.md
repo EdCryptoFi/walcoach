@@ -6,13 +6,13 @@
 > **Caption:** WalCoach remembers your goals, your routine and the thing that trips you up. Every memory is an encrypted blob on Walrus.
 > **Alt text:** The WalCoach walrus mascot in a navy tracksuit beside the words "a chatbot that remembers you", with glowing cyan cubes representing encrypted memories stored on Walrus.
 
-Most chatbots forget you the moment you close the tab. You explain your knee injury, your night shift, the exam in three weeks, and next session you explain it all again. I wanted to know how much of a coach's usefulness is actually locked in that forgetting. So I built **WalCoach**: a coaching companion with seven mentors (work, fitness, study, pets, cooking, zen, music) that share one memory of you, stored encrypted on Walrus.
+Most chatbots forget you the moment you close the tab. You explain your knee injury, your night shift, the exam in three weeks, and next session you explain it all again. I wanted to know how much of a coach's usefulness is locked in that forgetting. So I built **WalCoach**: a coaching companion with seven mentors that share one memory of you, stored encrypted on Walrus.
 
 Live: **walcoach.vercel.app** · Code: **github.com/EdCryptoFi/walcoach** (MIT)
 
 ## Who it's for and what it does
 
-Anyone with a goal they keep dropping. Type in any language and the coach answers short and direct. No account, no password, no wallet: on your first visit the browser generates a **memory key** and that key is your identity. Paste it on another device and your memories follow you. Lose it and they are gone, the honest trade for having no user database.
+Anyone with a goal they keep dropping. Write in English, Portuguese or Spanish and the coach answers in the same language, short and direct, and stores your memories in it too. No account, no password, no wallet: on your first visit the browser generates a **memory key** and that key is your identity. Paste it on another device and your memories follow you. Lose it and they are gone, the honest trade for having no user database.
 
 ## Seven mentors, one memory
 
@@ -34,7 +34,7 @@ The point is the shared memory. Switch from Cooking to Fitness and the new mento
 
 Three steps per message, all in [`src/memory.ts`](https://github.com/EdCryptoFi/walcoach/blob/main/src/memory.ts):
 
-1. **Recall.** Two semantic queries against the user's own namespace (`coach-<key hash>`): the message itself (cosine distance < 0.8) plus a fixed "core profile" query for goals, schedule and constraints, so even "hi, I'm back" surfaces what matters. Results are merged and deduped.
+1. **Recall.** Two semantic queries against the user's own namespace: the message itself (cosine distance < 0.8) plus a fixed "core profile" query for goals, schedule and constraints, so even "hi, I'm back" surfaces what matters.
 2. **Generate.** The recalled facts go into the system prompt. The reply shows the exact memories it used as chips, so nothing is hand-wavy.
 3. **Learn.** After the reply, the model extracts durable facts, tags each with a life area (`[training] Ana runs Tuesdays and Thursdays at 6am`), and `rememberBulkAndWait` writes them. Each fact becomes one SEAL-encrypted blob on Walrus mainnet, owned by an account object on Sui. Every memory in the UI links to its blob on Walruscan, so a skeptic can click and verify.
 
@@ -51,7 +51,7 @@ I built an eval harness (`npm run eval`): three personas share facts in session 
 | Without memory | **0 / 9** |
 | With Walrus Memory | **6 / 9** |
 
-The first version scored 1/9. The jump came from two fixes: recalling with a second "profile" query, and doing fact extraction with my own model instead of the relayer's `analyze`, which was flipping languages mid-user and hurting recall distances.
+The first version scored 1/9. The jump came from two fixes: the second "profile" recall query, and doing fact extraction with my own model instead of the relayer's `analyze`, which was flipping languages mid-user and hurting recall distances.
 
 ## What broke
 
@@ -64,6 +64,10 @@ The first version scored 1/9. The jump came from two fixes: recalling with a sec
 **Rate limits are per delegate key**, not per user: 60 weighted requests/min, 1000/hour. One backend serving many users hits that fast, and it surfaces as `seal encrypt failed: RpcError: Too Many Requests`, which reads like a crypto bug and is really a quota. All eight friction points are in [FRICTION.md](https://github.com/EdCryptoFi/walcoach/blob/main/FRICTION.md).
 
 When the relayer is unreachable the coach still answers, says so in a banner, and queues the unsaved facts for retry. Degrading well is part of the design.
+
+## See it for yourself
+
+The screenshots below are real sessions, nothing staged: on the left, the facts the coach has stored for that person, each one linking to its blob on Walrus; on the right, the reply and the exact memories it used to write it. Or skip them and check it yourself at **walcoach.vercel.app**: tell it something worth remembering, close the tab, and come back tomorrow.
 
 ## Would I do it again
 
