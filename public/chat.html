@@ -636,9 +636,11 @@
         for (const t of shown) t.role === "user" ? addUser(t.content) : addBot(t.content, { memories: [], memoryOn: true, restored: !t.h, handover: Boolean(t.h), as: t.m || null, when: clock(t.at) });
       } else addBot(`Hey ${user.name}. I'm a coach that actually remembers you between conversations. Tell me what you're working on, a habit, a goal, something you keep putting off.`, { system: true });
     }
-    loadAll(); pushInit(); renderStarters(); input.focus();
+    // An account that still needs its delegate key would 401 on the first read,
+    // so repair it before asking for memories.
+    if (needsDelegateCheck()) void ensureDelegate().then(loadAll); else loadAll();
+    pushInit(); renderStarters(); input.focus();
     setTimeout(() => weekLoad(false), 3000);
-    void ensureDelegate();
   }
 
   /**
@@ -648,11 +650,14 @@
    */
   const DELEGATE_OK = (id) => "walcoach-delegate-ok:" + id;
   const delegateDone = (id) => { try { localStorage.setItem(DELEGATE_OK(id), "1"); } catch {} };
+  function needsDelegateCheck() {
+    if (!user || !user.sk || !user.id || !/^0x/i.test(user.id)) return false;
+    // Accounts this browser set up already carry the key, and the chain indexer
+    // lags a few seconds behind, so never re-check those.
+    try { return !localStorage.getItem(DELEGATE_OK(user.id)); } catch { return true; }
+  }
   async function ensureDelegate() {
-    if (!user || !user.sk || !user.id || !/^0x/i.test(user.id)) return;
-    // Skip accounts this browser set up itself: the chain indexer lags a few
-    // seconds behind the transaction and we would pay for a duplicate key.
-    try { if (localStorage.getItem(DELEGATE_OK(user.id))) return; } catch {}
+    if (!needsDelegateCheck()) return;
     try {
       const st = await api("/api/account/status", { accountId: user.id });
       if (!st.enabled || st.delegated) { if (st.delegated) delegateDone(user.id); return; }
