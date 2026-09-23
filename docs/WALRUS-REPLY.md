@@ -29,10 +29,23 @@ numbers below are measured, not estimated.
 >
 > Existing users keep working on the old shared account, so nothing broke for them.
 >
-> Two things that would have made this easier, both now in our feedback form: the account id is not
-> discoverable from an owner address, because `MemWalAccount` is a shared object, so we had to embed
-> it in the key string the user saves; and there is no documented example of creating an account from
-> outside the dashboard, so the PTB shape had to be reverse engineered from the package.
+> One thing you should know, because it bit us hard. `MemWal.create({ key, accountId })` signs the
+> account id into every request, but the relayer resolves the account from the **delegate key**, by
+> on-chain lookup, and ignores the id. We assumed one server key could address many accounts, so for
+> a few hours every account owner was reading one shared pool while our UI told them otherwise. An
+> account id **that does not exist** returns data happily, which is what makes the mistake so easy to
+> make. Our fix is one delegate key per account, derived with `HMAC-SHA256(seed, accountId)` so
+> nothing has to be stored. Would you consider returning 400 when the signed account id is not the
+> account the key resolves to? That single check would have caught it on the first request. Full
+> measurements in `docs/RELAYER-ACCOUNT-SCOPING.md`.
+>
+> Two smaller ones: the account id is not discoverable from an owner address, because
+> `MemWalAccount` is a shared object, so we had to embed it in the key string the user saves; and
+> there is no documented example of creating an account from outside the dashboard, so the PTB shape
+> had to be reverse engineered from the package.
+>
+> The good news in the same breath: with a key per account, your per-delegate-key rate limit is now
+> per user for us, which was our single worst friction point.
 
 ---
 
@@ -55,10 +68,24 @@ three problems, not one:
 |---|---|---|
 | Account | one, ours, shared with other projects | **one per user, owned by the user** |
 | Isolation | namespace string at the relayer | separate Sui object, plus namespace |
-| Our access | a key that reads every user | a delegate **per account**, revocable |
+| Our access | one key that reads every user | a **derived key per account**, revocable |
 | What the server stores | the memory key, as an identifier | the account id, which is public |
 | 20 key limit | binding at 20 users | irrelevant, one slot used per account |
 | Wallet for the user | none | still none |
+
+### The part we got wrong first, in case it helps someone else
+
+Our first version passed a per-user `accountId` to `MemWal.create` and kept one delegate key. That
+does not isolate anything: the relayer routes by delegate key. Four different account ids, including
+`0xabab…abab`, which does not exist, returned an identical result set. The fix is a delegate key per
+account, derived from a server seed rather than stored:
+
+```ts
+const seed = createHmac("sha256", DELEGATE_KEY_SEED).update(`memwal-delegate:${accountId}`).digest();
+```
+
+Registered on exactly one account, the relayer's lookup is unambiguous. Verified: user A reads only
+A's fact, user B reads nothing, and the address owning A's account holds the `Blob` object itself.
 
 ### How the user avoids a wallet
 
@@ -91,13 +118,16 @@ recall             0.395  "Prototype user owns this account and trains on Tuesda
 Then the real thing, created by a browser on the deployed site, with no local script involved:
 
 ```
-account   0xd91cdff1d79e258a92df9ae9a7b57a20e5c6fac683f033d6db48a85746cb8734
-owner     0x713a002522062fba672ab978386a9a5a19150d28ede30bcd503245f837b848a4
-delegates 1, label "WalCoach", public key 813aa47d…b7fe
-blobs     2 facts written and recalled, each linking to Walruscan from the UI
+account   0x9602dff07a0953e6ffce2f435b74643f6deff6fcd65c981dcbabb772ae5320fe
+owner     0xdac643e972b50b49e207d7ce9c7ba47ad2aa741f7df58c9c2b9e8cc1559b0ca5
+delegates 1, derived for this account only, label "WalCoach"
+reads     A sees A's fact; a second account B, same server, sees nothing
+on chain  the owner address holds the Blob object: {'Blob': 1}
 ```
 
-Both read back from `0xe7c16fbe…::account::MemWalAccount` on mainnet.
+And the legacy path, end to end in production: a `web-` user's fact moved into an account they own,
+`{"found":1,"accepted":1}`, readable there a minute later, blob owned by
+`0x07c0228a…d0fb`. Read back from `0xe7c16fbe…::account::MemWalAccount` on mainnet.
 
 ### Cost, measured
 

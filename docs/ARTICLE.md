@@ -63,13 +63,34 @@ which is all the browser has to implement: 18 KB of vendored crypto, self-hosted
 Security Policy stays `script-src 'self'`. Cost measured on mainnet: **0.004774 SUI per user**, about
 two cents, paid by me.
 
-Here is an account created by a real browser on the live site:
+Then I shipped it, and it did not work. Not visibly: the accounts were created, owned by the right
+people, and the panel proudly said so. But `MemWal.create({ key, accountId })` takes an account id,
+signs it into every request, and the relayer **ignores it**. It resolves the account from the
+delegate key, by on-chain lookup. One key registered on many accounts means one pool. I only caught
+it because a migration test returned somebody else's facts.
+
+The proof took thirty seconds once I knew where to look: I asked for an account id that does not
+exist, `0xabab…abab`, and it cheerfully returned the same memories as every real one.
+
+The fix is a delegate key **per account**, derived from a server seed rather than stored, so there is
+still no database:
+
+```ts
+const seed = createHmac("sha256", DELEGATE_KEY_SEED).update(`memwal-delegate:${accountId}`).digest();
+```
+
+Registered on exactly one account, the relayer's lookup can only resolve one way. Now it is true:
 
 | | |
 |---|---|
-| account | `0xd91cdff1…cb8734` |
-| owner | `0x713a0025…48a4`, the user's key, not mine |
-| delegate keys | one, labelled WalCoach |
+| account | `0x9602dff0…20fe` |
+| owner | `0xdac643e9…0ca5`, the user's key, not mine |
+| delegate keys | one, derived for this account alone |
+| what that address owns on chain | `{'Blob': 1}`, the memory itself |
+
+A second user on the same server reads nothing of theirs. And a quota that used to be shared, the
+relayer's per-delegate-key rate limit, is now one bucket per person, which fixed my worst friction
+point by accident.
 
 The private key stops travelling to the server entirely. Before, the memory key was the identifier on
 every request. Now the server only ever sees the account id, which is public anyway.
@@ -99,7 +120,7 @@ The first version scored 1/9. The jump came from two fixes: the second "profile"
 
 **Recall sometimes returns an empty set with HTTP 200** for a namespace that has memories; the same call seconds later returns six hits. The fix is a retry when a user known to have facts gets zero.
 
-**Rate limits are per delegate key**, not per user: 60 weighted requests/min, 1000/hour. One backend serving many users hits that fast, and it surfaces as `seal encrypt failed: RpcError: Too Many Requests`, which reads like a crypto bug and is really a quota. Per-user accounts split the 1000/hour account limit, but the per-minute key limit is still shared, so the retries stayed. All eight friction points are in [FRICTION.md](https://github.com/EdCryptoFi/walcoach/blob/main/FRICTION.md).
+**Rate limits are per delegate key**, not per user: 60 weighted requests/min, 1000/hour. One backend serving many users hits that fast, and it surfaces as `seal encrypt failed: RpcError: Too Many Requests`, which reads like a crypto bug and is really a quota. A key per account turned that into one bucket per user, which is the only reason the retries are now a safety net instead of the normal path. All eight friction points are in [FRICTION.md](https://github.com/EdCryptoFi/walcoach/blob/main/FRICTION.md).
 
 When the relayer is unreachable the coach still answers, says so in a banner, and queues the unsaved facts for retry. Degrading well is part of the design.
 

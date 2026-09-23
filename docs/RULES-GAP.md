@@ -29,8 +29,12 @@ the Best Chatbot placement. Satisfy the stricter version.
 - Deployed and reachable by real users through a channel: https://walcoach.vercel.app ✓
 - All memory on Walrus **mainnet** (relayer `relayer.memory.walrus.xyz`) ✓
 - **One Walrus Memory account per user**, created by a sponsored transaction and owned by the
-  user's browser key, with WalCoach as a revocable delegate ✓ (answers the Walrus team's review;
-  live example `0xd91cdff1…cb8734`, owner `0x713a0025…48a4`, see `docs/WALRUS-REPLY.md`)
+  user's browser key, with a delegate key derived per account so the relayer really does isolate
+  them ✓ (answers the Walrus team's review; verified example `0x9602dff0…20fe`, owner
+  `0xdac643e9…0ca5`, whose address holds the Blob object; see `docs/WALRUS-REPLY.md` and
+  `docs/RELAYER-ACCOUNT-SCOPING.md`)
+- Legacy `web-` users can move into an account of their own from the key panel ✓ (`/api/migrate`,
+  tested end to end in production)
 - Public GitHub repo with setup instructions: https://github.com/EdCryptoFi/walcoach ✓ (MIT)
 - LLM stated everywhere: Qwen 3.8 27B via Groq (qualifies for Beyond the Big Two) ✓
 - Integration friction documented (`FRICTION.md`, 8 items) ✓, required for Beyond the Big Two
@@ -48,6 +52,7 @@ the Best Chatbot placement. Satisfy the stricter version.
 3. **Register on DeepSurge** (project name, chatbot description, primary contact, GitHub) and create
    the project entry, then the Airtable submission form.
 4. **Walrus Memory feedback form**: one bug + one improvement idea (separate from GitHub issues).
+   The bug to submit is now the `accountId` routing one, which is the strongest we found.
 5. **GitHub issues** at MystenLabs/MemWal from `FRICTION.md` (bug bounty, 5 x $100, judged separately).
 6. **Join the Walrus Discord.**
 7. ✓ **Article published**: https://medium.com/@cryptolairbr/walcoach-remebers-you-b2f3b5596868

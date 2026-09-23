@@ -122,3 +122,16 @@ Sponsor wallet after the prototypes and the first real account: **1.3704 SUI** o
 back to the shared account instead of failing.
 
 Still open: migration for the users created before this change, who remain on the shared account.
+
+## Correction, same day
+
+The first shipped version did not isolate anything. `MemWal.create({ key, accountId })` signs the
+account id into every request, but the relayer resolves the account from the **delegate key** and
+ignores the id, so every account owner shared one pool. Fixed with a delegate key derived per
+account, `HMAC-SHA256(DELEGATE_KEY_SEED, accountId)`, registered on that account alone. Accounts made
+before the fix repair themselves on next load. The measurements, the impact and what we are asking
+the Walrus team for are in `docs/RELAYER-ACCOUNT-SCOPING.md`.
+
+Verified after the fix, in production: account `0x9602dff0…20fe` reads only its own fact, a second
+account reads nothing, and the owner address holds the `Blob` object. Cost is unchanged, the delegate
+transaction was already part of the flow.
