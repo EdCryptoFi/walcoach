@@ -11,7 +11,7 @@ This page, not the DeepSurge description, is the binding document. Checked 2026-
 | Item | DeepSurge description said | Official rules say |
 |---|---|---|
 | Prize currency | "stablecoin" | **WAL**, into a wallet that can receive WAL |
-| Proof of memory use | "3 users with 10+ memories each" | **agent has written ≥10 blobs on mainnet**, and you submit **agent ID + blob count** |
+| Proof of memory use | "3 users with 10+ memories each" | **agent has written ≥10 blobs on mainnet**, and you submit **agent ID (delegate public key) + account id + blob count + explorer link** |
 | Wallet | not mentioned | **a dedicated wallet address created for Sessions** is required |
 | Feedback | "a bug or friction point and/or improvement idea" | the **Walrus Memory feedback form** with **at least one bug AND one improvement idea** |
 | Discord | listed as a resource | **joining the Walrus Discord is required** |
@@ -32,7 +32,10 @@ the Best Chatbot placement. Satisfy the stricter version.
 - LLM stated everywhere: Qwen 3.8 27B via Groq (qualifies for Beyond the Big Two) ✓
 - Integration friction documented (`FRICTION.md`, 8 items) ✓, required for Beyond the Big Two
 - Article drafted (`docs/ARTICLE.md`), X post drafted (`docs/X-POST.md`) ✓
-- Agent ID for the form: **0xf059b5c5b2429903359263c84c78190f6ac70063182d3b44eccb91e31bff7f3d**
+- The form asks for two different ids, do not mix them up:
+  - **MEMWAL_AGENT_ID** = the delegate key's **public key**: `813aa47d09ee950eea12b0acf6fb2fe45c97b5b6b8db9cf1ecefc64f19a0b7fe`
+  - **Account ID** = the MemWalAccount object on Sui: `0xf059b5c5b2429903359263c84c78190f6ac70063182d3b44eccb91e31bff7f3d`
+    (verified on-chain as `0xe7c16fbe…::account::MemWalAccount`)
 - Blob count: **1,068 blobs on Sui mainnet** for this account, **137 written during the session window** (needs 10). Counted on-chain with `scripts/count-blobs.py`; `restore()` is not a reliable counter because its `total` is capped by the sidecar.
 
 ### Missing, in order of risk
