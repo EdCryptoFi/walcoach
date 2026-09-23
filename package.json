@@ -18,7 +18,7 @@
     "build:css": "tailwindcss -i src/styles.css -o public/app.css --minify",
     "logs": "tail -n 50 logs/app.log",
     "logs:errors": "tail -n 50 logs/error.log",
-    "blobs": "tsx scripts/blob-count.ts"
+    "blobs": "python3 scripts/count-blobs-window.py"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

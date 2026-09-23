@@ -33,7 +33,7 @@ the Best Chatbot placement. Satisfy the stricter version.
 - Integration friction documented (`FRICTION.md`, 8 items) ✓, required for Beyond the Big Two
 - Article drafted (`docs/ARTICLE.md`), X post drafted (`docs/X-POST.md`) ✓
 - Agent ID for the form: **0xf059b5c5b2429903359263c84c78190f6ac70063182d3b44eccb91e31bff7f3d**
-- Blob count: far above the 10 minimum (`npm run blobs` counts per namespace via `restore`)
+- Blob count: **1,068 blobs on Sui mainnet** for this account, **137 written during the session window** (needs 10). Counted on-chain with `scripts/count-blobs.py`; `restore()` is not a reliable counter because its `total` is capped by the sidecar.
 
 ### Missing, in order of risk
 1. **Dedicated wallet for Sessions.** New requirement, blocks the prize payment. Create a fresh Sui

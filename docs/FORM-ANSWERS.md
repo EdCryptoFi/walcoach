@@ -36,6 +36,7 @@ Rules: https://thewalrussessions.wal.app/chatbots/index.html · Deadline **Oct 9
 | Which LLM did you build with? | Qwen (open-weight, via Groq) |
 | Model name and version | `qwen/qwen3.8-27b` served by Groq, OpenAI-compatible API |
 | How many agents wrote blobs on mainnet? | **1** |
+| Blob count (asked on the DeepSurge form) | **1,068 blobs** owned on Sui mainnet by this account, **137 of them written during the session window** (from Sep 18). Counted from chain: `python3 scripts/count-blobs.py` and `scripts/count-blobs-window.py`. Requirement is 10. |
 | MEMWAL_AGENT_ID (delegate public key) | `813aa47d09ee950eea12b0acf6fb2fe45c97b5b6b8db9cf1ecefc64f19a0b7fe` |
 | Account ID (MemWalAccount object on Sui) | `0xf059b5c5b2429903359263c84c78190f6ac70063182d3b44eccb91e31bff7f3d` |
 | Confirm agents wrote blobs on mainnet | Yes, verified on-chain: type `0xe7c16fbe…::account::MemWalAccount`, Sui mainnet |
@@ -69,4 +70,4 @@ Rules: https://thewalrussessions.wal.app/chatbots/index.html · Deadline **Oct 9
 ## Two things to decide before submitting
 
 1. **Dedicated wallet.** The rules require "a dedicated wallet address created for Sessions", and prizes are paid in WAL. The address in your memwal credentials is your existing wallet, not a dedicated one.
-2. **Dedicated delegate key.** Your current agent ID is labelled "MCP Client", created 2026-08-05: it is the same key your personal Claude memory uses, and WalCoach writes with it too. Creating a second delegate key on the same account, labelled "WalCoach", makes the submission cleaner and separates the app from your personal memories. Delegate keys share the account, so existing memories stay readable, but verify with `npm run check` right after switching.
+2. **Dedicated delegate key (optional, cosmetic).** Your agent ID is labelled "MCP Client", created 2026-08-05: the same key your personal Claude memory uses, and WalCoach writes with it too. That is why the account holds 1,068 blobs while only 137 date from the session. A second delegate key labelled "WalCoach" on the same account would read the same memories and look cleaner on the form, but it would not separate the blob count, since both share the account's owner address. Only a brand new MemWalAccount would, and that would leave the app's existing memories behind. My advice: keep the account, and state the two numbers honestly as above.
