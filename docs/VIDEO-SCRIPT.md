@@ -49,7 +49,7 @@ different account ids.
 | 1:06–1:22 | Open the **You** dialog: it reads *"Your Walrus Memory account, owned by your memory key"*. Click the account link → Suiscan shows `owner` = ED's key and **one** delegate key labelled WalCoach | "And the account holding it belongs to me, not to the app. WalCoach is one guest key in it, which I can remove whenever I want." |
 | 1:22–1:32 | Private window, paste **ED's memory key**, the same facts load | "Same key, different browser. The memory follows the person, not the device." |
 | 1:32–1:40 | Switch to the **second memory key**: a different panel, and a **different account id** in the You dialog | "Another person, another account on Sui. Neither can read the other." |
-| 1:40–1:50 | Back to ED, turn the **Memory** switch off, send the same question again | "Same question, memory off." → generic answer, no guitar, no tab |
+| 1:40–1:50 | Back to ED, turn the **Memory** switch off, send the same question again | "Memory on, it recalls before answering and saves what is new. Memory off, same model, same question, no idea who I am." → generic answer, no guitar, no tab |
 | 1:50–2:02 | Memory back on, click the **Study** mentor: the handover line appears with its badge, then scroll to **Your week** | "Switch mentor and the new one already knows, connecting the guitar practice to the English routine." |
 | 2:02–2:08 | End card | Open-weight Qwen 3.8 27B · memory on Walrus mainnet · `walcoach.vercel.app` · `github.com/EdCryptoFi/walcoach` |
 
@@ -96,6 +96,6 @@ shot or memory off.
 8. And the account holding it is mine. WalCoach is just a guest key I can remove.
 9. Same key, different browser. Memory follows the person.
 10. Another person, another account on Sui. Neither sees the other.
-11. Same question, memory off.
+11. Memory on: it recalls before answering, and saves what is new. Memory off: same model, same question, no idea who I am.
 12. Different mentor, same memory: guitar practice meets the English routine.
 13. Open-weight Qwen 3.8 27B. Memory on Walrus mainnet. No database.
