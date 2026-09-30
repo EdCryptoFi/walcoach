@@ -51,7 +51,7 @@ different account ids.
 | 1:32–1:40 | Switch to the **second memory key**: a different panel, and a **different account id** in the You dialog | "Another person, another account on Sui. Neither can read the other." |
 | 1:40–1:50 | Back to ED, turn the **Memory** switch off, send the same question again | "Memory on, it recalls before answering and saves what is new. Memory off, same model, same question, no idea who I am." → generic answer, no guitar, no tab |
 | 1:50–2:02 | Memory back on, click the **Study** mentor: the handover line appears with its badge, then scroll to **Your week** | "Switch mentor and the new one already knows, connecting the guitar practice to the English routine." |
-| 2:02–2:08 | End card | Open-weight Qwen 3.8 27B · memory on Walrus mainnet · `walcoach.vercel.app` · `github.com/EdCryptoFi/walcoach` |
+| 2:02–2:08 | End card. The closing line big, the specs small underneath | **"Your coach remembers. You own the memory."**<br>Open-weight Qwen 3.8 27B · memory on Walrus mainnet · `walcoach.vercel.app` · `github.com/EdCryptoFi/walcoach` |
 
 ## What each shot is there to prove
 
@@ -99,3 +99,4 @@ shot or memory off.
 11. Memory on: it recalls before answering, and saves what is new. Memory off: same model, same question, no idea who I am.
 12. Different mentor, same memory: guitar practice meets the English routine.
 13. Open-weight Qwen 3.8 27B. Memory on Walrus mainnet. No database.
+14. Your coach remembers. You own the memory.
