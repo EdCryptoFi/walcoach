@@ -10,3 +10,13 @@ __pycache__/
 Video.mov
 *.mov
 !public/media/*.mov
+
+# Submission planning and marketing copy: useful locally, not part of the project
+docs/SUBMISSION.md
+docs/FORM-ANSWERS.md
+docs/RULES-GAP.md
+docs/X-POST.md
+docs/DISCORD-POST.md
+docs/VIDEO-SCRIPT.md
+docs/WALRUS-REPLY.md
+video/

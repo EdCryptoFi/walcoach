@@ -190,7 +190,7 @@ Config: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (generate with
 
 ## Telegram (optional)
 
-Same pipeline, different adapter ([src/index.ts](src/index.ts)). Set `TELEGRAM_BOT_TOKEN`
+Same pipeline, different adapter ([src/telegram.ts](src/telegram.ts)). Set `TELEGRAM_BOT_TOKEN`
 and run `npm run telegram`.
 
 | Command | What it does |
@@ -216,11 +216,12 @@ Fill in `.env`:
 
 | Variable | Where to get it |
 |---|---|
-| `TELEGRAM_BOT_TOKEN` | optional — Telegram → [@BotFather](https://t.me/BotFather) → `/newbot` |
+| `TELEGRAM_BOT_TOKEN` | optional, Telegram → [@BotFather](https://t.me/BotFather) → `/newbot` |
 | `GROQ_API_KEY` | https://console.groq.com (free tier) |
 | `MEMWAL_PRIVATE_KEY`, `MEMWAL_ACCOUNT_ID` | https://memory.walrus.xyz → create account → delegate key |
 | `SUI_SPONSOR_KEY` | a dedicated Sui wallet (bech32 `suiprivkey1…`) holding ~1 SUI, pays gas for user accounts, about 0.005 SUI each |
 | `MEMWAL_PACKAGE_ID`, `MEMWAL_REGISTRY_ID` | the Walrus Memory package and its shared `AccountRegistry` on mainnet |
+| `DELEGATE_KEY_SEED` | any 32 random bytes, `openssl rand -hex 32`. Each user's account gets its own delegate key derived from this, so the relayer can tell the accounts apart. Per-user accounts stay off without it, and **changing it loses access to every account already created** |
 | `MEMWAL_SERVER_URL` | `https://relayer.memory.walrus.xyz` (mainnet) or `https://relayer-staging.memory.walrus.xyz` (testnet) |
 
 Verify credentials with a real write + recall round-trip:
@@ -238,19 +239,24 @@ npm run web        # or: npm run web:dev (reload on change)
 ### Deploy to Vercel (no server to keep running)
 
 The API is stateless (the browser sends its short-term history; long-term memory is on
-Walrus), so it runs as a single Vercel function ([api/index.ts](api/index.ts)); background
+Walrus), so it runs as a single Vercel function ([src/index.ts](src/index.ts), named in `vercel.json`);
+background
 learning is kept alive with `waitUntil`. From the project folder:
 
 ```bash
 vercel deploy --prod \
   -e GROQ_API_KEY=... -e GROQ_MODEL=qwen/qwen3.8-27b \
   -e MEMWAL_PRIVATE_KEY=... -e MEMWAL_ACCOUNT_ID=... \
-  -e MEMWAL_SERVER_URL=https://relayer.memory.walrus.xyz -e MEMWAL_NAMESPACE_PREFIX=coach
+  -e MEMWAL_SERVER_URL=https://relayer.memory.walrus.xyz -e MEMWAL_NAMESPACE_PREFIX=coach \
+  -e SUI_SPONSOR_KEY=suiprivkey1... -e DELEGATE_KEY_SEED=$(openssl rand -hex 32)
 ```
+
+Leave `SUI_SPONSOR_KEY` and `DELEGATE_KEY_SEED` out and the app still works: users fall back to the
+shared project account, isolated by namespace, instead of owning one each.
 
 (or set the same variables in the Vercel dashboard and run `vercel deploy --prod`).
 
-Run the Telegram bot instead (long polling — no public URL needed):
+Run the Telegram bot instead (long polling, no public URL needed):
 
 ```bash
 npm run telegram

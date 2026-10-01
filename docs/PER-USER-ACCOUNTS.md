@@ -95,7 +95,7 @@ including the failed attempts while getting the SDK call right: 0.0168 SUI for f
 | 1 | ✓ Prototype with one test user, end to end | treasury key + ~0.05 SUI |
 | 2 | ✓ **Done, live.** New users get their own account; existing users keep working | code |
 | 3 | Optional migration for existing users: new account, re-write their facts into it | gas per user |
-| 4 | ✓ Article section and reply drafted, see `docs/WALRUS-REPLY.md` | writing |
+| 4 | ✓ Article section written, and the findings reported to the Walrus team | writing |
 
 If step 1 fails on either unknown, the fallback is the dedicated app account plus "bring your own
 account", and this document becomes the honest account of what was tried.

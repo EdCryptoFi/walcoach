@@ -91,6 +91,7 @@ export function createApp() {
     const started = Date.now();
     await next();
     if (c.req.path.startsWith("/api/")) log.info("request", { method: c.req.method, path: c.req.path, status: c.res.status, ms: Date.now() - started });
+    c.header("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
     c.header("X-Content-Type-Options", "nosniff");
     c.header("Referrer-Policy", "no-referrer");
     c.header("X-Frame-Options", "DENY");
@@ -251,7 +252,12 @@ export function createApp() {
   // ---- per-user Walrus Memory accounts ----
   // The browser owns an Ed25519 key and signs; the project pays gas. Two steps:
   // create the account (owned by the user), then authorise WalCoach as a delegate.
-  const ACCOUNT_LIMITS = { ip: 3, global: 40 };   // creating an account costs real gas
+  // Creating an account costs real gas, so prepare is tight. Execute gets its own,
+  // slightly looser bucket (one execute follows each prepare) and the read-only
+  // endpoints get one too, because they call a public indexer on our behalf.
+  const ACCOUNT_LIMITS = { ip: 3, global: 40, execIp: 6, execGlobal: 80, readIp: 20, readGlobal: 200 };
+  const accountRead = (c: Parameters<typeof clientIp>[0]) =>
+    take(`acct-read-ip:${clientIp(c)}`, ACCOUNT_LIMITS.readIp) && take("acct-read", ACCOUNT_LIMITS.readGlobal);
   app.get("/api/account/config", (c) => c.json({ enabled: accountsEnabled }));
 
   app.post("/api/account/prepare", async (c) => {
@@ -278,6 +284,7 @@ export function createApp() {
     if (!accountsEnabled) return c.json({ enabled: false, delegated: false });
     const { accountId } = (await c.req.json().catch(() => ({}))) as { accountId?: string };
     if (!accountId || !isAccountId(accountId)) return c.json({ error: "invalid accountId" }, 400);
+    if (!accountRead(c)) return c.json({ error: "Too many requests, try again in a minute." }, 429);
     try { return c.json({ enabled: true, delegated: await hasDelegate(accountId) }); }
     catch (err) { log.error("account.status.failed", err); return c.json({ enabled: true, delegated: true }); }
   });
@@ -285,6 +292,7 @@ export function createApp() {
   app.post("/api/account/lookup", async (c) => {
     const { address } = (await c.req.json().catch(() => ({}))) as { address?: string };
     if (!address || !isAccountId(address)) return c.json({ error: "invalid address" }, 400);
+    if (!accountRead(c)) return c.json({ error: "Too many requests, try again in a minute." }, 429);
     try { return c.json({ accountId: await accountOfOwner(address) }); }
     catch (err) { log.error("account.lookup.failed", err); return c.json({ accountId: null }); }
   });
@@ -293,6 +301,8 @@ export function createApp() {
     if (!accountsEnabled) return c.json({ error: "per-user accounts are not configured" }, 503);
     const { txBytes, signature, step } = (await c.req.json().catch(() => ({}))) as { txBytes?: string; signature?: string; step?: string };
     if (!txBytes || !signature) return c.json({ error: "txBytes and signature are required" }, 400);
+    if (!take(`acct-exec-ip:${clientIp(c)}`, ACCOUNT_LIMITS.execIp) || !take("acct-exec", ACCOUNT_LIMITS.execGlobal))
+      return c.json({ error: "Too many requests, try again in a minute." }, 429);
     try {
       const digest = await execute(txBytes, signature);
       if (step === "delegate") { log.info("account.delegate", { digest }); return c.json({ digest }); }
@@ -326,9 +336,17 @@ export function createApp() {
     catch (err) { log.error("handover.failed", err, { user: numericId(userId) }); return c.json({ text: null }); }
   });
 
+  // Health calls the relayer, and the relayer's quota is shared by every user, so
+  // the answer is cached and the endpoint is capped. Otherwise a loop on this one
+  // path could exhaust the quota the whole app depends on.
+  let healthCache: { at: number; relayer: string } | null = null;
   app.get("/api/health", async (c) => {
-    const health = await memwal.health();
-    return c.json({ relayer: health.status, model: config.groqModel });
+    if (!take(`health-ip:${clientIp(c)}`, 10) || !take("health", 120)) return c.json({ error: "Too many requests" }, 429);
+    if (!healthCache || Date.now() - healthCache.at > 20_000) {
+      const health = await memwal.health();
+      healthCache = { at: Date.now(), relayer: health.status };
+    }
+    return c.json({ relayer: healthCache.relayer, model: config.groqModel });
   });
 
   // Public, non-secret facts that let anyone verify memories on-chain / on Walrus.

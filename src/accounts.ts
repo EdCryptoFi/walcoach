@@ -81,8 +81,57 @@ export function prepareDelegate(address: string, accountId: string, label = "Wal
   );
 }
 
+const GAS_BUDGET = 20_000_000;
+const ALLOWED = ["create_account", "add_delegate_key"];
+
+/** Pulls an object id out of an input, whatever shape the builder left it in. */
+function inputObjectId(input: unknown): string | null {
+  const seen = JSON.stringify(input ?? {});
+  const m = seen.match(/"objectId":"(0x[0-9a-f]{64})"/i);
+  return m ? m[1].toLowerCase() : null;
+}
+
+/**
+ * Refuses to co-sign anything that is not one of the two calls we offer.
+ *
+ * The sponsor pays the gas, so the gas coin belongs to us: a transaction we sign
+ * blindly can simply transfer that coin away, which a dry run confirmed would
+ * succeed. So every field that matters is checked here before the key is used.
+ */
+export function assertSponsorable(txBytesB64: string): void {
+  let data: ReturnType<Transaction["getData"]>;
+  try { data = Transaction.from(Uint8Array.from(Buffer.from(txBytesB64, "base64"))).getData(); }
+  catch { throw new Error("transaction could not be parsed"); }
+
+  const sponsorAddress = sponsor().getPublicKey().toSuiAddress();
+  if ((data.gasData.owner ?? "").toLowerCase() !== sponsorAddress.toLowerCase()) throw new Error("gas owner is not the sponsor");
+  if (Number(data.gasData.budget ?? 0) > GAS_BUDGET) throw new Error("gas budget above the allowed maximum");
+  if (data.commands.length !== 1) throw new Error("expected exactly one command");
+
+  const call = (data.commands[0] as { MoveCall?: { package?: string; module?: string; function?: string; typeArguments?: unknown[] } }).MoveCall;
+  if (!call) throw new Error("expected a single move call");
+  if ((call.package ?? "").toLowerCase() !== config.memwalPackageId.toLowerCase()) throw new Error("move call is not the Walrus Memory package");
+  if (call.module !== "account" || !ALLOWED.includes(call.function ?? "")) throw new Error("move call is not one we sponsor");
+  if ((call.typeArguments ?? []).length !== 0) throw new Error("unexpected type arguments");
+
+  // add_delegate_key(account, registry, public_key, label, clock): the key being
+  // registered must be the one we derive for that exact account, so a crafted
+  // transaction cannot put somebody else's key inside a user's account.
+  if (call.function === "add_delegate_key") {
+    const accountId = inputObjectId(data.inputs[0]);
+    if (!accountId) throw new Error("account input missing");
+    const pure = (data.inputs[2] as { Pure?: { bytes?: string } })?.Pure?.bytes;
+    if (!pure) throw new Error("delegate key input missing");
+    const bytes = Buffer.from(pure, "base64");
+    // BCS vector<u8>: one length byte (32) followed by the key itself.
+    const got = bytes.subarray(1).toString("hex");
+    if (bytes[0] !== 32 || got !== delegatePublicKeyFor(accountId)) throw new Error("delegate key is not the one derived for this account");
+  }
+}
+
 /** Co-signs with the sponsor and executes. Returns the transaction digest. */
 export async function execute(txBytesB64: string, userSignature: string): Promise<string> {
+  assertSponsorable(txBytesB64);
   const bytes = Uint8Array.from(Buffer.from(txBytesB64, "base64"));
   const sponsorSig = (await sponsor().signTransaction(bytes)).signature;
   const res = await client.core.executeTransaction({ transaction: bytes, signatures: [userSignature, sponsorSig] });
