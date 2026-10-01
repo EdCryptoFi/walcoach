@@ -1,0 +1,60 @@
+---
+config:
+  theme: base
+  themeVariables:
+    fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif"
+    fontSize: "16px"
+    primaryColor: "#ffffff"
+    primaryTextColor: "#0b2a3a"
+    primaryBorderColor: "#9fd4e8"
+    lineColor: "#2a7ea8"
+    tertiaryColor: "#f4fbfe"
+  flowchart:
+    curve: basis
+    nodeSpacing: 65
+    rankSpacing: 100
+    padding: 16
+---
+flowchart TB
+
+ subgraph SETUP["ONCE, ON YOUR FIRST VISIT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
+  direction LR
+  K["<b>Memory key</b><br/>an Ed25519 key generated<br/>in your browser, and kept there"]
+  ACC["<b>Your Walrus Memory account</b><br/>on Sui mainnet<br/>owner: your key"]
+  DK["<b>WalCoach delegate key</b><br/>derived for this account only<br/>you can revoke it"]
+  SP(["<b>Sponsor wallet</b><br/>pays the ~0.005 SUI of gas,<br/>so you never need a wallet"])
+  K == "signs one sponsored<br/>transaction" ==> ACC
+  SP -. "pays for it" .-> ACC
+  ACC -- "authorises" --> DK
+ end
+
+ subgraph LOOP["EVERY MESSAGE AFTER THAT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
+  direction LR
+  UI["<b>Chat</b><br/>7 mentors,<br/>one memory of you"]
+  API["<b>WalCoach API</b><br/>Hono on Vercel<br/>stateless, no database"]
+  REL["<b>Walrus Memory relayer</b><br/>embeds and SEAL encrypts<br/>called with your delegate key,<br/>which is what selects your account"]
+  LLM["<b>Qwen 3.8 27B on Groq</b><br/>open weights<br/>reply, facts, summary, nudge"]
+  BLOB["<b>Your encrypted blobs</b><br/>one per fact, on Walrus mainnet<br/>owned by your address<br/>public on Walruscan"]
+  UI -- "message + account id,<br/>never the key" --> API
+  API -- "<b>1</b> recall twice: the message,<br/>and your goals and constraints" --> REL
+  REL -- "your facts" --> API
+  API -- "<b>2</b> generate with those<br/>facts in the prompt" --> LLM
+  LLM -- "reply + new facts" --> API
+  API -- "<b>3</b> write one blob per fact" --> REL
+  REL --> BLOB
+ end
+
+ SETUP ~~~ LOOP
+
+ classDef key fill:#eaf6fc,stroke:#5fb4da,stroke-width:2px,color:#0b2a3a
+ classDef srv fill:#ffffff,stroke:#9fd4e8,stroke-width:1.6px,color:#0b2a3a
+ classDef chain fill:#e6f7f1,stroke:#4fb897,stroke-width:2px,color:#06372a
+ classDef ext fill:#f6f2fd,stroke:#b09ae4,stroke-width:1.6px,color:#2a1a4a
+ classDef gas fill:#fff6e8,stroke:#e0b267,stroke-width:1.6px,color:#4a3208
+ class K,UI key
+ class API,DK srv
+ class ACC,BLOB chain
+ class LLM,REL ext
+ class SP gas
+ style SETUP fill:#eef8fd,stroke:#bfe2f2,stroke-width:1.5px,color:#0b4a66
+ style LOOP fill:#f8fcfe,stroke:#cfe8f5,stroke-width:1.5px,color:#0b4a66
