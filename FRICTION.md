@@ -1,10 +1,12 @@
 # Walrus Memory friction log
 
 Observed while building this bot against `https://relayer.memory.walrus.xyz`
-(SDK `@mysten-incubation/memwal@0.1.7`, Node 22, macOS). Each item is a
-candidate GitHub issue at https://github.com/MystenLabs/MemWal/issues.
+(SDK `@mysten-incubation/memwal@0.1.7`, Node 22, macOS). Every item below is filed as a ticket at https://github.com/MystenLabs/MemWal/issues,
+linked under each heading.
 
 ## 1. `POST /api/analyze` returns transient 500 *and* 503 for the same failure
+
+> Filed as https://github.com/MystenLabs/MemWal/issues/1072
 
 - Repro: `scripts/repro-500.ts` — same input fails on attempt 1 with
   `500 {"error":"Internal server error (traceId: …)"}` or
@@ -17,6 +19,8 @@ candidate GitHub issue at https://github.com/MystenLabs/MemWal/issues.
 
 ## 2. `remember` job fails with `seal encrypt failed … RpcError: Too Many Requests`
 
+> Filed as https://github.com/MystenLabs/MemWal/issues/1071
+
 - Repro: ~15 sequential `rememberAndWait` calls from one delegate key over ~2 minutes.
 - Error: `remember job failed: Internal Error: seal encrypt failed: seal/encrypt failed during read_account_identity: RpcError: Too Many Requests (traceId=…, timeoutMs=25000)`
 - Expected: the relayer should cache the account identity read (it does not change
@@ -27,11 +31,15 @@ candidate GitHub issue at https://github.com/MystenLabs/MemWal/issues.
 
 ## 3. `analyze` leaks prompt template into extracted facts
 
+> Filed as https://github.com/MystenLabs/MemWal/issues/1076
+
 - Input (Carol, EN): "Goal: zero added sugar for 30 days, started this Monday."
 - Extracted fact stored on Walrus: `standard>User started the zero added sugar goal on Monday.`
 - Expected: clean fact text. Looks like a closing tag fragment from the extractor prompt.
 
 ## 4. `analyze` alternates output language for the same user
+
+> Filed as https://github.com/MystenLabs/MemWal/issues/1075
 
 - PT input produced EN facts ("User only trains Tuesday and Thursday…") in one call and
   PT facts ("User tem dois filhos pequenos") in the next. Mixed-language memories get
@@ -40,6 +48,8 @@ candidate GitHub issue at https://github.com/MystenLabs/MemWal/issues.
 
 ## 5. No relevance threshold + cross-language distances
 
+> Filed as https://github.com/MystenLabs/MemWal/issues/1077
+
 - With no `maxDistance`, short namespaces return filler. With the documented `0.7` cutoff,
   clearly related PT question / EN fact pairs (distance 0.55–0.70) were often dropped.
   Documenting typical cross-lingual distances, or exposing the embedding model name in
@@ -47,12 +57,16 @@ candidate GitHub issue at https://github.com/MystenLabs/MemWal/issues.
 
 ## 6. Retrying `rememberAndWait` after a timeout returned the *same* `job_id`
 
+> Filed as https://github.com/MystenLabs/MemWal/issues/1074
+
 - Three consecutive `rememberAndWait(sameText, sameNamespace)` calls reported
   `job_id=441d8509-…` each time. Docs say `remember()` is always append-never-upsert,
   so either there is undocumented idempotency, or the SDK re-polled the old job.
   Worth clarifying.
 
 ## 7. `recall` intermittently returns an empty result set with HTTP 200
+
+> Filed as https://github.com/MystenLabs/MemWal/issues/1070
 
 - Namespace `eval-…-900002` had 7 indexed memories. A recall with the fixed query
   "the user's main goal, deadline, weekly schedule, constraints and current struggle"
@@ -66,6 +80,8 @@ candidate GitHub issue at https://github.com/MystenLabs/MemWal/issues.
 
 ## 8. Rate limits are per delegate key / account, and a chatbot backend is one key
 
+> Filed as https://github.com/MystenLabs/MemWal/issues/1073
+
 - The relayer returns `429 {"error":"Rate limit exceeded","layer":"delegate_key","limit":"60 weighted-requests/min","retry_after_seconds":60}`
   and `{"layer":"account_sustained","limit":"1000 weighted-requests/hour","retry_after_seconds":300}`.
 - A bot serving N users shares one delegate key, so a naive loop (recall + dedupe-recall +
@@ -78,6 +94,8 @@ candidate GitHub issue at https://github.com/MystenLabs/MemWal/issues.
   a key with a higher tier for multi-user backends.
 
 ## 9. `accountId` is accepted and signed, but the relayer routes by delegate key
+
+> Filed as https://github.com/MystenLabs/MemWal/issues/1069
 
 - `MemWal.create({ key, accountId })` takes an account id, signs it into every request
   (`${timestamp}.${method}.${path}.${bodySha}.${nonce}.${accountId}`) and sends it as
