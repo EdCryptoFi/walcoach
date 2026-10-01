@@ -107,10 +107,14 @@ I built an eval harness (`npm run eval`): three personas share facts in session 
 
 | | Probes answered correctly |
 |---|---|
-| Without memory | **0 / 9** |
-| With Walrus Memory | **6 / 9** |
+| Without memory | **0 to 1 of 9** |
+| With Walrus Memory | **6 to 8 of 9** |
 
-The first version scored 1/9. The jump came from two fixes: the second "profile" recall query, and doing fact extraction with my own model instead of the relayer's `analyze`, which was flipping languages mid-user and hurting recall distances.
+Two numbers because a language model is not deterministic: the first clean run scored 6/9, the latest
+scored 8/9, and the no-memory baseline answered one probe by luck. Each run writes to a fresh
+namespace, so no run inherits the previous one's memories.
+
+An earlier version of the pipeline scored 1/9. The jump came from two fixes: the second "profile" recall query, and doing fact extraction with my own model instead of the relayer's `analyze`, which was flipping languages mid-user and hurting recall distances.
 
 ## What broke
 
