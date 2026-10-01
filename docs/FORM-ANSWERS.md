@@ -36,7 +36,7 @@ Rules: https://thewalrussessions.wal.app/chatbots/index.html · Deadline **Oct 9
 | Which LLM did you build with? | Qwen (open-weight, via Groq) |
 | Model name and version | `qwen/qwen3.8-27b` served by Groq, OpenAI-compatible API |
 | How many agents wrote blobs on mainnet? | **1** delegate key wrote the session blobs on the project account. Since per-user accounts shipped, each user's account also has its own derived delegate key, so the count grows with users; the agent id below is the one that wrote the blobs you can verify. |
-| Blob count (asked on the DeepSurge form) | **1,068 blobs** owned on Sui mainnet by this account, **137 of them written during the session window** (from Sep 18). Counted from chain: `python3 scripts/count-blobs.py` and `scripts/count-blobs-window.py`. Requirement is 10. |
+| Blob count (asked on the DeepSurge form) | **1,088 blobs** owned on Sui mainnet by this account, **157 of them touched during the session window** (from Sep 18). Separately, **24 user-owned accounts** exist, **8** of them holding **13 blobs owned by the users' own addresses**. Counted from chain on 2026-10-01: `python3 scripts/count-blobs.py`, `scripts/count-blobs-window.py`. Requirement is 10. |
 | MEMWAL_AGENT_ID (delegate public key) | `813aa47d09ee950eea12b0acf6fb2fe45c97b5b6b8db9cf1ecefc64f19a0b7fe` |
 | Account ID (MemWalAccount object on Sui) | `0xf059b5c5b2429903359263c84c78190f6ac70063182d3b44eccb91e31bff7f3d` (the project account, where the session blobs were written). Since 2026-09-23 **each new user also gets their own account**, created by a sponsored transaction and owned by their browser key, with WalCoach as a revocable delegate. Example verified end to end: `0x9602dff07a0953e6ffce2f435b74643f6deff6fcd65c981dcbabb772ae5320fe`, owner `0xdac643e9…0ca5`, whose address holds the Blob object itself. |
 | Confirm agents wrote blobs on mainnet | Yes, verified on-chain: type `0xe7c16fbe…::account::MemWalAccount`, Sui mainnet |
@@ -46,7 +46,7 @@ Rules: https://thewalrussessions.wal.app/chatbots/index.html · Deadline **Oct 9
 | SUI address (reward) | ✏️ **create a dedicated wallet for Sessions** at https://slush.app/get-started and send a WAL test transaction |
 | GitHub | https://github.com/EdCryptoFi and https://github.com/EdCryptoFi/walcoach |
 | Link to Article | ✓ https://medium.com/@cryptolairbr/walcoach-remebers-you-b2f3b5596868 |
-| Link to article tweet | ✏️ reply under the @WalrusProtocol Session 8 announcement, tagging @WalrusProtocol, #WalrusMemory |
+| Link to article tweet | ✓ https://x.com/EdCriptoFi/status/2105602374333050996 (5 post thread with the demo video, tagging @WalrusProtocol and @SuiDevelopers, #WalrusMemory, article link in post 5) |
 | Link to promo post | ⚠️ https://www.reddit.com/user/CryptoLairBR/comments/1wofdud/walcoach_remembers_you/ is a **profile post, not a community**. The prize asks for a post *in* a community and is judged on reach. Cross-post it to a real subreddit before submitting. |
 
 ### One bug or friction point you hit with Walrus Memory *(pick one, the rest go in the GitHub tickets field)*
